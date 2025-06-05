@@ -1,0 +1,574 @@
+Watching for file changes with StatReloader
+"POST /admin/login/?next=/admin/auth/user/add/ HTTP/1.1" 301 0
+You're accessing the development server over HTTPS, but it only supports HTTP.
+code 400, message Bad HTTP/0.9 request type ('\x16\x03\x01\x06')
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+code 400, message Bad HTTP/0.9 request type ('\x16\x03\x01\x06')
+You're accessing the development server over HTTPS, but it only supports HTTP.
+code 400, message Bad request version ('\x00\x02\x01\x00\x00\x1b\x00\x03\x02\x00\x02\x00')
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+Watching for file changes with StatReloader
+code 400, message Bad request version ('\x00\x02\x01\x00\x00')
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\serializers.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\views.py changed, reloading.
+Watching for file changes with StatReloader
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAEEDCGgAJ9tiQL2kHedskpTGxlSkBpI3aU/getMe "HTTP/1.1 401 Unauthorized"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getMe "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/deleteWebhook "HTTP/1.1 200 OK"
+Application started
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/sendMessage "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/sendMessage "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/sendMessage "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/sendMessage "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.telegram.org/bot7578033592:AAH4pjmkiPsHNhPf16_xLE0aXJQs2HXtYFk/getUpdates "HTTP/1.1 200 OK"
+Application is stopping. This might take a moment.
+Application.stop() complete
+Serializer errors: {'tags': [ErrorDetail(string='Значение должно быть корректным JSON-ом.', code='invalid')]}
+Bad Request: /api/notes/
+Watching for file changes with StatReloader
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+code 400, message Bad request version ('\x00\x12\x00\x10\x04\x03\x08\x04\x04\x01\x05\x03\x08\x05\x05\x01\x08\x06\x06\x01\x00')
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+Watching for file changes with StatReloader
+You're accessing the development server over HTTPS, but it only supports HTTP.
+You're accessing the development server over HTTPS, but it only supports HTTP.
+Watching for file changes with StatReloader
+"GET /admin HTTP/1.1" 301 0
+Session data corrupted
+"GET /admin/ HTTP/1.1" 302 0
+Session data corrupted
+"GET /admin/login/?next=/admin/ HTTP/1.1" 200 4361
+Session data corrupted
+"POST /admin/login/?next=/admin/ HTTP/1.1" 302 0
+"GET /admin/ HTTP/1.1" 200 9321
+"GET /static/admin/css/dashboard.css HTTP/1.1" 200 441
+"GET /static/admin/img/icon-deletelink.svg HTTP/1.1" 200 392
+"GET /static/admin/img/icon-changelink.svg HTTP/1.1" 200 380
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+"GET /admin/auth/user/ HTTP/1.1" 200 12760
+"GET /static/admin/css/changelists.css HTTP/1.1" 200 6878
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+"GET /static/admin/js/core.js HTTP/1.1" 200 6208
+"GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9097
+"GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+"GET /static/admin/img/search.svg HTTP/1.1" 200 458
+"GET /static/admin/img/icon-yes.svg HTTP/1.1" 200 436
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+"GET /static/admin/img/icon-no.svg HTTP/1.1" 200 560
+"GET /static/admin/js/filters.js HTTP/1.1" 200 978
+"GET /admin/jsi18n/ HTTP/1.1" 200 17546
+"GET /static/admin/img/sorting-icons.svg HTTP/1.1" 200 1097
+"GET /static/admin/img/tooltag-add.svg HTTP/1.1" 200 331
+"GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 200 581
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"OPTIONS /api/logout/ HTTP/1.1" 200 0
+"POST /api/logout/ HTTP/1.1" 200 31
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+Not Found: /.well-known/appspecific/com.chrome.devtools.json
+"GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2479
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\envisionary_backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+"GET /admin/auth/user/ HTTP/1.1" 200 12760
+"GET /static/admin/css/base.css HTTP/1.1" 200 22092
+"GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+"GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2804
+"GET /static/admin/css/changelists.css HTTP/1.1" 200 6878
+"GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+"GET /static/admin/css/responsive.css HTTP/1.1" 200 17972
+"GET /static/admin/js/core.js HTTP/1.1" 200 6208
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9097
+"GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+"GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+Not Found: /.well-known/appspecific/com.chrome.devtools.json
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+"GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2479
+"GET /static/admin/img/search.svg HTTP/1.1" 200 458
+"GET /static/admin/img/icon-yes.svg HTTP/1.1" 200 436
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+"GET /static/admin/img/icon-no.svg HTTP/1.1" 200 560
+"GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+"GET /static/admin/js/filters.js HTTP/1.1" 200 978
+"GET /admin/jsi18n/ HTTP/1.1" 200 17546
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+"GET /static/admin/img/sorting-icons.svg HTTP/1.1" 200 1097
+"GET /static/admin/img/tooltag-add.svg HTTP/1.1" 200 331
+"GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 200 581
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+Forbidden: /api/login/
+"POST /api/login/ HTTP/1.1" 403 45
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+Forbidden: /api/login/
+"POST /api/login/ HTTP/1.1" 403 45
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\envisionary_backend\settings.py changed, reloading.
+Watching for file changes with StatReloader
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/logout/ HTTP/1.1" 200 0
+"POST /api/logout/ HTTP/1.1" 200 31
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /admin/auth/user/ HTTP/1.1" 200 12760
+"GET /static/admin/css/base.css HTTP/1.1" 200 22092
+"GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+"GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+"GET /static/admin/css/changelists.css HTTP/1.1" 200 6878
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+"GET /static/admin/css/responsive.css HTTP/1.1" 200 17972
+"GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2804
+"GET /static/admin/js/core.js HTTP/1.1" 200 6208
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9097
+"GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+"GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+Not Found: /.well-known/appspecific/com.chrome.devtools.json
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+"GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2479
+"GET /static/admin/img/search.svg HTTP/1.1" 200 458
+"GET /static/admin/img/icon-yes.svg HTTP/1.1" 200 436
+"GET /static/admin/img/icon-no.svg HTTP/1.1" 200 560
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+"GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+"GET /static/admin/js/filters.js HTTP/1.1" 200 978
+"GET /admin/jsi18n/ HTTP/1.1" 200 17546
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+"GET /static/admin/img/sorting-icons.svg HTTP/1.1" 200 1097
+"GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 200 581
+"GET /static/admin/img/tooltag-add.svg HTTP/1.1" 200 331
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/auth/check/ HTTP/1.1" 200 43
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/register/ HTTP/1.1" 200 0
+"POST /api/register/ HTTP/1.1" 201 42
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+Internal Server Error: /api/login/
+Traceback (most recent call last):
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\views.py", line 49, in post
+    user = User.objects.get(email=email)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\db\models\query.py", line 652, in get
+    raise self.model.MultipleObjectsReturned(
+django.contrib.auth.models.User.MultipleObjectsReturned: get() returned more than one User -- it returned 2!
+"POST /api/login/ HTTP/1.1" 500 110601
+"GET /admin/auth/user/ HTTP/1.1" 200 13276
+"GET /static/admin/css/base.css HTTP/1.1" 200 22092
+Not Found: /.well-known/appspecific/com.chrome.devtools.json
+"GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2479
+"GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2804
+"GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+"GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+"GET /static/admin/css/changelists.css HTTP/1.1" 200 6878
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+"GET /static/admin/css/responsive.css HTTP/1.1" 200 17972
+"GET /static/admin/js/core.js HTTP/1.1" 200 6208
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9097
+"GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+"GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+"GET /static/admin/img/search.svg HTTP/1.1" 200 458
+"GET /static/admin/img/icon-no.svg HTTP/1.1" 200 560
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+"GET /static/admin/img/icon-yes.svg HTTP/1.1" 200 436
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+"GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+"GET /static/admin/js/filters.js HTTP/1.1" 200 978
+"GET /admin/jsi18n/ HTTP/1.1" 200 17546
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+"GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 200 581
+"GET /static/admin/img/tooltag-add.svg HTTP/1.1" 200 331
+"GET /static/admin/img/sorting-icons.svg HTTP/1.1" 200 1097
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 41
+"GET /api/auth/check/ HTTP/1.1" 200 41
+"GET /api/auth/check/ HTTP/1.1" 200 41
+"GET /api/auth/check/ HTTP/1.1" 200 41
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+Internal Server Error: /api/login/
+Traceback (most recent call last):
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\views.py", line 49, in post
+    user = User.objects.get(email=email)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\db\models\query.py", line 652, in get
+    raise self.model.MultipleObjectsReturned(
+django.contrib.auth.models.User.MultipleObjectsReturned: get() returned more than one User -- it returned 2!
+"POST /api/login/ HTTP/1.1" 500 110601
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\models.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\utils.py changed, reloading.
+Watching for file changes with StatReloader
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 41
+"GET /api/auth/check/ HTTP/1.1" 200 41
+"GET /api/auth/check/ HTTP/1.1" 200 41
+"GET /api/auth/check/ HTTP/1.1" 200 41
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+Internal Server Error: /api/login/
+Traceback (most recent call last):
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\views.py", line 49, in post
+    user = User.objects.get(email=email)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Майкл Ткачев\project\Envisionary2\backend\venv\Lib\site-packages\django\db\models\query.py", line 652, in get
+    raise self.model.MultipleObjectsReturned(
+django.contrib.auth.models.User.MultipleObjectsReturned: get() returned more than one User -- it returned 2!
+"POST /api/login/ HTTP/1.1" 500 110601
+"GET /admin/auth/user/11/change/ HTTP/1.1" 200 24237
+"GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2804
+"GET /static/admin/css/base.css HTTP/1.1" 200 22092
+"GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+"GET /static/admin/css/forms.css HTTP/1.1" 200 8710
+"GET /static/admin/css/responsive.css HTTP/1.1" 200 17972
+"GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+"GET /static/admin/js/calendar.js HTTP/1.1" 200 9141
+"GET /static/admin/js/admin/DateTimeShortcuts.js HTTP/1.1" 200 19319
+"GET /static/admin/js/core.js HTTP/1.1" 200 6208
+"GET /static/admin/js/SelectBox.js HTTP/1.1" 200 4530
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9097
+"GET /static/admin/css/widgets.css HTTP/1.1" 200 11564
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+"GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+"GET /static/admin/js/SelectFilter2.js HTTP/1.1" 200 15502
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+"GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+Not Found: /.well-known/appspecific/com.chrome.devtools.json
+"GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2479
+"GET /static/admin/js/prepopulate_init.js HTTP/1.1" 200 586
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+"GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+"GET /static/admin/js/change_form.js HTTP/1.1" 200 606
+"GET /admin/jsi18n/ HTTP/1.1" 200 17546
+"GET /static/admin/img/icon-unknown.svg HTTP/1.1" 200 655
+"GET /static/admin/img/search.svg HTTP/1.1" 200 458
+"GET /static/admin/img/selector-icons.svg HTTP/1.1" 200 3291
+"GET /static/admin/img/icon-clock.svg HTTP/1.1" 200 677
+"GET /static/admin/img/icon-unknown-alt.svg HTTP/1.1" 200 655
+"GET /static/admin/img/icon-calendar.svg HTTP/1.1" 200 1086
+"GET /admin/auth/user/ HTTP/1.1" 200 13276
+Not Found: /.well-known/appspecific/com.chrome.devtools.json
+"GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2479
+"GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2804
+"GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+"GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+"GET /static/admin/css/base.css HTTP/1.1" 200 22092
+"GET /static/admin/css/changelists.css HTTP/1.1" 200 6878
+"GET /static/admin/css/responsive.css HTTP/1.1" 200 17972
+"GET /static/admin/js/core.js HTTP/1.1" 200 6208
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9097
+"GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+"GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+"GET /static/admin/img/icon-no.svg HTTP/1.1" 200 560
+"GET /static/admin/img/search.svg HTTP/1.1" 200 458
+"GET /static/admin/img/icon-yes.svg HTTP/1.1" 200 436
+"GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+"GET /static/admin/js/filters.js HTTP/1.1" 200 978
+"GET /admin/jsi18n/ HTTP/1.1" 200 17546
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+"GET /static/admin/img/tooltag-add.svg HTTP/1.1" 200 331
+"GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 200 581
+"GET /static/admin/img/sorting-icons.svg HTTP/1.1" 200 1097
+"POST /admin/auth/user/ HTTP/1.1" 200 7913
+Not Found: /.well-known/appspecific/com.chrome.devtools.json
+"GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2479
+"GET /static/admin/css/base.css HTTP/1.1" 200 22092
+"GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2804
+"GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+"GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+"GET /static/admin/css/responsive.css HTTP/1.1" 200 17972
+"GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9097
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+"GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+"GET /static/admin/js/core.js HTTP/1.1" 200 6208
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+"GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+"GET /static/admin/js/cancel.js HTTP/1.1" 200 884
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+"POST /admin/auth/user/ HTTP/1.1" 302 0
+"GET /admin/auth/user/ HTTP/1.1" 200 12923
+Not Found: /.well-known/appspecific/com.chrome.devtools.json
+"GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2479
+"GET /static/admin/css/base.css HTTP/1.1" 200 22092
+"GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+"GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+"GET /static/admin/css/changelists.css HTTP/1.1" 200 6878
+"GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2804
+"GET /static/admin/css/responsive.css HTTP/1.1" 200 17972
+"GET /static/admin/js/admin/RelatedObjectLookups.js HTTP/1.1" 200 9097
+"GET /static/admin/js/core.js HTTP/1.1" 200 6208
+"GET /static/admin/js/jquery.init.js HTTP/1.1" 200 347
+"GET /static/admin/js/actions.js HTTP/1.1" 200 8076
+"GET /static/admin/js/urlify.js HTTP/1.1" 200 7887
+"GET /static/admin/js/prepopulate.js HTTP/1.1" 200 1531
+"GET /static/admin/js/vendor/jquery/jquery.js HTTP/1.1" 200 285314
+"GET /static/admin/js/vendor/xregexp/xregexp.js HTTP/1.1" 200 325171
+"GET /static/admin/img/search.svg HTTP/1.1" 200 458
+"GET /static/admin/img/icon-yes.svg HTTP/1.1" 200 436
+"GET /static/admin/img/icon-no.svg HTTP/1.1" 200 560
+"GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+"GET /static/admin/js/filters.js HTTP/1.1" 200 978
+"GET /admin/jsi18n/ HTTP/1.1" 200 17546
+"GET /static/admin/img/icon-addlink.svg HTTP/1.1" 200 331
+"GET /static/admin/img/icon-viewlink.svg HTTP/1.1" 200 581
+"GET /static/admin/img/sorting-icons.svg HTTP/1.1" 200 1097
+"GET /static/admin/img/tooltag-add.svg HTTP/1.1" 200 331
+"GET /api/get-csrf-token/ HTTP/1.1" 200 80
+"OPTIONS /api/login/ HTTP/1.1" 200 0
+"POST /api/login/ HTTP/1.1" 200 30
+"GET /api/auth/check HTTP/1.1" 301 0
+"GET /api/auth/check/ HTTP/1.1" 200 43
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\models.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\views.py changed, reloading.
+Watching for file changes with StatReloader
+C:\Users\Майкл Ткачев\project\Envisionary2\backend\api\views.py changed, reloading.
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader
+Watching for file changes with StatReloader

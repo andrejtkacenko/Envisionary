@@ -1,0 +1,41 @@
+from django.urls import path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .views import (
+    CSRFTokenView,
+    RegisterView,
+    LoginView,
+    LogoutView,
+    CheckAuthView,
+    ProjectView,
+    NoteView,
+    TaskView,
+    GoogleAuthView,
+    GoogleCallbackView,
+    GoogleEventsView,
+    GoogleStatusView,
+    LinkTelegramView,
+    NotebookLMView,
+    LocalFileView,
+    OfflineSyncView,
+)
+
+urlpatterns = [
+    path("get-csrf-token/", CSRFTokenView.as_view(), name="get_csrf_token"),
+    path("register/", RegisterView.as_view(), name="register"),
+    path("login/", LoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(), name="logout"),
+    path("auth/check/", CheckAuthView.as_view(), name="check_auth"),
+    path("projects/", ProjectView.as_view(), name="projects"),
+    path("notes/", NoteView.as_view(), name="notes"),
+    path("tasks/", TaskView.as_view(), name="tasks"),
+    path("google/auth/", GoogleAuthView.as_view(), name="google_auth"),
+    path("google/callback/", GoogleCallbackView.as_view(), name="google_callback"),
+    path("google/events/", GoogleEventsView.as_view(), name="google_events"),
+    path("google/status/", GoogleStatusView.as_view(), name="google_status"),
+    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("link-telegram/", LinkTelegramView.as_view(), name="link_telegram"),
+    path("notebooklm/", NotebookLMView.as_view(), name="notebooklm"),
+    path("local-files/", LocalFileView.as_view(), name="local_files"),
+    path("offline-sync/", OfflineSyncView.as_view(), name="offline_sync"),
+]
