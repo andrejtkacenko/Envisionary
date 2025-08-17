@@ -62,6 +62,14 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
       
       onGoalUpdate(updatedParentGoal);
   };
+
+  const handleSubGoalUpdate = (subGoalToUpdate: Goal) => {
+    const updatedSubGoals = goal.subGoals?.map(sg => 
+        sg.id === subGoalToUpdate.id ? { ...sg, ...subGoalToUpdate } : sg
+    );
+    const updatedParentGoal = { ...goal, subGoals: updatedSubGoals };
+    onGoalUpdate(updatedParentGoal);
+  }
   
   const completedSubGoals = goal.subGoals?.filter(sg => sg.status === 'done').length || 0;
   const totalSubGoals = goal.subGoals?.length || 0;
@@ -69,6 +77,7 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200 flex flex-col">
+      <div className="flex flex-col flex-grow">
         <CardHeader className="p-4 pb-2">
             <div className="flex items-start justify-between">
             <Badge variant="secondary">{goal.project}</Badge>
@@ -131,6 +140,7 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
                 </div>
             )}
         </CardContent>
+      </div>
       {goal.subGoals && goal.subGoals.length > 0 && (
         <Collapsible open={isSubtasksOpen} onOpenChange={setIsSubtasksOpen} className="border-t mt-auto">
             <CollapsibleTrigger asChild>
@@ -141,13 +151,24 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
             </CollapsibleTrigger>
             <CollapsibleContent className="px-4 pb-4 space-y-2">
                 {goal.subGoals.map(sg => (
-                    <div key={sg.id} className="flex items-center gap-2">
+                    <div key={sg.id} className="flex items-center gap-2 group">
                         <Checkbox 
                             id={sg.id} 
                             checked={sg.status === 'done'}
                             onCheckedChange={(checked) => handleSubGoalChange(sg.id, !!checked)}
                         />
-                        <label htmlFor={sg.id} className={cn("text-sm", sg.status === 'done' && 'line-through text-muted-foreground')}>{sg.title}</label>
+                        <label htmlFor={sg.id} className={cn("text-sm flex-grow", sg.status === 'done' && 'line-through text-muted-foreground')}>{sg.title}</label>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <GoalDialog
+                                goal={sg}
+                                onSave={(updatedSubGoal) => handleSubGoalUpdate({ ...sg, ...updatedSubGoal })}
+                                triggerButton={
+                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                        <Edit className="h-3 w-3" />
+                                    </Button>
+                                }
+                            />
+                        </div>
                     </div>
                 ))}
             </CollapsibleContent>
