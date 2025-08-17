@@ -31,17 +31,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Logo } from "@/components/logo";
-import { TaskDialog } from "@/components/task-dialog";
 import { ProgressReportDialog } from "@/components/progress-report-dialog";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 interface AppHeaderProps {
   allGoals: Goal[];
-  onGoalCreate: (goal: Omit<Goal, "id">) => void;
 }
 
-export function AppHeader({ allGoals, onGoalCreate }: AppHeaderProps) {
+export function AppHeader({ allGoals }: AppHeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -57,11 +55,11 @@ export function AppHeader({ allGoals, onGoalCreate }: AppHeaderProps) {
         <div className="ml-auto flex-1 sm:flex-initial">
           <div className="flex items-center gap-2">
             <ProgressReportDialog allGoals={allGoals} />
-            <TaskDialog onSave={onGoalCreate} triggerButton={
-              <Button>
+            <Button asChild>
+              <Link href="/create-goal">
                 <Plus className="mr-2 h-4 w-4" /> New Goal
-              </Button>
-            } />
+              </Link>
+            </Button>
           </div>
         </div>
         <DropdownMenu>

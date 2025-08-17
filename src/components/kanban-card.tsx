@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { TaskDialog } from "@/components/task-dialog";
+import { GoalDialog } from "@/components/goal-dialog";
 
 interface KanbanCardProps {
   goal: Goal;
@@ -45,39 +45,31 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
       <CardHeader className="p-4 pb-2">
         <div className="flex items-start justify-between">
           <Badge variant="secondary">{goal.project}</Badge>
-          <TaskDialog 
-            goal={goal} 
-            onSave={(updatedGoal) => onGoalUpdate({ ...updatedGoal, id: goal.id })}
-            triggerButton={
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                     <div className="w-full">
-                        <TaskDialog 
-                          goal={goal} 
-                          onSave={(updatedGoal) => onGoalUpdate({ ...updatedGoal, id: goal.id })}
-                          triggerButton={
-                            <button className="w-full text-left flex items-center">
-                              <Edit className="mr-2 h-4 w-4" />
-                              <span>Edit</span>
-                            </button>
-                          } 
-                        />
-                      </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onGoalDelete(goal.id)} className="text-destructive">
-                    <Trash className="mr-2 h-4 w-4" />
-                    <span>Delete</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            }
-          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <GoalDialog 
+                      goal={goal} 
+                      onSave={(updatedGoal) => onGoalUpdate({ ...updatedGoal, id: goal.id })}
+                      triggerButton={
+                        <button className="w-full text-left flex items-center">
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Edit</span>
+                        </button>
+                      } 
+                    />
+                </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onGoalDelete(goal.id)} className="text-destructive">
+                <Trash className="mr-2 h-4 w-4" />
+                <span>Delete</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
       </CardHeader>

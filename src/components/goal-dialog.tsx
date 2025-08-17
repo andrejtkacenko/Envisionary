@@ -55,13 +55,13 @@ const goalSchema = z.object({
 
 type GoalFormValues = z.infer<typeof goalSchema>;
 
-interface TaskDialogProps {
+interface GoalDialogProps {
   goal?: Goal;
   onSave: (goal: GoalFormValues) => void;
   triggerButton: React.ReactNode;
 }
 
-export function TaskDialog({ goal, onSave, triggerButton }: TaskDialogProps) {
+export function GoalDialog({ goal, onSave, triggerButton }: GoalDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -81,12 +81,9 @@ export function TaskDialog({ goal, onSave, triggerButton }: TaskDialogProps) {
     onSave(data);
     setOpen(false);
     toast({
-      title: goal ? "Goal Updated" : "Goal Created",
+      title: "Goal Updated",
       description: `The goal "${data.title}" has been saved.`,
     });
-    if (!goal) {
-      form.reset();
-    }
   };
 
   return (
@@ -94,9 +91,9 @@ export function TaskDialog({ goal, onSave, triggerButton }: TaskDialogProps) {
       <DialogTrigger asChild>{triggerButton}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-headline">{goal ? "Edit Goal" : "Create Goal"}</DialogTitle>
+          <DialogTitle className="font-headline">Edit Goal</DialogTitle>
           <DialogDescription>
-            {goal ? "Update the details of your goal." : "Fill in the details for your new goal."}
+            Update the details of your goal.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

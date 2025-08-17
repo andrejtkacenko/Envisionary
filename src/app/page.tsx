@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { Goal, GoalStatus } from '@/types';
 import { mockTasks } from '@/lib/mock-data';
 import { AppHeader } from '@/components/app-header';
 import { KanbanBoard } from '@/components/kanban-board';
-import { Button } from '@/components/ui/button';
 import { KANBAN_COLUMNS } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -22,15 +22,39 @@ export default function Home() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user) {
-      setGoals(mockTasks);
+    // Load initial goals
+    if (user && goals.length === 0) {
+       const storedGoals = sessionStorage.getItem('goals');
+       if (storedGoals) {
+         setGoals(JSON.parse(storedGoals, (key, value) => {
+          if (key === 'dueDate' && value) {
+            return new Date(value);
+          }
+          return value;
+         }));
+       } else {
+         setGoals(mockTasks);
+       }
     }
-  }, [user]);
 
-  const handleGoalCreate = (goal: Omit<Goal, 'id'>) => {
-    const newGoal = { ...goal, id: crypto.randomUUID() };
-    setGoals((prev) => [...prev, newGoal]);
-  };
+    const newGoalParam = searchParams.get('newGoal');
+    if (newGoalParam) {
+      const newGoal = JSON.parse(newGoalParam);
+      if (newGoal && !goals.find(g => g.id === newGoal.id)) {
+        const updatedGoals = [...goals, { ...newGoal, dueDate: newGoal.dueDate ? new Date(newGoal.dueDate) : undefined }];
+        setGoals(updatedGoals);
+        sessionStorage.setItem('goals', JSON.stringify(updatedGoals));
+        // Remove the query param from the URL
+        router.replace('/', { scroll: false });
+      }
+    }
+  }, [user, searchParams, router]);
+
+  useEffect(() => {
+    if (goals.length > 0) {
+      sessionStorage.setItem('goals', JSON.stringify(goals));
+    }
+  }, [goals]);
 
   const handleGoalUpdate = (updatedGoal: Goal) => {
     setGoals((prev) =>
@@ -55,7 +79,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background font-body">
-      <AppHeader allGoals={goals} onGoalCreate={handleGoalCreate} />
+      <AppHeader allGoals={goals} />
       <main className="flex-1 overflow-x-auto">
         <KanbanBoard 
           columns={columns} 
