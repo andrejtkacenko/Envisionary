@@ -9,12 +9,17 @@ const goalConverter = {
         const data: any = { ...goal };
         if (goal.dueDate) {
             data.dueDate = Timestamp.fromDate(goal.dueDate);
+        } else {
+            delete data.dueDate;
         }
+
         if (goal.subGoals) {
             data.subGoals = goal.subGoals.map(sg => {
                 const subGoalData: any = {...sg};
                 if (sg.dueDate) {
                     subGoalData.dueDate = Timestamp.fromDate(sg.dueDate);
+                } else {
+                    delete subGoalData.dueDate;
                 }
                 return subGoalData;
             });
