@@ -1,19 +1,19 @@
 "use client"
 
-import type { Task } from "@/types";
+import type { Goal } from "@/types";
 import { KanbanColumn } from "@/components/kanban-column";
 
 interface KanbanBoardProps {
   columns: {
     id: string;
     title: string;
-    tasks: Task[];
+    goals: Goal[];
   }[];
-  onTaskUpdate: (task: Task) => void;
-  onTaskDelete: (taskId: string) => void;
+  onGoalUpdate: (goal: Goal) => void;
+  onGoalDelete: (goalId: string) => void;
 }
 
-export function KanbanBoard({ columns, onTaskUpdate, onTaskDelete }: KanbanBoardProps) {
+export function KanbanBoard({ columns, onGoalUpdate, onGoalDelete }: KanbanBoardProps) {
   return (
     <div className="flex-1 px-4 py-6 md:px-8">
       <div className="flex gap-6 h-full overflow-x-auto">
@@ -21,8 +21,8 @@ export function KanbanBoard({ columns, onTaskUpdate, onTaskDelete }: KanbanBoard
           <KanbanColumn
             key={col.id}
             column={col}
-            onTaskUpdate={onTaskUpdate}
-            onTaskDelete={onTaskDelete}
+            onGoalUpdate={onGoalUpdate}
+            onGoalDelete={onGoalDelete}
           />
         ))}
       </div>

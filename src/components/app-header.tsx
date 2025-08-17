@@ -12,7 +12,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import type { Task } from "@/types";
+import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,11 +37,11 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 interface AppHeaderProps {
-  allTasks: Task[];
-  onTaskCreate: (task: Omit<Task, "id">) => void;
+  allGoals: Goal[];
+  onGoalCreate: (goal: Omit<Goal, "id">) => void;
 }
 
-export function AppHeader({ allTasks, onTaskCreate }: AppHeaderProps) {
+export function AppHeader({ allGoals, onGoalCreate }: AppHeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -56,10 +56,10 @@ export function AppHeader({ allTasks, onTaskCreate }: AppHeaderProps) {
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial">
           <div className="flex items-center gap-2">
-            <ProgressReportDialog allTasks={allTasks} />
-            <TaskDialog onSave={onTaskCreate} triggerButton={
+            <ProgressReportDialog allGoals={allGoals} />
+            <TaskDialog onSave={onGoalCreate} triggerButton={
               <Button>
-                <Plus className="mr-2 h-4 w-4" /> New Task
+                <Plus className="mr-2 h-4 w-4" /> New Goal
               </Button>
             } />
           </div>

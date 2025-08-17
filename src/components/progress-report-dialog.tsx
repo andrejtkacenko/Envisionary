@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import type { Task } from "@/types";
+import type { Goal } from "@/types";
 import { summarizeProgress } from "@/ai/flows/summarize-progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,10 +16,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 interface ProgressReportDialogProps {
-  allTasks: Task[];
+  allGoals: Goal[];
 }
 
-export function ProgressReportDialog({ allTasks }: ProgressReportDialogProps) {
+export function ProgressReportDialog({ allGoals }: ProgressReportDialogProps) {
   const [open, setOpen] = useState(false);
   const [summary, setSummary] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -29,8 +29,8 @@ export function ProgressReportDialog({ allTasks }: ProgressReportDialogProps) {
     setIsLoading(true);
     setSummary("");
     try {
-      const taskString = allTasks
-        .map((task) => `- ${task.title} (Status: ${task.status}, Priority: ${task.priority})`)
+      const taskString = allGoals
+        .map((goal) => `- ${goal.title} (Status: ${goal.status}, Priority: ${goal.priority})`)
         .join("\n");
       
       const result = await summarizeProgress({ tasks: taskString });
@@ -63,7 +63,7 @@ export function ProgressReportDialog({ allTasks }: ProgressReportDialogProps) {
         <DialogHeader>
           <DialogTitle className="font-headline">AI Progress Report</DialogTitle>
           <DialogDescription>
-            Get an AI-generated summary of your current progress across all tasks.
+            Get an AI-generated summary of your current progress across all your goals.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center gap-4 py-8">

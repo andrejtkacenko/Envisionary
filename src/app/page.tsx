@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import type { Task, TaskStatus } from '@/types';
+import type { Goal, GoalStatus } from '@/types';
 import { mockTasks } from '@/lib/mock-data';
 import { AppHeader } from '@/components/app-header';
 import { KanbanBoard } from '@/components/kanban-board';
@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -23,31 +23,31 @@ export default function Home() {
 
   useEffect(() => {
     if (user) {
-      setTasks(mockTasks);
+      setGoals(mockTasks);
     }
   }, [user]);
 
-  const handleTaskCreate = (task: Omit<Task, 'id'>) => {
-    const newTask = { ...task, id: crypto.randomUUID() };
-    setTasks((prev) => [...prev, newTask]);
+  const handleGoalCreate = (goal: Omit<Goal, 'id'>) => {
+    const newGoal = { ...goal, id: crypto.randomUUID() };
+    setGoals((prev) => [...prev, newGoal]);
   };
 
-  const handleTaskUpdate = (updatedTask: Task) => {
-    setTasks((prev) =>
-      prev.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+  const handleGoalUpdate = (updatedGoal: Goal) => {
+    setGoals((prev) =>
+      prev.map((goal) => (goal.id === updatedGoal.id ? updatedGoal : goal))
     );
   };
   
-  const handleTaskDelete = (taskId: string) => {
-    setTasks((prev) => prev.filter((task) => task.id !== taskId));
+  const handleGoalDelete = (goalId: string) => {
+    setGoals((prev) => prev.filter((goal) => goal.id !== goalId));
   }
 
   const columns = useMemo(() => {
     return KANBAN_COLUMNS.map(col => ({
       ...col,
-      tasks: tasks.filter(task => task.status === col.id),
+      goals: goals.filter(goal => goal.status === col.id),
     }))
-  }, [tasks]);
+  }, [goals]);
 
   if (loading || !user) {
     return <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center"><p>Loading...</p></div>;
@@ -55,12 +55,12 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background font-body">
-      <AppHeader allTasks={tasks} onTaskCreate={handleTaskCreate} />
+      <AppHeader allGoals={goals} onGoalCreate={handleGoalCreate} />
       <main className="flex-1 overflow-x-auto">
         <KanbanBoard 
           columns={columns} 
-          onTaskUpdate={handleTaskUpdate}
-          onTaskDelete={handleTaskDelete}
+          onGoalUpdate={handleGoalUpdate}
+          onGoalDelete={handleGoalDelete}
         />
       </main>
     </div>

@@ -1,6 +1,6 @@
-import type { Task } from "@/types";
+import type { Goal } from "@/types";
 
-export const mockTasks: Task[] = [
+export const mockTasks: Goal[] = [
   {
     id: "task-1",
     title: "Design the new landing page",

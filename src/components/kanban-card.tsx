@@ -3,7 +3,7 @@
 import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit } from "lucide-react";
 import { format } from "date-fns";
 
-import type { Task, TaskPriority } from "@/types";
+import type { Goal, GoalPriority } from "@/types";
 import {
   Card,
   CardContent,
@@ -22,32 +22,32 @@ import { cn } from "@/lib/utils";
 import { TaskDialog } from "@/components/task-dialog";
 
 interface KanbanCardProps {
-  task: Task;
-  onTaskUpdate: (task: Task) => void;
-  onTaskDelete: (taskId: string) => void;
+  goal: Goal;
+  onGoalUpdate: (goal: Goal) => void;
+  onGoalDelete: (goalId: string) => void;
 }
 
-const priorityIcons: Record<TaskPriority, React.ReactNode> = {
+const priorityIcons: Record<GoalPriority, React.ReactNode> = {
   high: <ArrowUp className="h-4 w-4 text-destructive" />,
   medium: <ArrowRight className="h-4 w-4 text-yellow-500" />,
   low: <ArrowDown className="h-4 w-4 text-green-500" />,
 };
 
-const priorityTooltips: Record<TaskPriority, string> = {
+const priorityTooltips: Record<GoalPriority, string> = {
   high: 'High Priority',
   medium: 'Medium Priority',
   low: 'Low Priority'
 }
 
-export function KanbanCard({ task, onTaskUpdate, onTaskDelete }: KanbanCardProps) {
+export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps) {
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200">
       <CardHeader className="p-4 pb-2">
         <div className="flex items-start justify-between">
-          <Badge variant="secondary">{task.project}</Badge>
+          <Badge variant="secondary">{goal.project}</Badge>
           <TaskDialog 
-            task={task} 
-            onSave={(updatedTask) => onTaskUpdate({ ...updatedTask, id: task.id })}
+            goal={goal} 
+            onSave={(updatedGoal) => onGoalUpdate({ ...updatedGoal, id: goal.id })}
             triggerButton={
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -59,8 +59,8 @@ export function KanbanCard({ task, onTaskUpdate, onTaskDelete }: KanbanCardProps
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                      <div className="w-full">
                         <TaskDialog 
-                          task={task} 
-                          onSave={(updatedTask) => onTaskUpdate({ ...updatedTask, id: task.id })}
+                          goal={goal} 
+                          onSave={(updatedGoal) => onGoalUpdate({ ...updatedGoal, id: goal.id })}
                           triggerButton={
                             <button className="w-full text-left flex items-center">
                               <Edit className="mr-2 h-4 w-4" />
@@ -70,7 +70,7 @@ export function KanbanCard({ task, onTaskUpdate, onTaskDelete }: KanbanCardProps
                         />
                       </div>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onTaskDelete(task.id)} className="text-destructive">
+                  <DropdownMenuItem onClick={() => onGoalDelete(goal.id)} className="text-destructive">
                     <Trash className="mr-2 h-4 w-4" />
                     <span>Delete</span>
                   </DropdownMenuItem>
@@ -79,18 +79,18 @@ export function KanbanCard({ task, onTaskUpdate, onTaskDelete }: KanbanCardProps
             }
           />
         </div>
-        <CardTitle className="text-base font-medium pt-2">{task.title}</CardTitle>
+        <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          {task.dueDate && (
+          {goal.dueDate && (
             <div className="flex items-center gap-1">
               <CalendarIcon className="h-4 w-4" />
-              <span>{format(task.dueDate, "MMM d")}</span>
+              <span>{format(goal.dueDate, "MMM d")}</span>
             </div>
           )}
-          <div className="flex items-center" title={priorityTooltips[task.priority]}>
-            {priorityIcons[task.priority]}
+          <div className="flex items-center" title={priorityTooltips[goal.priority]}>
+            {priorityIcons[goal.priority]}
           </div>
         </div>
       </CardContent>

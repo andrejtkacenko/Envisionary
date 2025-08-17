@@ -1,18 +1,18 @@
-export type TaskStatus = "todo" | "inprogress" | "done";
+export type GoalStatus = "todo" | "inprogress" | "done";
 
-export type TaskPriority = "low" | "medium" | "high";
+export type GoalPriority = "low" | "medium" | "high";
 
-export type Task = {
+export type Goal = {
   id: string;
   title: string;
   description?: string;
-  status: TaskStatus;
-  priority: TaskPriority;
+  status: GoalStatus;
+  priority: GoalPriority;
   project: string;
   dueDate?: Date;
 };
 
-export const KANBAN_COLUMNS: { id: TaskStatus; title: string }[] = [
+export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
   { id: "todo", title: "To Do" },
   { id: "inprogress", title: "In Progress" },
   { id: "done", title: "Done" },

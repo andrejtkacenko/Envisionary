@@ -7,7 +7,7 @@ import * as z from "zod";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
-import type { Task } from "@/types";
+import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,7 +44,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-const taskSchema = z.object({
+const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   project: z.string().min(1, "Project is required"),
@@ -53,38 +53,38 @@ const taskSchema = z.object({
   dueDate: z.date().optional(),
 });
 
-type TaskFormValues = z.infer<typeof taskSchema>;
+type GoalFormValues = z.infer<typeof goalSchema>;
 
 interface TaskDialogProps {
-  task?: Task;
-  onSave: (task: TaskFormValues) => void;
+  goal?: Goal;
+  onSave: (goal: GoalFormValues) => void;
   triggerButton: React.ReactNode;
 }
 
-export function TaskDialog({ task, onSave, triggerButton }: TaskDialogProps) {
+export function TaskDialog({ goal, onSave, triggerButton }: TaskDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskSchema),
+  const form = useForm<GoalFormValues>({
+    resolver: zodResolver(goalSchema),
     defaultValues: {
-      title: task?.title ?? "",
-      description: task?.description ?? "",
-      project: task?.project ?? "",
-      status: task?.status ?? "todo",
-      priority: task?.priority ?? "medium",
-      dueDate: task?.dueDate,
+      title: goal?.title ?? "",
+      description: goal?.description ?? "",
+      project: goal?.project ?? "",
+      status: goal?.status ?? "todo",
+      priority: goal?.priority ?? "medium",
+      dueDate: goal?.dueDate,
     },
   });
 
-  const onSubmit = (data: TaskFormValues) => {
+  const onSubmit = (data: GoalFormValues) => {
     onSave(data);
     setOpen(false);
     toast({
-      title: task ? "Task Updated" : "Task Created",
-      description: `The task "${data.title}" has been saved.`,
+      title: goal ? "Goal Updated" : "Goal Created",
+      description: `The goal "${data.title}" has been saved.`,
     });
-    if (!task) {
+    if (!goal) {
       form.reset();
     }
   };
@@ -94,9 +94,9 @@ export function TaskDialog({ task, onSave, triggerButton }: TaskDialogProps) {
       <DialogTrigger asChild>{triggerButton}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-headline">{task ? "Edit Task" : "Create Task"}</DialogTitle>
+          <DialogTitle className="font-headline">{goal ? "Edit Goal" : "Create Goal"}</DialogTitle>
           <DialogDescription>
-            {task ? "Update the details of your task." : "Fill in the details for your new task."}
+            {goal ? "Update the details of your goal." : "Fill in the details for your new goal."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -226,7 +226,7 @@ export function TaskDialog({ task, onSave, triggerButton }: TaskDialogProps) {
                 )}
               />
             <DialogFooter>
-              <Button type="submit">Save Task</Button>
+              <Button type="submit">Save Goal</Button>
             </DialogFooter>
           </form>
         </Form>
