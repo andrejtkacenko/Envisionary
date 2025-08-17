@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -56,7 +57,7 @@ const goalSchema = z.object({
 type GoalFormValues = z.infer<typeof goalSchema>;
 
 interface GoalDialogProps {
-  goal?: Goal;
+  goal: Goal;
   onSave: (goal: GoalFormValues) => void;
   triggerButton: React.ReactNode;
 }

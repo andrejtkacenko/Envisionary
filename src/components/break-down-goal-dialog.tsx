@@ -2,7 +2,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, Sparkles, Wand2, Plus } from "lucide-react";
 import { breakDownGoal, BreakDownGoalOutput } from "@/ai/flows/break-down-goal";
 import type { Goal } from "@/types";
@@ -23,17 +22,16 @@ import { useToast } from "@/hooks/use-toast";
 interface BreakDownGoalDialogProps {
   goal: Goal;
   children: React.ReactNode;
+  onGoalUpdate: (goal: Goal) => void;
 }
 
 type SubGoal = BreakDownGoalOutput["subGoals"][0];
 
-export function BreakDownGoalDialog({ goal, children }: BreakDownGoalDialogProps) {
+export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownGoalDialogProps) {
   const [open, setOpen] = useState(false);
   const [subGoals, setSubGoals] = useState<SubGoal[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
-
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -66,23 +64,27 @@ export function BreakDownGoalDialog({ goal, children }: BreakDownGoalDialogProps
   };
   
   const handleAddSubGoals = () => {
-    const newGoals = subGoals.map(sg => ({
+    const newSubGoals: Goal[] = subGoals.map(sg => ({
       id: crypto.randomUUID(),
       title: sg.title,
       description: sg.description,
-      project: goal.project, // Inherit project from parent
+      project: goal.project,
       status: 'todo',
-      priority: 'medium',
-      dueDate: goal.dueDate // Optionally inherit due date or leave blank
+      priority: goal.priority,
+      dueDate: goal.dueDate
     }));
 
-    const params = new URLSearchParams();
-    params.set('newGoals', JSON.stringify(newGoals));
-    router.push(`/?${params.toString()}`);
+    const updatedParentGoal = {
+        ...goal,
+        subGoals: [...(goal.subGoals || []), ...newSubGoals]
+    };
+    
+    onGoalUpdate(updatedParentGoal);
+
     setOpen(false);
     toast({
         title: "Sub-goals Added",
-        description: `${newGoals.length} new goals have been added to your board.`
+        description: `${newSubGoals.length} new sub-goals have been added to "${goal.title}".`
     })
   }
 
@@ -140,7 +142,7 @@ export function BreakDownGoalDialog({ goal, children }: BreakDownGoalDialogProps
             </Button>
             <Button onClick={handleAddSubGoals}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Sub-Goals to Board
+                Add Sub-Goals to &quot;{goal.title}&quot;
             </Button>
           </DialogFooter>
         )}

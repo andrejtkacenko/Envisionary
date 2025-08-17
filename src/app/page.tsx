@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -20,18 +21,29 @@ export default function Home() {
       router.push('/login');
     }
   }, [user, loading, router]);
+  
+  const parseGoalsWithDates = (key: string, value: any) => {
+    if ((key === 'dueDate' || key.endsWith('Date')) && value) {
+      return new Date(value);
+    }
+    if (key === 'subGoals' && Array.isArray(value)) {
+       return value.map(subGoal => {
+           const newSubGoal = {...subGoal};
+           if (newSubGoal.dueDate) {
+               newSubGoal.dueDate = new Date(newSubGoal.dueDate);
+           }
+           return newSubGoal;
+       })
+    }
+    return value;
+  }
 
   useEffect(() => {
     // Load initial goals
     if (user && goals.length === 0) {
        const storedGoals = sessionStorage.getItem('goals');
        if (storedGoals) {
-         setGoals(JSON.parse(storedGoals, (key, value) => {
-          if (key === 'dueDate' && value) {
-            return new Date(value);
-          }
-          return value;
-         }));
+         setGoals(JSON.parse(storedGoals, parseGoalsWithDates));
        } else {
          setGoals(mockTasks);
        }
@@ -70,9 +82,34 @@ export default function Home() {
   }, [goals]);
 
   const handleGoalUpdate = (updatedGoal: Goal) => {
-    setGoals((prev) =>
-      prev.map((goal) => (goal.id === updatedGoal.id ? updatedGoal : goal))
-    );
+    setGoals((prevGoals) => {
+        const newGoals = prevGoals.map(g => {
+            if (g.id === updatedGoal.id) {
+                return updatedGoal;
+            }
+            // Check for nested updates
+            if (g.subGoals) {
+                const newSubGoals = g.subGoals.map(sg => sg.id === updatedGoal.id ? updatedGoal : sg);
+                return {...g, subGoals: newSubGoals};
+            }
+            return g;
+        });
+
+        // If the updated goal wasn't found as a top-level goal or a sub-goal, maybe it's a new sub-goal being added
+        // The logic for adding subgoals is now handled by passing the whole parent goal to onGoalUpdate.
+        const goalExists = newGoals.some(g => g.id === updatedGoal.id);
+        if (!goalExists) {
+            // This is likely a new goal, not an update.
+            // This case should be handled by the goal creation logic.
+            // Let's ensure we don't accidentally add it twice.
+            const isAlreadyAdded = newGoals.some(g => g.id === updatedGoal.id);
+            if (!isAlreadyAdded) {
+                return [...newGoals, updatedGoal];
+            }
+        }
+        
+        return newGoals;
+    });
   };
   
   const handleGoalDelete = (goalId: string) => {

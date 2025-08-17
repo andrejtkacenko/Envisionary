@@ -1,3 +1,4 @@
+
 export type GoalStatus = "todo" | "inprogress" | "done";
 
 export type GoalPriority = "low" | "medium" | "high";
@@ -10,6 +11,7 @@ export type Goal = {
   priority: GoalPriority;
   project: string;
   dueDate?: Date;
+  subGoals?: Goal[];
 };
 
 export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
