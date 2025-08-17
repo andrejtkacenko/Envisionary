@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Skeleton } from "./ui/skeleton";
 
 const suggestSchema = z.object({
   topic: z.string().min(3, "Topic must be at least 3 characters long."),
@@ -36,23 +37,29 @@ interface SuggestGoalsPanelProps {
 
 export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps) {
   const [suggestions, setSuggestions] = useState<SuggestedGoal[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start loading initially
   const { toast } = useToast();
 
   const form = useForm<SuggestFormValues>({
     resolver: zodResolver(suggestSchema),
     defaultValues: { topic: "" },
   });
-
-  const handleGenerateSuggestions = async (data: SuggestFormValues) => {
+  
+  const generateSuggestions = async (topic: string) => {
     setIsLoading(true);
     setSuggestions([]);
     try {
-      const result = await suggestGoals({ topic: data.topic });
+      const result = await suggestGoals({ topic });
       if (result.suggestions && result.suggestions.length > 0) {
         setSuggestions(result.suggestions);
       } else {
-        throw new Error("No suggestions were generated.");
+        // If no suggestions, show a toast but don't throw an error
+        // to avoid breaking the initial load.
+        toast({
+            variant: "default",
+            title: "No suggestions found",
+            description: "Try a different topic.",
+        });
       }
     } catch (error) {
       console.error(error);
@@ -66,6 +73,15 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
     }
   };
 
+  useEffect(() => {
+    generateSuggestions("popular life goals");
+  }, []);
+
+
+  const handleFormSubmit = (data: SuggestFormValues) => {
+    generateSuggestions(data.topic);
+  };
+
   const handleSelect = (suggestion: SuggestedGoal) => {
     onSuggestionSelect(suggestion);
   };
@@ -75,21 +91,21 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
       <CardHeader>
         <CardTitle className="font-headline flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-accent" />
-            Suggest with AI
+            AI Goal Suggestions
         </CardTitle>
         <CardDescription>
-          Tell the AI a topic, and it will generate a few goals for you.
+          Get inspiration from popular goals, or enter a topic to generate your own.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleGenerateSuggestions)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="topic"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Topic</FormLabel>
+                  <FormLabel>Custom Topic</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Learn to cook" {...field} />
                   </FormControl>
@@ -101,23 +117,30 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
               {isLoading ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
               ) : (
-                'Generate Goals'
+                'Generate Custom Goals'
               )}
             </Button>
           </form>
         </Form>
         
-        {suggestions.length > 0 && (
-          <div className="mt-6 space-y-2">
-             <h3 className="text-sm font-medium text-muted-foreground">Click a suggestion to use it:</h3>
-            {suggestions.map((s, i) => (
+        <div className="mt-6 space-y-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              {isLoading ? "Loading popular goals..." : "Click a suggestion to use it:"}
+            </h3>
+            {isLoading && (
+              <div className="space-y-2">
+                <Skeleton className="h-[68px] w-full" />
+                <Skeleton className="h-[68px] w-full" />
+                <Skeleton className="h-[68px] w-full" />
+              </div>
+            )}
+            {!isLoading && suggestions.map((s, i) => (
               <Card key={i} className="p-3 hover:bg-muted cursor-pointer" onClick={() => handleSelect(s)}>
                   <p className="font-semibold text-sm">{s.title}</p>
                   <p className="text-sm text-muted-foreground">{s.description}</p>
               </Card>
             ))}
           </div>
-        )}
       </CardContent>
     </Card>
   );
