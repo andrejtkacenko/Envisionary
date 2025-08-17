@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Sparkles, Calendar, Edit, Save, X } from 'lucide-react';
+import { Loader2, Sparkles, Calendar, Edit, Save, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -17,7 +17,7 @@ import { generateSchedule, type GenerateScheduleInput, type GenerateScheduleOutp
 import { saveSchedule, getSchedule, type WeeklySchedule, type ScheduledItem } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -43,7 +43,7 @@ const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: Scheduled
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md touch-none">
             {isEditing ? (
                 <>
                     <Input defaultValue={item.time} onBlur={(e) => onUpdate(e.target.value, item.task)} className="h-8 text-xs" />
@@ -67,6 +67,7 @@ export default function PlannerPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [schedule, setSchedule] = useState<GenerateScheduleOutput | null>(null);
+    const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
     const form = useForm<GenerateScheduleInput>({
         resolver: zodResolver(GenerateScheduleInputSchema),
@@ -110,10 +111,16 @@ export default function PlannerPage() {
         }
     };
     
-    const handleDragEnd = (event: DragEndEvent, dayIndex: number) => {
+    const sensors = useSensors(useSensor(PointerSensor, {
+        activationConstraint: {
+          distance: 8,
+        },
+    }));
+
+    const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id && schedule) {
-            const daySchedule = schedule.weeklySchedule[dayIndex].schedule;
+            const daySchedule = schedule.weeklySchedule[currentDayIndex].schedule;
             const oldIndex = daySchedule.findIndex(item => item.id === active.id);
             const newIndex = daySchedule.findIndex(item => item.id === over.id);
             
@@ -122,7 +129,7 @@ export default function PlannerPage() {
             const newFullSchedule = {
                 ...schedule,
                 weeklySchedule: schedule.weeklySchedule.map((day, index) => 
-                    index === dayIndex ? { ...day, schedule: newScheduleItems } : day
+                    index === currentDayIndex ? { ...day, schedule: newScheduleItems } : day
                 )
             };
             setSchedule(newFullSchedule);
@@ -144,19 +151,29 @@ export default function PlannerPage() {
         }
     };
 
-    const updateItem = (dayIndex: number, itemIndex: number, time: string, task: string) => {
+    const updateItem = (itemIndex: number, time: string, task: string) => {
         if (!schedule) return;
         const newSchedule = { ...schedule };
-        newSchedule.weeklySchedule[dayIndex].schedule[itemIndex] = { ...newSchedule.weeklySchedule[dayIndex].schedule[itemIndex], time, task };
+        newSchedule.weeklySchedule[currentDayIndex].schedule[itemIndex] = { ...newSchedule.weeklySchedule[currentDayIndex].schedule[itemIndex], time, task };
         setSchedule(newSchedule);
     };
     
-    const removeItem = (dayIndex: number, itemIndex: number) => {
+    const removeItem = (itemIndex: number) => {
         if (!schedule) return;
         const newSchedule = { ...schedule };
-        newSchedule.weeklySchedule[dayIndex].schedule.splice(itemIndex, 1);
+        newSchedule.weeklySchedule[currentDayIndex].schedule.splice(itemIndex, 1);
         setSchedule(newSchedule);
     };
+
+    const goToPreviousDay = () => {
+        setCurrentDayIndex(prev => (prev > 0 ? prev - 1 : daysOfWeek.length - 1));
+    }
+    const goToNextDay = () => {
+        setCurrentDayIndex(prev => (prev < daysOfWeek.length - 1 ? prev + 1 : 0));
+    }
+    
+    const currentDaySchedule = schedule?.weeklySchedule[currentDayIndex];
+
 
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -259,8 +276,22 @@ export default function PlannerPage() {
                 <div className="lg:col-span-2">
                     <Card className="h-full">
                         <CardHeader>
-                            <CardTitle>Your AI-Generated Schedule</CardTitle>
-                            <CardDescription>Drag and drop to reorder tasks in edit mode.</CardDescription>
+                            <div className="flex justify-between items-center">
+                                 <div>
+                                    <CardTitle>Your AI-Generated Schedule</CardTitle>
+                                    <CardDescription>Drag and drop to reorder tasks in edit mode.</CardDescription>
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="icon" onClick={goToPreviousDay}>
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    <span className="font-semibold text-lg w-28 text-center">{daysOfWeek[currentDayIndex]}</span>
+                                     <Button variant="outline" size="icon" onClick={goToNextDay}>
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                 </div>
+                            </div>
+                           
                         </CardHeader>
                         <CardContent>
                             {isLoading && !schedule && (
@@ -275,34 +306,23 @@ export default function PlannerPage() {
                                     <p>Your schedule will appear here once generated.</p>
                                 </div>
                             )}
-                            {schedule && (
+                            {schedule && currentDaySchedule && (
                                 <ScrollArea className="h-[calc(100vh-20rem)]">
-                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pr-4">
-                                        {schedule.weeklySchedule.map((day, dayIndex) => (
-                                            <Card key={day.day}>
-                                                <CardHeader>
-                                                    <CardTitle className="text-lg">{day.day}</CardTitle>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <DndContext sensors={[]} onDragEnd={(e) => handleDragEnd(e, dayIndex)} collisionDetection={closestCenter}>
-                                                        <SortableContext items={day.schedule.map(item => item.id)} strategy={verticalListSortingStrategy}>
-                                                            <div className="space-y-2">
-                                                                {day.schedule.map((item, itemIndex) => (
-                                                                    <SortableItem 
-                                                                        key={item.id} 
-                                                                        item={item} 
-                                                                        isEditing={isEditing}
-                                                                        onUpdate={(time, task) => updateItem(dayIndex, itemIndex, time, task)}
-                                                                        onRemove={() => removeItem(dayIndex, itemIndex)}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        </SortableContext>
-                                                    </DndContext>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
+                                    <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+                                        <SortableContext items={currentDaySchedule.schedule.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                                            <div className="space-y-2 pr-4">
+                                                {currentDaySchedule.schedule.map((item, itemIndex) => (
+                                                    <SortableItem 
+                                                        key={item.id} 
+                                                        item={item} 
+                                                        isEditing={isEditing}
+                                                        onUpdate={(time, task) => updateItem(itemIndex, time, task)}
+                                                        onRemove={() => removeItem(itemIndex)}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </SortableContext>
+                                    </DndContext>
                                 </ScrollArea>
                             )}
                         </CardContent>
@@ -312,4 +332,3 @@ export default function PlannerPage() {
         </div>
     );
 }
-
