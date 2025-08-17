@@ -5,6 +5,7 @@ import type { Task, TaskStatus } from '@/types';
 import { mockTasks } from '@/lib/mock-data';
 import { AppHeader } from '@/components/app-header';
 import { KanbanBoard } from '@/components/kanban-board';
+import { Button } from '@/components/ui/button';
 import { KANBAN_COLUMNS } from '@/types';
 
 export default function Home() {
@@ -46,6 +47,8 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background font-body">
+      <Button>Sign Up</Button>
+      <Button>Login</Button>
       <AppHeader allTasks={tasks} onTaskCreate={handleTaskCreate} />
       <main className="flex-1 overflow-x-auto">
         <KanbanBoard 

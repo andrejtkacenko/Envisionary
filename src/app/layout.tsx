@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
-import "./globals.css";
+import "./globals.css"; // Assuming you'll create this component
 import { cn } from "@/lib/utils";
+import { AuthProvider } from '@/context/AuthContext';
 
 const fontInter = Inter({ 
   subsets: ["latin"],
@@ -33,7 +34,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn("font-body antialiased", fontInter.variable, fontSpaceGrotesk.variable)}>
- {children}
+        <AuthProvider>
+          {children}  
+        </AuthProvider>
         <Toaster />
       </body>
     </html>
