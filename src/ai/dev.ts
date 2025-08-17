@@ -3,3 +3,4 @@ config();
 
 import '@/ai/flows/summarize-progress.ts';
 import '@/ai/flows/suggest-goals.ts';
+import '@/ai/flows/break-down-goal.ts';

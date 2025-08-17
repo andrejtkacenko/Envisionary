@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, Wand2 } from "lucide-react";
 import { format } from "date-fns";
 
 import type { Goal, GoalPriority } from "@/types";
@@ -17,9 +17,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { GoalDialog } from "@/components/goal-dialog";
+import { BreakDownGoalDialog } from "@/components/break-down-goal-dialog";
 
 interface KanbanCardProps {
   goal: Goal;
@@ -64,6 +66,15 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
                       } 
                     />
                 </DropdownMenuItem>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <BreakDownGoalDialog goal={goal}>
+                        <button className="w-full text-left flex items-center">
+                            <Wand2 className="mr-2 h-4 w-4" />
+                            <span>Break down goal</span>
+                        </button>
+                    </BreakDownGoalDialog>
+                </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onGoalDelete(goal.id)} className="text-destructive">
                 <Trash className="mr-2 h-4 w-4" />
                 <span>Delete</span>

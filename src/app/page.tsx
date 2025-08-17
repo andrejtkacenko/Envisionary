@@ -48,7 +48,17 @@ export default function Home() {
         router.replace('/', { scroll: false });
       }
     }
-  }, [user, searchParams, router]);
+     const newGoalsParam = searchParams.get('newGoals');
+    if (newGoalsParam) {
+      const newGoals = JSON.parse(newGoalsParam);
+      if (newGoals && Array.isArray(newGoals) && newGoals.length > 0) {
+        const updatedGoals = [...goals, ...newGoals.map((g: any) => ({ ...g, dueDate: g.dueDate ? new Date(g.dueDate) : undefined }))];
+        setGoals(updatedGoals);
+        sessionStorage.setItem('goals', JSON.stringify(updatedGoals));
+        router.replace('/', { scroll: false });
+      }
+    }
+  }, [user, searchParams, router, goals]);
 
   useEffect(() => {
     if (goals.length > 0) {
