@@ -417,9 +417,6 @@ export function EditGoalDialog({ goal, onGoalUpdate, trigger }: EditGoalDialogPr
                     </ScrollArea>
                 </div>
                 <DialogFooter className="col-span-1 md:col-span-2">
-                    <DialogClose asChild>
-                        <Button variant="secondary">Close</Button>
-                    </DialogClose>
                     <Button onClick={() => setIsEditing(true)}>
                         <Edit className="mr-2 h-4 w-4" />
                         Edit Goal
