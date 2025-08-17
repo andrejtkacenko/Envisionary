@@ -309,7 +309,7 @@ export default function PlannerPage() {
                             {schedule && currentDaySchedule && (
                                 <ScrollArea className="h-[calc(100vh-20rem)]">
                                     <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
-                                        <SortableContext items={currentDaySchedule.schedule} strategy={verticalListSortingStrategy}>
+                                        <SortableContext items={currentDaySchedule.schedule.map(i => i.id)} strategy={verticalListSortingStrategy}>
                                             <div className="space-y-2 pr-4">
                                                 {currentDaySchedule.schedule.map((item, itemIndex) => (
                                                     <SortableItem 
