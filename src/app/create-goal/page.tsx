@@ -93,7 +93,7 @@ export default function CreateGoalPage() {
         title: "Goal Created",
         description: `The goal "${data.title}" has been created.`,
       });
-    } catch(e) {
+    } catch (e) {
         console.error(e)
         toast({
             variant: "destructive",
