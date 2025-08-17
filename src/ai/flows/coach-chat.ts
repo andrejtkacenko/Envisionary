@@ -40,11 +40,10 @@ const coachChatFlow = ai.defineFlow(
   },
   async ({history, message}) => {
     
-    const llm = ai.model('googleai/gemini-2.0-flash');
-
-    const response = await llm.generate({
+    const response = await ai.generate({
+        model: 'googleai/gemini-2.0-flash',
         system: "You are an AI coach named Zenith Flow. Your goal is to help users achieve their goals by providing supportive, insightful, and actionable advice. Keep your responses concise and encouraging.",
-        history: history,
+        history: history.map(m => ({...m, role: m.role === 'assistant' ? 'model' : m.role})),
         prompt: message,
     });
 
