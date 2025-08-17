@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Skeleton } from "./ui/skeleton";
+import { ScrollArea } from "./ui/scroll-area";
 
 const suggestSchema = z.object({
   topic: z.string().min(3, "Topic must be at least 3 characters long."),
@@ -154,30 +155,32 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
             <h3 className="text-sm font-medium text-muted-foreground mb-2">
               {isLoading && !isAppending ? "Loading popular goals..." : "Click a suggestion to use it:"}
             </h3>
-            {isLoading && !isAppending && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-[68px] w-full" />)}
+            <ScrollArea className="h-[400px] pr-4">
+              {isLoading && !isAppending && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-[68px] w-full" />)}
+                </div>
+              )}
+              {!isLoading && suggestions.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {suggestions.map((s, i) => (
+                    <Card key={i} className="p-3 hover:bg-muted cursor-pointer" onClick={() => handleSelect(s)}>
+                        <p className="font-semibold text-sm">{s.title}</p>
+                        <p className="text-sm text-muted-foreground">{s.description}</p>
+                    </Card>
+                  ))}
+                </div>
+              )}
+              <div className="mt-4">
+                  <Button onClick={handleLoadMore} disabled={isAppending || isLoading} className="w-full" variant="outline">
+                      {isAppending ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</>
+                      ) : (
+                          'Load More'
+                      )}
+                  </Button>
               </div>
-            )}
-            {!isLoading && suggestions.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {suggestions.map((s, i) => (
-                  <Card key={i} className="p-3 hover:bg-muted cursor-pointer" onClick={() => handleSelect(s)}>
-                      <p className="font-semibold text-sm">{s.title}</p>
-                      <p className="text-sm text-muted-foreground">{s.description}</p>
-                  </Card>
-                ))}
-              </div>
-            )}
-             <div className="mt-4">
-                <Button onClick={handleLoadMore} disabled={isAppending || isLoading} className="w-full" variant="outline">
-                    {isAppending ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</>
-                    ) : (
-                        'Load More'
-                    )}
-                </Button>
-            </div>
+            </ScrollArea>
           </div>
       </CardContent>
     </Card>
