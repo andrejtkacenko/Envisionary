@@ -69,70 +69,68 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200 flex flex-col">
-        <div>
-            <CardHeader className="p-4 pb-2">
-                <div className="flex items-start justify-between">
-                <Badge variant="secondary">{goal.project}</Badge>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                            <GoalDialog 
-                            goal={goal} 
-                            onSave={(updatedGoal) => onGoalUpdate({ ...goal, ...updatedGoal })}
-                            triggerButton={
-                                <button className="w-full text-left flex items-center">
-                                <Edit className="mr-2 h-4 w-4" />
-                                <span>Edit</span>
-                                </button>
-                            } 
-                            />
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                            <BreakDownGoalDialog goal={goal} onGoalUpdate={onGoalUpdate}>
-                                <button className="w-full text-left flex items-center">
-                                    <Wand2 className="mr-2 h-4 w-4" />
-                                    <span>Break down goal</span>
-                                </button>
-                            </BreakDownGoalDialog>
-                        </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onGoalDelete(goal.id)} className="text-destructive">
-                        <Trash className="mr-2 h-4 w-4" />
-                        <span>Delete</span>
+        <CardHeader className="p-4 pb-2">
+            <div className="flex items-start justify-between">
+            <Badge variant="secondary">{goal.project}</Badge>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <GoalDialog 
+                        goal={goal} 
+                        onSave={(updatedGoal) => onGoalUpdate({ ...goal, ...updatedGoal })}
+                        triggerButton={
+                            <button className="w-full text-left flex items-center">
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Edit</span>
+                            </button>
+                        } 
+                        />
                     </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <BreakDownGoalDialog goal={goal} onGoalUpdate={onGoalUpdate}>
+                            <button className="w-full text-left flex items-center">
+                                <Wand2 className="mr-2 h-4 w-4" />
+                                <span>Break down goal</span>
+                            </button>
+                        </BreakDownGoalDialog>
+                    </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onGoalDelete(goal.id)} className="text-destructive">
+                    <Trash className="mr-2 h-4 w-4" />
+                    <span>Delete</span>
+                </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            </div>
+            <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 flex-grow">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            {goal.dueDate && (
+                <div className="flex items-center gap-1">
+                <CalendarIcon className="h-4 w-4" />
+                <span>{format(goal.dueDate, "MMM d")}</span>
                 </div>
-                <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                {goal.dueDate && (
-                    <div className="flex items-center gap-1">
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>{format(goal.dueDate, "MMM d")}</span>
+            )}
+            <div className="flex items-center" title={priorityTooltips[goal.priority]}>
+                {priorityIcons[goal.priority]}
+            </div>
+            </div>
+            {totalSubGoals > 0 && (
+                <div className="mt-3">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                        <span>Sub-Goals</span>
+                        <span>{completedSubGoals}/{totalSubGoals}</span>
                     </div>
-                )}
-                <div className="flex items-center" title={priorityTooltips[goal.priority]}>
-                    {priorityIcons[goal.priority]}
+                    <Progress value={progress} className="h-2" />
                 </div>
-                </div>
-                {totalSubGoals > 0 && (
-                    <div className="mt-3">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                            <span>Sub-Goals</span>
-                            <span>{completedSubGoals}/{totalSubGoals}</span>
-                        </div>
-                        <Progress value={progress} className="h-2" />
-                    </div>
-                )}
-            </CardContent>
-        </div>
+            )}
+        </CardContent>
       {goal.subGoals && goal.subGoals.length > 0 && (
         <Collapsible open={isSubtasksOpen} onOpenChange={setIsSubtasksOpen} className="border-t mt-auto">
             <CollapsibleTrigger asChild>
