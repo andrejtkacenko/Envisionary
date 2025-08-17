@@ -12,7 +12,8 @@ import {
   Settings,
   Users,
   Zap,
-  PanelLeft
+  PanelLeft,
+  Calendar,
 } from "lucide-react";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,13 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
                 >
                   <Zap className="h-5 w-5" />
                   AI Coach
+                </Link>
+                <Link
+                  href="/planner"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Calendar className="h-5 w-5" />
+                  Planner
                 </Link>
               </nav>
             </SheetContent>
