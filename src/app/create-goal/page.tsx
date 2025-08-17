@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, ArrowLeft } from "lucide-react";
+import { CalendarIcon, ArrowLeft, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
+import { SuggestGoalsDialog, type SuggestedGoal } from "@/components/suggest-goals-dialog";
+
 
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -73,12 +75,17 @@ export default function CreateGoalPage() {
     },
   });
 
+  const handleSuggestionSelect = (suggestion: SuggestedGoal) => {
+    form.setValue("title", suggestion.title);
+    form.setValue("description", suggestion.description);
+    form.setValue("project", suggestion.project);
+  }
+
   const onSubmit = (data: GoalFormValues) => {
     setIsLoading(true);
     try {
       const newGoal = { ...data, id: crypto.randomUUID() };
       
-      // Since we don't have a database, we'll pass the new goal back to the main page via query params
       const params = new URLSearchParams();
       params.set("newGoal", JSON.stringify(newGoal));
       router.push(`/?${params.toString()}`);
@@ -112,10 +119,15 @@ export default function CreateGoalPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Create a New Goal</CardTitle>
-            <CardDescription>
-              Fill in the details for your new goal to add it to your board.
-            </CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="font-headline">Create a New Goal</CardTitle>
+                <CardDescription>
+                  Fill in the details for your new goal to add it to your board.
+                </CardDescription>
+              </div>
+               <SuggestGoalsDialog onSuggestionSelect={handleSuggestionSelect} />
+            </div>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -202,7 +214,7 @@ export default function CreateGoalPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select priority" />
-                            </SelectTrigger>
+                            </Trigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="low">Low</SelectItem>
