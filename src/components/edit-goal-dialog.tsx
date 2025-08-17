@@ -51,6 +51,7 @@ import { DeleteSubGoalAlert } from "./delete-subgoal-alert";
 import { GoalDialog } from "./goal-dialog";
 import { BreakDownGoalDialog, SubGoal } from "./break-down-goal-dialog";
 import { Badge } from "./ui/badge";
+import { DeleteGoalAlert } from "./delete-goal-alert";
 
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -66,10 +67,11 @@ type GoalFormValues = z.infer<typeof goalSchema>;
 interface EditGoalDialogProps {
   goal: Goal;
   onGoalUpdate: (goal: Goal) => void;
+  onGoalDelete: (goalId: string) => void;
   trigger: React.ReactNode;
 }
 
-export function EditGoalDialog({ goal, onGoalUpdate, trigger }: EditGoalDialogProps) {
+export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: EditGoalDialogProps) {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [subGoals, setSubGoals] = useState<Goal[]>(goal.subGoals || []);
@@ -168,10 +170,19 @@ export function EditGoalDialog({ goal, onGoalUpdate, trigger }: EditGoalDialogPr
     setIsEditing(false);
   }
 
+  const handleDeleteGoal = () => {
+    onGoalDelete(goal.id);
+    setOpen(false);
+    toast({
+        title: "Goal Deleted",
+        description: `The goal "${goal.title}" has been deleted.`,
+    });
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild onClick={(e) => { e.stopPropagation(); setOpen(true); }}>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-3xl" onPointerDownOutside={(e) => e.preventDefault()}>
+      <DialogContent className="sm:max-w-3xl" onPointerDownOutside={(e) => {if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) { e.preventDefault(); }}}>
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2">
             {isEditing ? <FilePenLine /> : <span className="text-sm"><Badge variant="secondary">{goal.project}</Badge></span>}
@@ -417,10 +428,18 @@ export function EditGoalDialog({ goal, onGoalUpdate, trigger }: EditGoalDialogPr
                     </ScrollArea>
                 </div>
                 <DialogFooter className="col-span-1 md:col-span-2">
-                    <Button onClick={() => setIsEditing(true)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Goal
-                    </Button>
+                    <div className="flex justify-between w-full">
+                        <DeleteGoalAlert onConfirm={handleDeleteGoal}>
+                            <Button variant="destructive">
+                                <Trash className="mr-2 h-4 w-4" />
+                                Delete
+                            </Button>
+                        </DeleteGoalAlert>
+                        <Button onClick={() => setIsEditing(true)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Goal
+                        </Button>
+                    </div>
                 </DialogFooter>
             </div>
         )}
