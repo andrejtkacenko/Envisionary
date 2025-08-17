@@ -93,21 +93,7 @@ export default function Home() {
     try {
       await updateGoal(user.uid, updatedGoal);
       setGoals((prevGoals) => {
-          const goalExists = prevGoals.some(g => g.id === updatedGoal.id);
-          if (goalExists) {
-              return prevGoals.map(g => g.id === updatedGoal.id ? updatedGoal : g);
-          } else {
-              // This handles sub-goal updates
-              return prevGoals.map(g => {
-                  if (g.subGoals?.some(sg => sg.id === updatedGoal.id)) {
-                      return {
-                          ...g,
-                          subGoals: g.subGoals.map(sg => sg.id === updatedGoal.id ? updatedGoal : sg)
-                      };
-                  }
-                  return g;
-              });
-          }
+          return prevGoals.map(g => g.id === updatedGoal.id ? updatedGoal : g);
       });
     } catch (e) {
       console.error("Error updating goal:", e);
@@ -125,7 +111,8 @@ export default function Home() {
   }
 
   const columns = useMemo(() => {
-    const topLevelGoals = goals.filter(goal => !goals.some(parent => parent.subGoals?.some(sub => sub.id === goal.id)));
+    const allSubGoalIds = new Set(goals.flatMap(g => g.subGoals?.map(sg => sg.id) ?? []));
+    const topLevelGoals = goals.filter(goal => !allSubGoalIds.has(goal.id));
     return KANBAN_COLUMNS.map(col => ({
       ...col,
       goals: topLevelGoals.filter(goal => goal.status === col.id),
