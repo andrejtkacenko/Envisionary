@@ -93,11 +93,8 @@ export default function CreateGoalPage() {
     }
     setIsLoading(true);
     try {
-      // The addGoal function will handle adding it to Firestore.
-      // We pass the raw data and the function adds the id and subGoals properties.
-      const params = new URLSearchParams();
-      params.set("newGoal", JSON.stringify(data));
-      router.push(`/?${params.toString()}`);
+      await addGoal(user.uid, data);
+      router.push('/');
 
       toast({
         title: "Goal Created",
