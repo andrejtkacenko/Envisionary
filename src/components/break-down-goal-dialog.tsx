@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Sparkles, Wand2, Plus } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Plus, X } from "lucide-react";
 import { breakDownGoal, BreakDownGoalOutput } from "@/ai/flows/break-down-goal";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
 interface BreakDownGoalDialogProps {
@@ -31,11 +32,11 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
   const [open, setOpen] = useState(false);
   const [subGoals, setSubGoals] = useState<SubGoal[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [manualInput, setManualInput] = useState("");
   const { toast } = useToast();
 
   const handleGenerate = async () => {
     setIsLoading(true);
-    setSubGoals([]);
     try {
       const result = await breakDownGoal({ 
         title: goal.title, 
@@ -43,7 +44,7 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
       });
 
       if (result.subGoals && result.subGoals.length > 0) {
-        setSubGoals(result.subGoals);
+        setSubGoals(prev => [...prev, ...result.subGoals]);
       } else {
         toast({
             variant: "default",
@@ -80,7 +81,6 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
     };
     
     onGoalUpdate(updatedParentGoal);
-
     setOpen(false);
     toast({
         title: "Sub-goals Added",
@@ -88,8 +88,25 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
     })
   }
 
+  const handleManualAdd = () => {
+    if (manualInput.trim() === "") return;
+    setSubGoals(prev => [...prev, { title: manualInput.trim(), description: "Manually added task." }]);
+    setManualInput("");
+  }
+
+  const handleRemoveSubGoal = (indexToRemove: number) => {
+    setSubGoals(prev => prev.filter((_, index) => index !== indexToRemove));
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+            setSubGoals([]);
+            setIsLoading(false);
+            setManualInput("");
+        }
+    }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
@@ -98,20 +115,43 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
             Break Down Goal
           </DialogTitle>
           <DialogDescription>
-            Use AI to break down your goal &quot;{goal.title}&quot; into smaller, manageable sub-goals.
+            Use AI to break down your goal &quot;{goal.title}&quot; or add sub-goals manually.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="my-4">
-            {!isLoading && subGoals.length === 0 && (
-                <div className="flex flex-col items-center justify-center gap-4 text-center py-8">
-                    <p className="text-muted-foreground">Ready to break this goal down into smaller tasks?</p>
-                    <Button onClick={handleGenerate}>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Generate Sub-Goals
-                    </Button>
+        <div className="space-y-4 my-4">
+            <div className="flex gap-2">
+                <Input 
+                    placeholder="Enter a new sub-goal title"
+                    value={manualInput}
+                    onChange={(e) => setManualInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleManualAdd();
+                        }
+                    }}
+                />
+                <Button onClick={handleManualAdd} variant="outline">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Task
+                </Button>
+            </div>
+
+            <div className="relative">
+                <div aria-hidden="true" className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t"></span>
                 </div>
-            )}
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+            </div>
+
+            <Button onClick={handleGenerate} disabled={isLoading} className="w-full">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Generate with AI
+            </Button>
+            
             {isLoading && (
                 <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground py-8">
                     <Loader2 className="h-8 w-8 animate-spin" />
@@ -119,13 +159,19 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
                 </div>
             )}
             {subGoals.length > 0 && (
-                 <ScrollArea className="h-72">
+                 <ScrollArea className="h-60 mt-4">
                     <div className="space-y-2 pr-4">
+                        <h4 className="text-sm font-medium text-muted-foreground">Sub-goal List</h4>
                         {subGoals.map((sg, i) => (
                             <Card key={i}>
-                                <CardContent className="p-3">
-                                    <p className="font-semibold text-sm">{sg.title}</p>
-                                    <p className="text-sm text-muted-foreground">{sg.description}</p>
+                                <CardContent className="p-3 flex items-center justify-between">
+                                    <div>
+                                        <p className="font-semibold text-sm">{sg.title}</p>
+                                        <p className="text-sm text-muted-foreground">{sg.description}</p>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveSubGoal(i)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
                                 </CardContent>
                             </Card>
                         ))}
@@ -136,13 +182,12 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
         
         {subGoals.length > 0 && (
           <DialogFooter>
-            <Button variant="outline" onClick={handleGenerate} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                Regenerate
+            <Button variant="ghost" onClick={() => setSubGoals([])}>
+                Clear List
             </Button>
             <Button onClick={handleAddSubGoals}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Sub-Goals to &quot;{goal.title}&quot;
+                Add {subGoals.length} Sub-Goal(s)
             </Button>
           </DialogFooter>
         )}
