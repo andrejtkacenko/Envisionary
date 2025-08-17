@@ -7,16 +7,25 @@ import { AppHeader } from '@/components/app-header';
 import { KanbanBoard } from '@/components/kanban-board';
 import { Button } from '@/components/ui/button';
 import { KANBAN_COLUMNS } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [isClient, setIsClient] = useState(false);
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    // Load mock data on the client to avoid hydration mismatch
-    setTasks(mockTasks);
-    setIsClient(true);
-  }, []);
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    if (user) {
+      setTasks(mockTasks);
+    }
+  }, [user]);
 
   const handleTaskCreate = (task: Omit<Task, 'id'>) => {
     const newTask = { ...task, id: crypto.randomUUID() };
@@ -40,15 +49,12 @@ export default function Home() {
     }))
   }, [tasks]);
 
-  if (!isClient) {
-    // Render nothing or a loading skeleton on the server
-    return null;
+  if (loading || !user) {
+    return <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center"><p>Loading...</p></div>;
   }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background font-body">
-      <Button>Sign Up</Button>
-      <Button>Login</Button>
       <AppHeader allTasks={tasks} onTaskCreate={handleTaskCreate} />
       <main className="flex-1 overflow-x-auto">
         <KanbanBoard 
