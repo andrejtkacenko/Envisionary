@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -81,6 +82,13 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
                 >
                   <Users className="h-5 w-5" />
                   Kanban Board
+                </Link>
+                 <Link
+                  href="/coach"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Zap className="h-5 w-5" />
+                  AI Coach
                 </Link>
               </nav>
             </SheetContent>
