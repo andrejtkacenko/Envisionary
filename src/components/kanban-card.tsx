@@ -2,7 +2,7 @@
 "use client"
 
 import { useState } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, Wand2, ChevronDown } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, Wand2, ChevronDown, Plus } from "lucide-react";
 import { format } from "date-fns";
 
 import type { Goal, GoalPriority } from "@/types";
@@ -32,6 +32,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { GoalDialog } from "@/components/goal-dialog";
 import { BreakDownGoalDialog } from "@/components/break-down-goal-dialog";
+import { DeleteSubGoalAlert } from "@/components/delete-subgoal-alert";
 
 interface KanbanCardProps {
   goal: Goal;
@@ -71,13 +72,18 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
     onGoalUpdate(updatedParentGoal);
   }
   
+  const handleSubGoalDelete = (subGoalId: string) => {
+    const updatedSubGoals = goal.subGoals?.filter(sg => sg.id !== subGoalId);
+    const updatedParentGoal = { ...goal, subGoals: updatedSubGoals };
+    onGoalUpdate(updatedParentGoal);
+  }
+
   const completedSubGoals = goal.subGoals?.filter(sg => sg.status === 'done').length || 0;
   const totalSubGoals = goal.subGoals?.length || 0;
   const progress = totalSubGoals > 0 ? (completedSubGoals / totalSubGoals) * 100 : 0;
 
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200 flex flex-col">
-      <div className="flex flex-col flex-grow">
         <CardHeader className="p-4 pb-2">
             <div className="flex items-start justify-between">
             <Badge variant="secondary">{goal.project}</Badge>
@@ -101,7 +107,7 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
                         />
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <BreakDownGoalDialog goal={goal} onGoalUpdate={onGoalUpdate}>
+                        <BreakDownGoalDialog goal={goal} onGoalUpdate={onGoalUpdate} triggerMode="menu">
                             <button className="w-full text-left flex items-center">
                                 <Wand2 className="mr-2 h-4 w-4" />
                                 <span>Break down goal</span>
@@ -140,12 +146,11 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
                 </div>
             )}
         </CardContent>
-      </div>
       {goal.subGoals && goal.subGoals.length > 0 && (
         <Collapsible open={isSubtasksOpen} onOpenChange={setIsSubtasksOpen} className="border-t mt-auto">
             <CollapsibleTrigger asChild>
                 <button className="flex justify-between items-center w-full p-3 text-sm font-medium text-muted-foreground hover:bg-muted/50">
-                    <span>{isSubtasksOpen ? "Hide Sub-goals" : "Show Sub-goals"}</span>
+                    <span>{isSubtasksOpen ? "Hide Sub-goals" : `Show ${totalSubGoals} Sub-goals`}</span>
                     <ChevronDown className={cn("h-4 w-4 transition-transform", isSubtasksOpen && "rotate-180")} />
                 </button>
             </CollapsibleTrigger>
@@ -158,7 +163,7 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
                             onCheckedChange={(checked) => handleSubGoalChange(sg.id, !!checked)}
                         />
                         <label htmlFor={sg.id} className={cn("text-sm flex-grow", sg.status === 'done' && 'line-through text-muted-foreground')}>{sg.title}</label>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
                             <GoalDialog
                                 goal={sg}
                                 onSave={(updatedSubGoal) => handleSubGoalUpdate({ ...sg, ...updatedSubGoal })}
@@ -168,9 +173,22 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
                                     </Button>
                                 }
                             />
+                            <DeleteSubGoalAlert onConfirm={() => handleSubGoalDelete(sg.id)}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/70 hover:text-destructive">
+                                    <Trash className="h-3 w-3" />
+                                </Button>
+                            </DeleteSubGoalAlert>
                         </div>
                     </div>
                 ))}
+                <div className="pt-2">
+                    <BreakDownGoalDialog goal={goal} onGoalUpdate={onGoalUpdate} triggerMode="button">
+                        <Button variant="outline" size="sm" className="w-full">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Sub-goal
+                        </Button>
+                    </BreakDownGoalDialog>
+                </div>
             </CollapsibleContent>
         </Collapsible>
       )}

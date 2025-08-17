@@ -24,11 +24,12 @@ interface BreakDownGoalDialogProps {
   goal: Goal;
   children: React.ReactNode;
   onGoalUpdate: (goal: Goal) => void;
+  triggerMode: 'menu' | 'button';
 }
 
 type SubGoal = BreakDownGoalOutput["subGoals"][0];
 
-export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownGoalDialogProps) {
+export function BreakDownGoalDialog({ goal, children, onGoalUpdate, triggerMode }: BreakDownGoalDialogProps) {
   const [open, setOpen] = useState(false);
   const [subGoals, setSubGoals] = useState<SubGoal[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -98,6 +99,11 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
     setSubGoals(prev => prev.filter((_, index) => index !== indexToRemove));
   }
 
+  const dialogTrigger = triggerMode === 'menu' ? 
+    ( <div className="w-full" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>{children}</div> ) :
+    ( <DialogTrigger asChild>{children}</DialogTrigger> );
+
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
         setOpen(isOpen);
@@ -107,12 +113,12 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
             setManualInput("");
         }
     }}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      {dialogTrigger}
+      <DialogContent className="sm:max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2">
             <Wand2 className="h-5 w-5 text-accent" />
-            Break Down Goal
+            Add Sub-goals
           </DialogTitle>
           <DialogDescription>
             Use AI to break down your goal &quot;{goal.title}&quot; or add sub-goals manually.
@@ -131,7 +137,6 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate }: BreakDownG
                             handleManualAdd();
                         }
                     }}
-                    onMouseDown={(e) => e.stopPropagation()}
                 />
                 <Button onClick={handleManualAdd} variant="outline">
                     <Plus className="mr-2 h-4 w-4" />
