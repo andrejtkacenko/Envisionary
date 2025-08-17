@@ -50,11 +50,14 @@ export default function Home() {
     }
      const newGoalsParam = searchParams.get('newGoals');
     if (newGoalsParam) {
-      const newGoals = JSON.parse(newGoalsParam);
+      const newGoals: Goal[] = JSON.parse(newGoalsParam);
       if (newGoals && Array.isArray(newGoals) && newGoals.length > 0) {
-        const updatedGoals = [...goals, ...newGoals.map((g: any) => ({ ...g, dueDate: g.dueDate ? new Date(g.dueDate) : undefined }))];
-        setGoals(updatedGoals);
-        sessionStorage.setItem('goals', JSON.stringify(updatedGoals));
+        const goalsToAdd = newGoals.filter(newGoal => !goals.some(existingGoal => existingGoal.id === newGoal.id));
+        if (goalsToAdd.length > 0) {
+          const updatedGoals = [...goals, ...goalsToAdd.map((g: any) => ({ ...g, dueDate: g.dueDate ? new Date(g.dueDate) : undefined }))];
+          setGoals(updatedGoals);
+          sessionStorage.setItem('goals', JSON.stringify(updatedGoals));
+        }
         router.replace('/', { scroll: false });
       }
     }
