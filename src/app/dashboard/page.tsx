@@ -1,11 +1,12 @@
+
 "use client"
 
+import { useState, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Zap, Target, CheckCircle, Clock, Star, Award, ChevronRight } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import {
   ChartContainer,
@@ -14,7 +15,7 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart"
-import { PieChart, Pie, Cell } from "recharts"
+import { PieChart, Pie } from "recharts"
 import { mockTasks } from "@/lib/mock-data"
 import type { Goal } from "@/types"
 
@@ -35,14 +36,34 @@ const chartConfig = {
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const [goals, setGoals] = useState<Goal[]>(mockTasks);
 
-  // Process mock data for stats and charts
-  const totalGoals = mockTasks.length
-  const completedGoals = mockTasks.filter(g => g.status === 'done').length
-  const activeGoals = mockTasks.filter(g => g.status === 'inprogress').length
-  const recentGoals = mockTasks.slice(0, 4)
+  useEffect(() => {
+    const storedGoals = sessionStorage.getItem('goals');
+    if (storedGoals) {
+      try {
+        const parsedGoals = JSON.parse(storedGoals, (key, value) => {
+            if ((key === 'dueDate' || key.endsWith('Date')) && value) {
+                return new Date(value);
+            }
+            return value;
+        });
+        setGoals(parsedGoals);
+      } catch (e) {
+        console.error("Failed to parse goals from session storage", e);
+        setGoals(mockTasks);
+      }
+    }
+  }, []);
 
-  const categoryProgress = mockTasks.reduce((acc, goal) => {
+
+  // Process goal data for stats and charts
+  const totalGoals = goals.length
+  const completedGoals = goals.filter(g => g.status === 'done').length
+  const activeGoals = goals.filter(g => g.status === 'inprogress').length
+  const recentGoals = goals.slice(-4).reverse()
+
+  const categoryProgress = goals.reduce((acc, goal) => {
     if (!acc[goal.project]) {
       acc[goal.project] = { total: 0, completed: 0 }
     }
@@ -53,16 +74,16 @@ export default function DashboardPage() {
     return acc
   }, {} as Record<string, { total: number; completed: number }>)
 
-  const categoryData = Object.entries(categoryProgress).map(([name, data]) => ({
+  const categoryData = Object.entries(categoryProgress).map(([name, data], index) => ({
     name,
     value: data.completed,
-    fill: `hsl(var(--chart-${Object.keys(categoryProgress).indexOf(name) + 1}))`
+    fill: `hsl(var(--chart-${(index % 5) + 1}))`
   }));
   
   const chartData = [
     { name: "Completed", value: completedGoals, fill: "hsl(var(--chart-2))" },
     { name: "In Progress", value: activeGoals, fill: "hsl(var(--chart-4))" },
-    { name: "To Do", value: mockTasks.filter(g => g.status === 'todo').length, fill: "hsl(var(--muted))" },
+    { name: "To Do", value: goals.filter(g => g.status === 'todo').length, fill: "hsl(var(--muted))" },
   ]
 
 
@@ -78,12 +99,6 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button asChild>
-            <Link href="/create-goal">
-              <Plus />
-              New Goal
-            </Link>
-          </Button>
           <Button variant="outline">
             <Zap />
             Generate Insights
@@ -188,24 +203,31 @@ export default function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              {recentGoals.map((goal: Goal) => {
-                const completedSub = goal.subGoals?.filter(sg => sg.status === 'done').length || 0
-                const totalSub = goal.subGoals?.length || 0
-                const progress = totalSub > 0 ? (completedSub / totalSub) * 100 : (goal.status === 'done' ? 100 : goal.status === 'inprogress' ? 50 : 0)
-                
-                return (
-                  <div key={goal.id}>
-                    <div className="flex items-center justify-between">
-                      <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
-                       <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
+            {goals.length > 0 ? (
+                <div className="space-y-6">
+                {recentGoals.map((goal: Goal) => {
+                    const completedSub = goal.subGoals?.filter(sg => sg.status === 'done').length || 0
+                    const totalSub = goal.subGoals?.length || 0
+                    const progress = totalSub > 0 ? (completedSub / totalSub) * 100 : (goal.status === 'done' ? 100 : goal.status === 'inprogress' ? 50 : 0)
+                    
+                    return (
+                    <div key={goal.id}>
+                        <div className="flex items-center justify-between">
+                        <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
+                        <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{goal.project}</p>
+                        <Progress value={progress} className="h-2 mt-2" />
                     </div>
-                    <p className="text-sm text-muted-foreground">{goal.project}</p>
-                    <Progress value={progress} className="h-2 mt-2" />
-                  </div>
-                )
-              })}
-            </div>
+                    )
+                })}
+                </div>
+            ) : (
+                <div className="text-center text-muted-foreground py-12">
+                     <Target className="mx-auto h-12 w-12" />
+                     <p className="mt-4">No goals yet. Create one to get started!</p>
+                </div>
+            )}
           </CardContent>
         </Card>
 
@@ -223,4 +245,5 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}
+
+  
