@@ -132,6 +132,8 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
                 <Skeleton className="h-[68px] w-full" />
                 <Skeleton className="h-[68px] w-full" />
                 <Skeleton className="h-[68px] w-full" />
+                <Skeleton className="h-[68px] w-full" />
+                <Skeleton className="h-[68px] w-full" />
               </div>
             )}
             {!isLoading && suggestions.map((s, i) => (

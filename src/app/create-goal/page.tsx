@@ -114,8 +114,8 @@ export default function CreateGoalPage() {
                 </Link>
             </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+          <div className="md:col-span-3">
             <Card>
               <CardHeader>
                 <CardTitle className="font-headline">Create a New Goal</CardTitle>
@@ -272,7 +272,7 @@ export default function CreateGoalPage() {
               </CardContent>
             </Card>
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-2">
             <SuggestGoalsPanel onSuggestionSelect={handleSuggestionSelect} />
           </div>
         </div>

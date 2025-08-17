@@ -34,7 +34,7 @@ const prompt = ai.definePrompt({
   name: 'suggestGoalsPrompt',
   input: {schema: SuggestGoalsInputSchema},
   output: {schema: SuggestGoalsOutputSchema},
-  prompt: `You are a productivity assistant. Your task is to suggest 3 achievable goals for a user based on a given topic. For each goal, provide a clear title and a one-sentence description.
+  prompt: `You are a productivity assistant. Your task is to suggest 5 achievable goals for a user based on a given topic. For each goal, provide a clear title and a one-sentence description.
 
 Topic: {{{topic}}}`,
 });
