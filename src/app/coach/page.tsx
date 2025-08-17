@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
-import { coachChat, CoachChatInput, CoachChatOutput } from '@/ai/flows/coach-chat';
+import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
 import { summarizeProgress, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
 import { getGoals } from '@/lib/goals-service';
 import type { Goal } from '@/types';
@@ -25,6 +25,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2 } from 'lucide-react';
+import { RecommendGoalsDialog } from '@/components/recommend-goals-dialog';
 
 type ChatMessage = {
     role: 'user' | 'assistant';
@@ -124,9 +125,11 @@ export default function CoachPage() {
                         {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
                          Analyze Progress
                     </Button>
-                    <Button variant="outline" disabled>
-                        <Star className="mr-2 h-4 w-4" /> Get Recommendations
-                    </Button>
+                    <RecommendGoalsDialog allGoals={goals}>
+                        <Button variant="outline">
+                            <Star className="mr-2 h-4 w-4" /> Get Recommendations
+                        </Button>
+                    </RecommendGoalsDialog>
                 </div>
             </div>
 
