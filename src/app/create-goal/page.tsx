@@ -43,6 +43,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { SuggestGoalsDialog, type SuggestedGoal } from "@/components/suggest-goals-dialog";
 
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -71,6 +72,11 @@ export default function CreateGoalPage() {
       dueDate: undefined,
     },
   });
+
+  const handleSuggestionSelect = (suggestion: SuggestedGoal) => {
+    form.setValue("title", suggestion.title);
+    form.setValue("description", suggestion.description);
+  };
 
   const onSubmit = (data: GoalFormValues) => {
     setIsLoading(true);
@@ -110,10 +116,15 @@ export default function CreateGoalPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Create a New Goal</CardTitle>
-            <CardDescription>
-              Fill in the details for your new goal to add it to your board.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline">Create a New Goal</CardTitle>
+                    <CardDescription>
+                      Fill in the details for your new goal to add it to your board.
+                    </CardDescription>
+                </div>
+                <SuggestGoalsDialog onSuggestionSelect={handleSuggestionSelect} />
+            </div>
           </CardHeader>
           <CardContent>
             <Form {...form}>
