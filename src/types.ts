@@ -25,6 +25,7 @@ export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
 
 // Types for the new Weekly Planner feature
 export type ScheduledItem = {
+  id: string;
   time: string;
   task: string;
   priority?: GoalPriority;

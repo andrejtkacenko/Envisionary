@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { generateSchedule, type GenerateScheduleInput, type GenerateScheduleOutput } from '@/ai/flows/generate-schedule';
-import { saveSchedule, getSchedule, type WeeklySchedule } from '@/lib/goals-service';
+import { saveSchedule, getSchedule, type WeeklySchedule, type ScheduledItem } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
@@ -34,8 +34,8 @@ const GenerateScheduleInputSchema = z.object({
 });
 
 
-const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: any, isEditing: boolean, onUpdate: (time: string, task: string) => void, onRemove: () => void }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.task });
+const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: ScheduledItem, isEditing: boolean, onUpdate: (time: string, task: string) => void, onRemove: () => void }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -95,7 +95,7 @@ export default function PlannerPage() {
         try {
             const result = await generateSchedule(data);
             setSchedule(result);
-            if (user) {
+            if (user && result) {
                 await saveSchedule(user.uid, { id: user.uid, scheduleData: result.weeklySchedule });
             }
         } catch (error) {
@@ -114,8 +114,8 @@ export default function PlannerPage() {
         const { active, over } = event;
         if (over && active.id !== over.id && schedule) {
             const daySchedule = schedule.weeklySchedule[dayIndex].schedule;
-            const oldIndex = daySchedule.findIndex(item => item.task === active.id);
-            const newIndex = daySchedule.findIndex(item => item.task === over.id);
+            const oldIndex = daySchedule.findIndex(item => item.id === active.id);
+            const newIndex = daySchedule.findIndex(item => item.id === over.id);
             
             const newScheduleItems = arrayMove(daySchedule, oldIndex, newIndex);
             
@@ -285,11 +285,11 @@ export default function PlannerPage() {
                                                 </CardHeader>
                                                 <CardContent>
                                                     <DndContext sensors={[]} onDragEnd={(e) => handleDragEnd(e, dayIndex)} collisionDetection={closestCenter}>
-                                                        <SortableContext items={day.schedule.map(item => item.task)} strategy={verticalListSortingStrategy}>
+                                                        <SortableContext items={day.schedule.map(item => item.id)} strategy={verticalListSortingStrategy}>
                                                             <div className="space-y-2">
                                                                 {day.schedule.map((item, itemIndex) => (
                                                                     <SortableItem 
-                                                                        key={item.task} 
+                                                                        key={item.id} 
                                                                         item={item} 
                                                                         isEditing={isEditing}
                                                                         onUpdate={(time, task) => updateItem(dayIndex, itemIndex, time, task)}

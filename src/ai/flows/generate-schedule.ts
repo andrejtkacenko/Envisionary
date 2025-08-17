@@ -18,6 +18,7 @@ const DailyGoalSchema = z.object({
 });
 
 const ScheduledItemSchema = z.object({
+    id: z.string().describe('A unique ID for the scheduled item.'),
     time: z.string().describe('The suggested time for the activity (e.g., "09:00 AM - 10:00 AM").'),
     task: z.string().describe('The name of the task or activity.'),
     priority: z.enum(["low", "medium", "high"]).optional().describe('The priority of the task.'),
@@ -65,7 +66,7 @@ Analyze the user's daily goals, time constraints, and overall priorities. Create
 
 **Instructions:**
 1.  Create a schedule for all 7 days of the week (Monday to Sunday).
-2.  For each day, provide a list of scheduled items with a specific time range (e.g., "08:00 AM - 09:00 AM"), the task, and a priority level.
+2.  For each day, provide a list of scheduled items with a unique ID, a specific time range (e.g., "08:00 AM - 09:00 AM"), the task, and a priority level.
 3.  Incorporate the daily goals into the schedule.
 4.  Respect all specified time constraints.
 5.  Align the schedule with the user's stated priorities.
@@ -82,6 +83,15 @@ const generateScheduleFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
+    if (output) {
+        output.weeklySchedule.forEach(day => {
+            day.schedule.forEach(item => {
+                if (!item.id) {
+                    item.id = crypto.randomUUID();
+                }
+            });
+        });
+    }
     return output!;
   }
 );
