@@ -86,6 +86,7 @@ const generateScheduleFlow = ai.defineFlow(
     if (output) {
         output.weeklySchedule.forEach(day => {
             day.schedule.forEach(item => {
+                // Failsafe: Ensure every item has a unique ID, even if the model forgets.
                 if (!item.id) {
                     item.id = crypto.randomUUID();
                 }
@@ -95,3 +96,4 @@ const generateScheduleFlow = ai.defineFlow(
     return output!;
   }
 );
+
