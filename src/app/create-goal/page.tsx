@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -44,6 +45,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { SuggestGoalsPanel, type SuggestedGoal } from "@/components/suggest-goals-panel";
+import { useAuth } from "@/context/AuthContext";
+import { addGoal } from "@/lib/goals-service";
 
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -58,6 +61,7 @@ type GoalFormValues = z.infer<typeof goalSchema>;
 
 export default function CreateGoalPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -78,13 +82,21 @@ export default function CreateGoalPage() {
     form.setValue("description", suggestion.description);
   };
 
-  const onSubmit = (data: GoalFormValues) => {
+  const onSubmit = async (data: GoalFormValues) => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Not Authenticated",
+            description: "You must be logged in to create a goal.",
+        });
+        return;
+    }
     setIsLoading(true);
     try {
-      const newGoal = { ...data, id: crypto.randomUUID() };
-      
+      // The addGoal function will handle adding it to Firestore.
+      // We pass the raw data and the function adds the id and subGoals properties.
       const params = new URLSearchParams();
-      params.set("newGoal", JSON.stringify(newGoal));
+      params.set("newGoal", JSON.stringify(data));
       router.push(`/?${params.toString()}`);
 
       toast({

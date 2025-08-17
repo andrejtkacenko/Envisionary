@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Zap, Target, CheckCircle, Clock, Star, Award, ChevronRight } from "lucide-react"
+import { Plus, Zap, Target, CheckCircle, Clock, Star, Award, ChevronRight, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import Link from "next/link"
 import {
@@ -16,8 +16,8 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart"
 import { PieChart, Pie } from "recharts"
-import { mockTasks } from "@/lib/mock-data"
 import type { Goal } from "@/types"
+import { getGoals } from "@/lib/goals-service"
 
 const chartConfig = {
   completed: {
@@ -36,25 +36,25 @@ const chartConfig = {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const [goals, setGoals] = useState<Goal[]>(mockTasks);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedGoals = sessionStorage.getItem('goals');
-    if (storedGoals) {
-      try {
-        const parsedGoals = JSON.parse(storedGoals, (key, value) => {
-            if ((key === 'dueDate' || key.endsWith('Date')) && value) {
-                return new Date(value);
-            }
-            return value;
-        });
-        setGoals(parsedGoals);
-      } catch (e) {
-        console.error("Failed to parse goals from session storage", e);
-        setGoals(mockTasks);
-      }
+    if (user) {
+      const fetchGoals = async () => {
+        setIsLoading(true);
+        try {
+          const userGoals = await getGoals(user.uid);
+          setGoals(userGoals);
+        } catch (error) {
+          console.error("Error fetching goals:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchGoals();
     }
-  }, []);
+  }, [user]);
 
 
   // Process goal data for stats and charts
@@ -85,6 +85,14 @@ export default function DashboardPage() {
     { name: "In Progress", value: activeGoals, fill: "hsl(var(--chart-4))" },
     { name: "To Do", value: goals.filter(g => g.status === 'todo').length, fill: "hsl(var(--muted))" },
   ]
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
 
   return (
@@ -245,5 +253,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-
-  
+}
