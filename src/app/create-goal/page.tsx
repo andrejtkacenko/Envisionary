@@ -43,8 +43,6 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { SuggestGoalsDialog, type SuggestedGoal } from "@/components/suggest-goals-dialog";
-
 
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -73,12 +71,6 @@ export default function CreateGoalPage() {
       dueDate: undefined,
     },
   });
-
-  const handleSuggestionSelect = (suggestion: SuggestedGoal) => {
-    form.setValue("title", suggestion.title);
-    form.setValue("description", suggestion.description);
-    form.setValue("project", suggestion.project);
-  }
 
   const onSubmit = (data: GoalFormValues) => {
     setIsLoading(true);
@@ -118,15 +110,10 @@ export default function CreateGoalPage() {
         </div>
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="font-headline">Create a New Goal</CardTitle>
-                <CardDescription>
-                  Fill in the details for your new goal to add it to your board.
-                </CardDescription>
-              </div>
-               <SuggestGoalsDialog onSuggestionSelect={handleSuggestionSelect} />
-            </div>
+            <CardTitle className="font-headline">Create a New Goal</CardTitle>
+            <CardDescription>
+              Fill in the details for your new goal to add it to your board.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -213,7 +200,7 @@ export default function CreateGoalPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select priority" />
-                            </Trigger>
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="low">Low</SelectItem>
