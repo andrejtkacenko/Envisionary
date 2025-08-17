@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,9 +35,20 @@ interface SuggestGoalsPanelProps {
   onSuggestionSelect: (suggestion: SuggestedGoal) => void;
 }
 
+const suggestionTopics = [
+    "popular life goals",
+    "career development",
+    "health and fitness",
+    "creative skills",
+    "financial planning",
+    "mindfulness and well-being",
+];
+
 export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps) {
   const [suggestions, setSuggestions] = useState<SuggestedGoal[]>([]);
-  const [isLoading, setIsLoading] = useState(true); // Start loading initially
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAppending, setIsAppending] = useState(false);
+  const [topicIndex, setTopicIndex] = useState(0);
   const { toast } = useToast();
 
   const form = useForm<SuggestFormValues>({
@@ -45,16 +56,23 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
     defaultValues: { topic: "" },
   });
   
-  const generateSuggestions = async (topic: string) => {
-    setIsLoading(true);
-    setSuggestions([]);
+  const generateSuggestions = useCallback(async (topic: string, append = false) => {
+    if (!append) {
+      setIsLoading(true);
+      setSuggestions([]);
+    } else {
+      setIsAppending(true);
+    }
+    
     try {
       const result = await suggestGoals({ topic });
       if (result.suggestions && result.suggestions.length > 0) {
-        setSuggestions(result.suggestions);
+        if (append) {
+            setSuggestions(prev => [...prev, ...result.suggestions]);
+        } else {
+            setSuggestions(result.suggestions);
+        }
       } else {
-        // If no suggestions, show a toast but don't throw an error
-        // to avoid breaking the initial load.
         toast({
             variant: "default",
             title: "No suggestions found",
@@ -70,17 +88,26 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
       });
     } finally {
       setIsLoading(false);
+      setIsAppending(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    generateSuggestions("popular life goals");
+    // Initial load
+    generateSuggestions(suggestionTopics[0]);
+    setTopicIndex(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
   const handleFormSubmit = (data: SuggestFormValues) => {
     generateSuggestions(data.topic);
   };
+
+  const handleLoadMore = () => {
+    generateSuggestions(suggestionTopics[topicIndex % suggestionTopics.length], true);
+    setTopicIndex(prev => prev + 1);
+  }
 
   const handleSelect = (suggestion: SuggestedGoal) => {
     onSuggestionSelect(suggestion);
@@ -114,7 +141,7 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
               )}
             />
             <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? (
+              {isLoading && !isAppending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
               ) : (
                 'Generate Custom Goals'
@@ -123,25 +150,34 @@ export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps
           </form>
         </Form>
         
-        <div className="mt-6 space-y-2">
-            <h3 className="text-sm font-medium text-muted-foreground">
-              {isLoading ? "Loading popular goals..." : "Click a suggestion to use it:"}
+        <div className="mt-6">
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">
+              {isLoading && !isAppending ? "Loading popular goals..." : "Click a suggestion to use it:"}
             </h3>
-            {isLoading && (
-              <div className="space-y-2">
-                <Skeleton className="h-[68px] w-full" />
-                <Skeleton className="h-[68px] w-full" />
-                <Skeleton className="h-[68px] w-full" />
-                <Skeleton className="h-[68px] w-full" />
-                <Skeleton className="h-[68px] w-full" />
+            {isLoading && !isAppending && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-[68px] w-full" />)}
               </div>
             )}
-            {!isLoading && suggestions.map((s, i) => (
-              <Card key={i} className="p-3 hover:bg-muted cursor-pointer" onClick={() => handleSelect(s)}>
-                  <p className="font-semibold text-sm">{s.title}</p>
-                  <p className="text-sm text-muted-foreground">{s.description}</p>
-              </Card>
-            ))}
+            {!isLoading && suggestions.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {suggestions.map((s, i) => (
+                  <Card key={i} className="p-3 hover:bg-muted cursor-pointer" onClick={() => handleSelect(s)}>
+                      <p className="font-semibold text-sm">{s.title}</p>
+                      <p className="text-sm text-muted-foreground">{s.description}</p>
+                  </Card>
+                ))}
+              </div>
+            )}
+             <div className="mt-4">
+                <Button onClick={handleLoadMore} disabled={isAppending || isLoading} className="w-full" variant="outline">
+                    {isAppending ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</>
+                    ) : (
+                        'Load More'
+                    )}
+                </Button>
+            </div>
           </div>
       </CardContent>
     </Card>
