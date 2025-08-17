@@ -18,6 +18,19 @@ export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const fetchGoals = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const userGoals = await getGoals(user.uid);
+      setGoals(userGoals);
+    } catch (error) {
+      console.error("Error fetching goals:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -26,22 +39,10 @@ export default function Home() {
 
   useEffect(() => {
     if (user) {
-      const fetchGoals = async () => {
-        setIsLoading(true);
-        try {
-          const userGoals = await getGoals(user.uid);
-          setGoals(userGoals);
-        } catch (error) {
-          console.error("Error fetching goals:", error);
-          // Handle error, e.g., show a toast notification
-        } finally {
-          setIsLoading(false);
-        }
-      };
       fetchGoals();
     }
-  }, [user]);
-  
+  }, [user, fetchGoals]);
+
   const handleAddNewGoal = useCallback(async (newGoalData: Omit<Goal, 'id' | 'subGoals'>) => {
     if (!user) return;
     try {
@@ -64,29 +65,15 @@ export default function Home() {
       }
   }, [user]);
 
-
   useEffect(() => {
-    const newGoalParam = searchParams.get('newGoal');
-    if (newGoalParam) {
-      const newGoalData = JSON.parse(newGoalParam);
-      // Ensure we don't add a goal that already exists from a previous render
-      if (newGoalData && !goals.some(g => g.title === newGoalData.title && g.status === newGoalData.status)) {
-        handleAddNewGoal(newGoalData);
-        router.replace('/', { scroll: false });
-      }
+    const hasNewGoals = searchParams.get('newGoal') || searchParams.get('newGoals');
+    if (hasNewGoals) {
+      // New goal(s) were added, so we refetch from the database to ensure consistency
+      fetchGoals();
+      // Clean the URL
+      router.replace('/', { scroll: false });
     }
-
-    const newGoalsParam = searchParams.get('newGoals');
-    if (newGoalsParam) {
-        const newGoalsData = JSON.parse(newGoalsParam);
-        if (newGoalsData && Array.isArray(newGoalsData) && newGoalsData.length > 0) {
-            handleAddNewGoals(newGoalsData);
-            router.replace('/', { scroll: false });
-        }
-    }
-
-  }, [searchParams, router, goals, handleAddNewGoal, handleAddNewGoals]);
-
+  }, [searchParams, fetchGoals, router]);
 
   const handleGoalUpdate = async (updatedGoal: Goal) => {
     if (!user) return;
