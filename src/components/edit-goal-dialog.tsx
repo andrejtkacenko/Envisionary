@@ -115,6 +115,19 @@ export function EditGoalDialog({ goal, onGoalUpdate, trigger }: EditGoalDialogPr
 
     setSubGoals(prev => [...prev, ...newGoals]);
   }
+  
+  const handleAddManualSubGoal = () => {
+    const newSubGoal: Goal = {
+        id: crypto.randomUUID(),
+        title: "New sub-goal",
+        description: "",
+        project: goal.project,
+        status: 'todo',
+        priority: goal.priority,
+        dueDate: goal.dueDate
+    };
+    setSubGoals(prev => [...prev, newSubGoal]);
+  };
 
   const handleSubGoalUpdate = (updatedSubGoal: Goal) => {
     setSubGoals(prev => prev.map(sg => sg.id === updatedSubGoal.id ? updatedSubGoal : sg));
@@ -312,7 +325,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, trigger }: EditGoalDialogPr
                     </div>
                 )}
               </ScrollArea>
-              <Button type="button" variant="secondary" className="w-full" onClick={() => handleSubGoalAdd([{title: "New sub-goal", description: ""}])}>
+              <Button type="button" variant="secondary" className="w-full" onClick={handleAddManualSubGoal}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Sub-goal Manually
               </Button>
