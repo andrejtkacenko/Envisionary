@@ -337,7 +337,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                     </BreakDownGoalDialog>
                 </div>
 
-                <ScrollArea className="h-96 border rounded-md p-2">
+                <ScrollArea className="h-[500px] border rounded-md p-2">
                     {subGoals.length > 0 ? (
                         <div className="space-y-2">
                             {subGoals.map(sg => (
@@ -408,7 +408,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                 {/* Right Column: Sub-goals */}
                 <div className="space-y-4">
                      <h4 className="text-sm font-medium text-muted-foreground">Sub-goals</h4>
-                     <ScrollArea className="h-96 border rounded-md p-2">
+                     <ScrollArea className="h-[500px] border rounded-md p-2">
                         {subGoals.length > 0 ? (
                             <div className="space-y-2">
                                 {subGoals.map(sg => (
