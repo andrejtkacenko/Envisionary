@@ -8,15 +8,6 @@ import * as z from "zod";
 import { suggestGoals } from "@/ai/flows/suggest-goals";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   Form,
   FormControl,
   FormField,
@@ -26,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardDescription, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 
 const suggestSchema = z.object({
   topic: z.string().min(3, "Topic must be at least 3 characters long."),
@@ -39,12 +30,11 @@ export type SuggestedGoal = {
   description: string;
 };
 
-interface SuggestGoalsDialogProps {
+interface SuggestGoalsPanelProps {
   onSuggestionSelect: (suggestion: SuggestedGoal) => void;
 }
 
-export function SuggestGoalsDialog({ onSuggestionSelect }: SuggestGoalsDialogProps) {
-  const [open, setOpen] = useState(false);
+export function SuggestGoalsPanel({ onSuggestionSelect }: SuggestGoalsPanelProps) {
   const [suggestions, setSuggestions] = useState<SuggestedGoal[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -78,27 +68,20 @@ export function SuggestGoalsDialog({ onSuggestionSelect }: SuggestGoalsDialogPro
 
   const handleSelect = (suggestion: SuggestedGoal) => {
     onSuggestionSelect(suggestion);
-    setOpen(false);
-    form.reset();
-    setSuggestions([]);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Sparkles className="mr-2 h-4 w-4" />
-          Suggest with AI
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-headline">Suggest Goals</DialogTitle>
-          <DialogDescription>
-            Tell the AI a topic, and it will generate a few goals for you.
-          </DialogDescription>
-        </DialogHeader>
-        
+    <Card className="sticky top-24">
+      <CardHeader>
+        <CardTitle className="font-headline flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-accent" />
+            Suggest with AI
+        </CardTitle>
+        <CardDescription>
+          Tell the AI a topic, and it will generate a few goals for you.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleGenerateSuggestions)} className="space-y-4">
             <FormField
@@ -118,25 +101,24 @@ export function SuggestGoalsDialog({ onSuggestionSelect }: SuggestGoalsDialogPro
               {isLoading ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
               ) : (
-                <><Sparkles className="mr-2 h-4 w-4" /> Generate Goals</>
+                'Generate Goals'
               )}
             </Button>
           </form>
         </Form>
         
         {suggestions.length > 0 && (
-          <div className="mt-4 space-y-2">
-             <h3 className="text-sm font-medium text-muted-foreground">Suggestions:</h3>
+          <div className="mt-6 space-y-2">
+             <h3 className="text-sm font-medium text-muted-foreground">Click a suggestion to use it:</h3>
             {suggestions.map((s, i) => (
-              <Card key={i} className="p-4 hover:bg-muted cursor-pointer" onClick={() => handleSelect(s)}>
-                  <CardTitle className="text-base">{s.title}</CardTitle>
-                  <CardDescription className="text-sm">{s.description}</CardDescription>
+              <Card key={i} className="p-3 hover:bg-muted cursor-pointer" onClick={() => handleSelect(s)}>
+                  <p className="font-semibold text-sm">{s.title}</p>
+                  <p className="text-sm text-muted-foreground">{s.description}</p>
               </Card>
             ))}
           </div>
         )}
-
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 }
