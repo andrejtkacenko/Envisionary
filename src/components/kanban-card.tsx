@@ -2,14 +2,13 @@
 "use client"
 
 import { useState } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, Wand2, ChevronDown, Plus } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 
 import type { Goal, GoalPriority } from "@/types";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -30,9 +29,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { GoalDialog } from "@/components/goal-dialog";
-import { BreakDownGoalDialog } from "@/components/break-down-goal-dialog";
-import { DeleteSubGoalAlert } from "@/components/delete-subgoal-alert";
+import { EditGoalDialog } from "./edit-goal-dialog";
 
 interface KanbanCardProps {
   goal: Goal;
@@ -64,20 +61,6 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
       onGoalUpdate(updatedParentGoal);
   };
 
-  const handleSubGoalUpdate = (subGoalToUpdate: Goal) => {
-    const updatedSubGoals = goal.subGoals?.map(sg => 
-        sg.id === subGoalToUpdate.id ? { ...sg, ...subGoalToUpdate } : sg
-    );
-    const updatedParentGoal = { ...goal, subGoals: updatedSubGoals };
-    onGoalUpdate(updatedParentGoal);
-  }
-  
-  const handleSubGoalDelete = (subGoalId: string) => {
-    const updatedSubGoals = goal.subGoals?.filter(sg => sg.id !== subGoalId);
-    const updatedParentGoal = { ...goal, subGoals: updatedSubGoals };
-    onGoalUpdate(updatedParentGoal);
-  }
-
   const completedSubGoals = goal.subGoals?.filter(sg => sg.status === 'done').length || 0;
   const totalSubGoals = goal.subGoals?.length || 0;
   const progress = totalSubGoals > 0 ? (completedSubGoals / totalSubGoals) * 100 : 0;
@@ -95,24 +78,16 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <GoalDialog 
-                        goal={goal} 
-                        onSave={(updatedGoal) => onGoalUpdate({ ...goal, ...updatedGoal })}
-                        triggerButton={
-                            <button className="w-full text-left flex items-center">
-                            <Edit className="mr-2 h-4 w-4" />
-                            <span>Edit</span>
-                            </button>
-                        } 
-                        />
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <BreakDownGoalDialog goal={goal} onGoalUpdate={onGoalUpdate} triggerMode="menu">
-                            <button className="w-full text-left flex items-center">
-                                <Wand2 className="mr-2 h-4 w-4" />
-                                <span>Break down goal</span>
-                            </button>
-                        </BreakDownGoalDialog>
+                       <EditGoalDialog
+                         goal={goal}
+                         onGoalUpdate={onGoalUpdate}
+                         trigger={
+                           <button className="w-full text-left flex items-center">
+                             <Edit className="mr-2 h-4 w-4" />
+                             <span>Edit Goal</span>
+                           </button>
+                         }
+                       />
                     </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onGoalDelete(goal.id)} className="text-destructive">
@@ -158,37 +133,13 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
                 {goal.subGoals.map(sg => (
                     <div key={sg.id} className="flex items-center gap-2 group">
                         <Checkbox 
-                            id={sg.id} 
+                            id={`card-${sg.id}`}
                             checked={sg.status === 'done'}
                             onCheckedChange={(checked) => handleSubGoalChange(sg.id, !!checked)}
                         />
-                        <label htmlFor={sg.id} className={cn("text-sm flex-grow", sg.status === 'done' && 'line-through text-muted-foreground')}>{sg.title}</label>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                            <GoalDialog
-                                goal={sg}
-                                onSave={(updatedSubGoal) => handleSubGoalUpdate({ ...sg, ...updatedSubGoal })}
-                                triggerButton={
-                                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                                        <Edit className="h-3 w-3" />
-                                    </Button>
-                                }
-                            />
-                            <DeleteSubGoalAlert onConfirm={() => handleSubGoalDelete(sg.id)}>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/70 hover:text-destructive">
-                                    <Trash className="h-3 w-3" />
-                                </Button>
-                            </DeleteSubGoalAlert>
-                        </div>
+                        <label htmlFor={`card-${sg.id}`} className={cn("text-sm flex-grow", sg.status === 'done' && 'line-through text-muted-foreground')}>{sg.title}</label>
                     </div>
                 ))}
-                <div className="pt-2">
-                    <BreakDownGoalDialog goal={goal} onGoalUpdate={onGoalUpdate} triggerMode="button">
-                        <Button variant="outline" size="sm" className="w-full">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Sub-goal
-                        </Button>
-                    </BreakDownGoalDialog>
-                </div>
             </CollapsibleContent>
         </Collapsible>
       )}

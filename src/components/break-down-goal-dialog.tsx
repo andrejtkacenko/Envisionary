@@ -23,13 +23,12 @@ import { useToast } from "@/hooks/use-toast";
 interface BreakDownGoalDialogProps {
   goal: Goal;
   children: React.ReactNode;
-  onGoalUpdate: (goal: Goal) => void;
-  triggerMode: 'menu' | 'button';
+  onSubGoalsAdd: (subGoals: SubGoal[]) => void;
 }
 
-type SubGoal = BreakDownGoalOutput["subGoals"][0];
+export type SubGoal = BreakDownGoalOutput["subGoals"][0];
 
-export function BreakDownGoalDialog({ goal, children, onGoalUpdate, triggerMode }: BreakDownGoalDialogProps) {
+export function BreakDownGoalDialog({ goal, children, onSubGoalsAdd }: BreakDownGoalDialogProps) {
   const [open, setOpen] = useState(false);
   const [subGoals, setSubGoals] = useState<SubGoal[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,27 +65,8 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate, triggerMode 
   };
   
   const handleAddSubGoals = () => {
-    const newSubGoals: Goal[] = subGoals.map(sg => ({
-      id: crypto.randomUUID(),
-      title: sg.title,
-      description: sg.description,
-      project: goal.project,
-      status: 'todo',
-      priority: goal.priority,
-      dueDate: goal.dueDate
-    }));
-
-    const updatedParentGoal = {
-        ...goal,
-        subGoals: [...(goal.subGoals || []), ...newSubGoals]
-    };
-    
-    onGoalUpdate(updatedParentGoal);
+    onSubGoalsAdd(subGoals);
     setOpen(false);
-    toast({
-        title: "Sub-goals Added",
-        description: `${newSubGoals.length} new sub-goals have been added to "${goal.title}".`
-    })
   }
 
   const handleManualAdd = () => {
@@ -98,22 +78,19 @@ export function BreakDownGoalDialog({ goal, children, onGoalUpdate, triggerMode 
   const handleRemoveSubGoal = (indexToRemove: number) => {
     setSubGoals(prev => prev.filter((_, index) => index !== indexToRemove));
   }
-
-  const dialogTrigger = triggerMode === 'menu' ? 
-    ( <div className="w-full" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>{children}</div> ) :
-    ( <DialogTrigger asChild>{children}</DialogTrigger> );
-
+  
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+        setSubGoals([]);
+        setIsLoading(false);
+        setManualInput("");
+    }
+  }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-        setOpen(isOpen);
-        if (!isOpen) {
-            setSubGoals([]);
-            setIsLoading(false);
-            setManualInput("");
-        }
-    }}>
-      {dialogTrigger}
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2">
