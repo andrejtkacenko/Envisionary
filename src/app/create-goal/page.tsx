@@ -43,7 +43,6 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Logo } from "@/components/logo";
 import { SuggestGoalsDialog, type SuggestedGoal } from "@/components/suggest-goals-dialog";
 
 
