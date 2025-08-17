@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Loader2, Sparkles, Calendar, Edit, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { generateSchedule, GenerateScheduleInputSchema, type GenerateScheduleOutput } from '@/ai/flows/generate-schedule';
+import { generateSchedule, type GenerateScheduleInput, type GenerateScheduleOutput } from '@/ai/flows/generate-schedule';
 import { saveSchedule, getSchedule, type WeeklySchedule } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,6 +22,17 @@ import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+// Re-define schema here as it cannot be exported from the "use server" file
+const GenerateScheduleInputSchema = z.object({
+    dailyGoals: z.array(z.object({
+        day: z.string(),
+        tasks: z.string(),
+    })),
+    timeConstraints: z.string().optional(),
+    priorities: z.string().optional(),
+});
+
 
 const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: any, isEditing: boolean, onUpdate: (time: string, task: string) => void, onRemove: () => void }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.task });
@@ -56,7 +68,7 @@ export default function PlannerPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [schedule, setSchedule] = useState<GenerateScheduleOutput | null>(null);
 
-    const form = useForm({
+    const form = useForm<GenerateScheduleInput>({
         resolver: zodResolver(GenerateScheduleInputSchema),
         defaultValues: {
             dailyGoals: daysOfWeek.map(day => ({ day, tasks: "" })),
@@ -77,7 +89,7 @@ export default function PlannerPage() {
         }
     }, [user]);
 
-    const onSubmit = async (data: any) => {
+    const onSubmit = async (data: GenerateScheduleInput) => {
         setIsLoading(true);
         setSchedule(null);
         try {

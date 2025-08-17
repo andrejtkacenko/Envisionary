@@ -29,7 +29,7 @@ const DailyScheduleSchema = z.object({
 });
 
 
-export const GenerateScheduleInputSchema = z.object({
+const GenerateScheduleInputSchema = z.object({
   dailyGoals: z.array(DailyGoalSchema).describe('A list of goals for each day of the week.'),
   timeConstraints: z.string().optional().describe('Any general time constraints, e.g., "Work 9am-5pm", "Free on weekends".'),
   priorities: z.string().optional().describe('Overall priorities for the week, e.g., "Focus on health", "Complete the project".'),
@@ -37,7 +37,7 @@ export const GenerateScheduleInputSchema = z.object({
 export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
 
 
-export const GenerateScheduleOutputSchema = z.object({
+const GenerateScheduleOutputSchema = z.object({
   weeklySchedule: z.array(DailyScheduleSchema).describe('The generated schedule for the entire week.'),
 });
 export type GenerateScheduleOutput = z.infer<typeof GenerateScheduleOutputSchema>;
