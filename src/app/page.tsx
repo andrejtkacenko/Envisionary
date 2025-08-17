@@ -111,12 +111,19 @@ export default function Home() {
   }
 
   const columns = useMemo(() => {
-    const allSubGoalIds = new Set(goals.flatMap(g => g.subGoals?.map(sg => sg.id) ?? []));
+    const allSubGoalIds = new Set<string>();
+    goals.forEach(g => {
+        g.subGoals?.forEach(sg => {
+            allSubGoalIds.add(sg.id);
+        });
+    });
+
     const topLevelGoals = goals.filter(goal => !allSubGoalIds.has(goal.id));
+
     return KANBAN_COLUMNS.map(col => ({
-      ...col,
-      goals: topLevelGoals.filter(goal => goal.status === col.id),
-    }))
+        ...col,
+        goals: topLevelGoals.filter(goal => goal.status === col.id),
+    }));
   }, [goals]);
 
   if (authLoading || !user) {
