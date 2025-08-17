@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, KanbanSquare, Zap, Calendar } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Zap, Calendar as CalendarIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import {
@@ -35,7 +35,12 @@ export function AppSidebar() {
     {
         href: "/planner",
         label: "Planner",
-        icon: Calendar,
+        icon: CalendarIcon,
+    },
+    {
+        href: "/calendar",
+        label: "Calendar",
+        icon: CalendarIcon,
     }
   ];
 
@@ -55,7 +60,7 @@ export function AppSidebar() {
                   href={item.href}
                   className={cn(
                     "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                    pathname === item.href && "bg-accent text-accent-foreground"
+                    (pathname === item.href || (item.href === "/planner" && pathname === "/calendar")) && "bg-accent text-accent-foreground"
                   )}
                 >
                   <item.icon className="h-5 w-5" />

@@ -1,0 +1,125 @@
+
+"use client";
+
+import { useState, useMemo } from 'react';
+import {
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  format,
+  startOfWeek,
+  endOfWeek,
+  addMonths,
+  subMonths,
+  isSameDay,
+  isToday
+} from 'date-fns';
+import { ChevronLeft, ChevronRight, PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+// We will create this component in the next step
+// import { DayScheduleDialog } from '@/components/day-schedule-dialog'; 
+
+export default function CalendarPage() {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const { user } = useAuth();
+  // In a real app, you'd fetch events from your database
+  const [events, setEvents] = useState<any[]>([]); 
+
+  const firstDayOfMonth = startOfMonth(currentDate);
+  const lastDayOfMonth = endOfMonth(currentDate);
+
+  const daysInMonth = eachDayOfInterval({
+    start: startOfWeek(firstDayOfMonth),
+    end: endOfWeek(lastDayOfMonth),
+  });
+
+  const goToNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
+  const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
+
+  // Dummy state for the dialog
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const handleDayClick = (day: Date) => {
+    // This will eventually open the DayScheduleDialog
+    setSelectedDate(day);
+    setIsDialogOpen(true);
+    console.log("Day clicked:", day);
+  };
+  
+  const hasEvent = (day: Date) => {
+      return events.some(event => isSameDay(new Date(event.date), day));
+  }
+
+  return (
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between space-y-2">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+                    <CalendarIcon /> Calendar
+                </h1>
+                <p className="text-muted-foreground">
+                    Plan your days, weeks, and months with AI assistance.
+                </p>
+            </div>
+        </div>
+
+        <div className="bg-card rounded-lg border p-4">
+            <div className="flex items-center justify-between mb-4">
+                <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <h2 className="text-xl font-semibold font-headline">
+                    {format(currentDate, 'MMMM yyyy')}
+                </h2>
+                <Button variant="outline" size="icon" onClick={goToNextMonth}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div key={day} className="py-2">{day}</div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-7 grid-rows-5 gap-1">
+                {daysInMonth.map((day, index) => (
+                    <div
+                        key={index}
+                        onClick={() => handleDayClick(day)}
+                        className={cn(
+                            "relative flex flex-col h-28 p-2 border rounded-md cursor-pointer transition-colors hover:bg-muted/50",
+                            format(day, 'M') !== format(currentDate, 'M') && "text-muted-foreground/50 bg-muted/20",
+                            isToday(day) && "bg-primary/10 border-primary/50",
+                            hasEvent(day) && "bg-accent/20"
+                        )}
+                    >
+                        <span className={cn("font-medium", isToday(day) && "text-primary")}>
+                            {format(day, 'd')}
+                        </span>
+                        {/* Event indicators would go here */}
+                         {hasEvent(day) && (
+                            <div className="mt-1 flex-grow overflow-hidden">
+                                <div className="h-2 w-2 rounded-full bg-accent mx-auto"></div>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+        {/* Placeholder for dialog logic */}
+        {isDialogOpen && selectedDate && (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={() => setIsDialogOpen(false)}>
+                <div className="bg-card p-6 rounded-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
+                    <h3 className="font-headline text-lg">Schedule for {format(selectedDate, 'PPP')}</h3>
+                    <p className="text-muted-foreground text-sm mt-2">Dialog for scheduling AI tasks would appear here.</p>
+                    <Button className="mt-4 w-full" onClick={() => setIsDialogOpen(false)}>Close</Button>
+                </div>
+            </div>
+        )}
+    </div>
+  );
+}
