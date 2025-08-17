@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
-import "./globals.css"; // Assuming you'll create this component
+import "./globals.css";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from '@/context/AuthContext';
+import { AppSidebar } from "@/components/app-sidebar";
 
 const fontInter = Inter({ 
   subsets: ["latin"],
@@ -35,7 +36,12 @@ export default function RootLayout({
       </head>
       <body className={cn("font-body antialiased", fontInter.variable, fontSpaceGrotesk.variable)}>
         <AuthProvider>
-          {children}  
+            <div className="flex min-h-screen w-full flex-col bg-muted/40">
+              <AppSidebar />
+              <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-16">
+                 {children}  
+              </div>
+            </div>
         </AuthProvider>
         <Toaster />
       </body>

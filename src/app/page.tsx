@@ -87,7 +87,6 @@ export default function Home() {
             if (g.id === updatedGoal.id) {
                 return updatedGoal;
             }
-            // Check for nested updates
             if (g.subGoals) {
                 const newSubGoals = g.subGoals.map(sg => sg.id === updatedGoal.id ? updatedGoal : sg);
                 return {...g, subGoals: newSubGoals};
@@ -95,16 +94,11 @@ export default function Home() {
             return g;
         });
 
-        // If the updated goal wasn't found as a top-level goal or a sub-goal, maybe it's a new sub-goal being added
-        // The logic for adding subgoals is now handled by passing the whole parent goal to onGoalUpdate.
         const goalExists = newGoals.some(g => g.id === updatedGoal.id);
         if (!goalExists) {
-            // This is likely a new goal, not an update.
-            // This case should be handled by the goal creation logic.
-            // Let's ensure we don't accidentally add it twice.
-            const isAlreadyAdded = newGoals.some(g => g.id === updatedGoal.id);
-            if (!isAlreadyAdded) {
-                return [...newGoals, updatedGoal];
+            const parentGoal = newGoals.find(g => g.subGoals?.some(sg => sg.id === updatedGoal.id));
+            if (parentGoal) {
+                 return newGoals.map(g => g.id === parentGoal.id ? { ...g, subGoals: g.subGoals!.map(sg => sg.id === updatedGoal.id ? updatedGoal : sg)} : g);
             }
         }
         
@@ -128,15 +122,15 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background font-body">
+    <>
       <AppHeader allGoals={goals} />
-      <main className="flex-1 overflow-x-auto">
+      <main className="flex-1 overflow-x-auto p-4 sm:p-0">
         <KanbanBoard 
           columns={columns} 
           onGoalUpdate={handleGoalUpdate}
           onGoalDelete={handleGoalDelete}
         />
       </main>
-    </div>
+    </>
   );
 }

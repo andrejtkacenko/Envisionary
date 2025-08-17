@@ -11,6 +11,7 @@ import {
   Settings,
   Users,
   Zap,
+  PanelLeft
 } from "lucide-react";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import { Logo } from "@/components/logo";
 import { ProgressReportDialog } from "@/components/progress-report-dialog";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface AppHeaderProps {
   allGoals: Goal[];
@@ -49,8 +51,40 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
   }
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
-      <Logo />
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+       <Sheet>
+            <SheetTrigger asChild>
+              <Button size="icon" variant="outline" className="sm:hidden">
+                <PanelLeft className="h-5 w-5" />
+                <span className="sr-only">Toggle Menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="sm:max-w-xs">
+              <nav className="grid gap-6 text-lg font-medium">
+                <Link
+                  href="#"
+                  className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
+                >
+                  <Zap className="h-5 w-5 transition-all group-hover:scale-110" />
+                  <span className="sr-only">Zenith Flow</span>
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <Home className="h-5 w-5" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/"
+                  className="flex items-center gap-4 px-2.5 text-foreground"
+                >
+                  <Users className="h-5 w-5" />
+                  Kanban Board
+                </Link>
+              </nav>
+            </SheetContent>
+          </Sheet>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex-1 sm:flex-initial">
           <div className="flex items-center gap-2">
