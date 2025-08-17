@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Zap, Activity, Star, MessageCircle, Trash2, Headphones, Mic, Info, Briefcase, Aperture, Heart, Clock, User, Send } from 'lucide-react';
+import { Zap, Activity, Star, MessageCircle, Trash2, Headphones, Mic, Info, Briefcase, Aperture, Heart, Clock, User, Send, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
