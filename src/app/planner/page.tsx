@@ -34,8 +34,8 @@ const GenerateScheduleInputSchema = z.object({
 });
 
 
-const SortableItem = ({ id, item, isEditing, onUpdate, onRemove }: { id: string, item: ScheduledItem, isEditing: boolean, onUpdate: (time: string, task: string) => void, onRemove: () => void }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: ScheduledItem, isEditing: boolean, onUpdate: (time: string, task: string) => void, onRemove: () => void }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -313,8 +313,7 @@ export default function PlannerPage() {
                                             <div className="space-y-2 pr-4">
                                                 {currentDaySchedule.schedule.map((item, itemIndex) => (
                                                     <SortableItem 
-                                                        key={item.id} 
-                                                        id={item.id}
+                                                        key={item.id}
                                                         item={item} 
                                                         isEditing={isEditing}
                                                         onUpdate={(time, task) => updateItem(itemIndex, time, task)}
@@ -333,3 +332,5 @@ export default function PlannerPage() {
         </div>
     );
 }
+
+    
