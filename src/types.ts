@@ -11,7 +11,7 @@ export type Goal = {
   description?: string;
   status: GoalStatus;
   priority: GoalPriority;
-  project: string;
+  project: string; // This will now be treated as 'category' but we keep the name for DB compatibility
   dueDate?: Date;
   subGoals?: Goal[];
   estimatedTime?: string;

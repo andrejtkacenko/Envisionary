@@ -51,7 +51,7 @@ import { addGoal } from "@/lib/goals-service";
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  project: z.string().min(1, "Project is required"),
+  project: z.string().optional(),
   status: z.enum(["todo", "inprogress", "done"]),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
@@ -93,7 +93,10 @@ export default function CreateGoalPage() {
     }
     setIsLoading(true);
     try {
-      await addGoal(user.uid, data);
+      await addGoal(user.uid, {
+        ...data,
+        project: data.project || 'General' // Use 'General' if not provided
+      });
       router.push('/');
 
       toast({
@@ -153,9 +156,9 @@ export default function CreateGoalPage() {
                       name="project"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Project</FormLabel>
+                          <FormLabel>Category</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g. Website Redesign" {...field} />
+                            <Input placeholder="e.g. Work, Health, Learning" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

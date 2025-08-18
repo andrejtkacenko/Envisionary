@@ -60,14 +60,14 @@ export default function LibraryPage() {
       await addGoal(user.uid, {
         title: template.title,
         description: template.description,
-        project: template.project,
+        project: template.project || 'General',
         status: 'todo',
         priority: 'medium',
         subGoals: template.subGoals.map(sg => ({
             id: crypto.randomUUID(),
             title: sg.title,
             description: sg.description,
-            project: template.project,
+            project: template.project || 'General',
             status: 'todo',
             priority: 'medium',
         }))
@@ -124,7 +124,7 @@ export default function LibraryPage() {
                 <CardHeader>
                     <div className="flex justify-between items-start">
                         <CardTitle className="font-headline text-xl">{template.title}</CardTitle>
-                        <Badge variant="secondary">{template.project}</Badge>
+                        <Badge variant="secondary">{template.project || 'Uncategorized'}</Badge>
                     </div>
                     <CardDescription>{template.description}</CardDescription>
                 </CardHeader>

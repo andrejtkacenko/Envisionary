@@ -115,7 +115,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
     >
         <CardHeader className="p-4 pb-2">
             <div className="flex items-start justify-between">
-                <Badge variant="secondary">{goal.project}</Badge>
+                <Badge variant="secondary">{goal.project || 'Uncategorized'}</Badge>
                 <div className="flex items-center" title={priorityTooltips[goal.priority]}>
                     {priorityIcons[goal.priority]}
                 </div>

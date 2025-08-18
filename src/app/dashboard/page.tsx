@@ -202,7 +202,7 @@ export default function DashboardPage() {
             <Card className="lg:col-span-4">
             <CardHeader>
                 <CardTitle>Goals by Category</CardTitle>
-                <CardDescription>Distribution of your goals across different projects.</CardDescription>
+                <CardDescription>Distribution of your goals across different categories.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
                 <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
@@ -272,7 +272,7 @@ export default function DashboardPage() {
                             <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
                             <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
                             </div>
-                            <p className="text-sm text-muted-foreground">{goal.project}</p>
+                            <p className="text-sm text-muted-foreground">{goal.project || 'Uncategorized'}</p>
                             <Progress value={progress} className="h-2 mt-2" />
                         </div>
                         )
@@ -313,5 +313,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

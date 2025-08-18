@@ -48,7 +48,7 @@ import { useToast } from "@/hooks/use-toast";
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  project: z.string().min(1, "Project is required"),
+  project: z.string().optional(),
   status: z.enum(["todo", "inprogress", "done"]),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
@@ -119,9 +119,9 @@ export function GoalDialog({ goal, onSave, triggerButton }: GoalDialogProps) {
               name="project"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Project</FormLabel>
+                  <FormLabel>Category</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Website Redesign" {...field} />
+                    <Input placeholder="e.g. Work, Health" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

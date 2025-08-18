@@ -24,7 +24,7 @@ export type RecommendGoalsInput = z.infer<typeof RecommendGoalsInputSchema>;
 const RecommendedGoalSchema = z.object({
     title: z.string().describe('The title of the suggested goal.'),
     description: z.string().describe('A brief description of the suggested goal.'),
-    project: z.string().describe('A suggested project category for the goal.'),
+    project: z.string().describe('A suggested category for the goal.'),
     priority: z.enum(["low", "medium", "high"]).describe('The suggested priority for the goal.'),
 });
 
@@ -43,7 +43,7 @@ const prompt = ai.definePrompt({
   output: {schema: RecommendGoalsOutputSchema},
   prompt: `You are a productivity expert and AI coach. Your task is to analyze a user's existing goals and recommend 3 new, relevant goals that would complement their current efforts or help them in related areas.
 
-For each recommendation, provide a clear title, a one-sentence description, a relevant project category, and a suggested priority.
+For each recommendation, provide a clear title, a one-sentence description, a relevant category, and a suggested priority.
 
 Analyze the following goals:
 {{{existingGoals}}}

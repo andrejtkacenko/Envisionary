@@ -15,7 +15,7 @@ const CreateGoalSchema = z.object({
   userId: z.string().describe("The ID of the user for whom to create the goal."),
   title: z.string().describe("The title of the goal."),
   description: z.string().optional().describe("A detailed description of the goal."),
-  project: z.string().optional().describe("The project category for this goal."),
+  project: z.string().optional().describe("The category for this goal (e.g., Work, Health)."),
   priority: z.enum(["low", "medium", "high"]).optional().describe("The priority of the goal."),
 });
 
@@ -25,7 +25,7 @@ const UpdateGoalSchema = z.object({
     goalId: z.string().describe("The ID of the goal to update."),
     title: z.string().optional().describe("The new title for the goal."),
     description: z.string().optional().describe("The new description for the goal."),
-    project: z.string().optional().describe("The new project category."),
+    project: z.string().optional().describe("The new category for the goal."),
     priority: z.enum(["low", "medium", "high"]).optional().describe("The new priority."),
     status: z.enum(["todo", "inprogress", "done"]).optional().describe("The new status."),
 });
