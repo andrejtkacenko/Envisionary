@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -23,7 +23,6 @@ import { CSS } from '@dnd-kit/utilities';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-// Re-define schema here as it cannot be exported from the "use server" file
 const GenerateScheduleInputSchema = z.object({
     dailyGoals: z.array(z.object({
         day: z.string(),
@@ -61,13 +60,46 @@ const SortableItem = ({ id, item, isEditing, onUpdate, onRemove }: { id: string,
     );
 };
 
+const DailyScheduleView = React.memo(function DailyScheduleView({ 
+    items, 
+    isEditing, 
+    onUpdateItem, 
+    onRemoveItem 
+}: { 
+    items: ScheduledItem[], 
+    isEditing: boolean, 
+    onUpdateItem: (itemIndex: number, time: string, task: string) => void,
+    onRemoveItem: (itemIndex: number) => void,
+}) {
+    const itemIds = useMemo(() => items.map(i => i.id), [items]);
+
+    return (
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2 pr-4">
+                {items.map((item, itemIndex) => (
+                    <SortableItem 
+                        key={item.id}
+                        id={item.id}
+                        item={item} 
+                        isEditing={isEditing}
+                        onUpdate={(time, task) => onUpdateItem(itemIndex, time, task)}
+                        onRemove={() => onRemoveItem(itemIndex)}
+                    />
+                ))}
+            </div>
+        </SortableContext>
+    );
+});
+DailyScheduleView.displayName = "DailyScheduleView";
+
+
 export default function PlannerPage() {
     const { user } = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [schedule, setSchedule] = useState<GenerateScheduleOutput | null>(null);
-    const [currentDayIndex, setCurrentDayIndex] = useState(new Date().getDay() - 1); // Monday is 0
+    const [currentDayIndex, setCurrentDayIndex] = useState(new Date().getDay() - 1); 
 
     const form = useForm<GenerateScheduleInput>({
         resolver: zodResolver(GenerateScheduleInputSchema),
@@ -82,11 +114,12 @@ export default function PlannerPage() {
 
     useEffect(() => {
         if (user) {
+            setIsLoading(true);
             getSchedule(user.uid).then(savedSchedule => {
                 if (savedSchedule) {
                     setSchedule({ weeklySchedule: savedSchedule.scheduleData });
                 }
-            });
+            }).finally(() => setIsLoading(false));
         }
     }, [user]);
 
@@ -153,16 +186,26 @@ export default function PlannerPage() {
 
     const updateItem = (itemIndex: number, time: string, task: string) => {
         if (!schedule) return;
-        const newSchedule = { ...schedule };
-        newSchedule.weeklySchedule[currentDayIndex].schedule[itemIndex] = { ...newSchedule.weeklySchedule[currentDayIndex].schedule[itemIndex], time, task };
-        setSchedule(newSchedule);
+        setSchedule(prev => {
+            if (!prev) return null;
+            const newSchedule = { ...prev };
+            const updatedDaySchedule = [...newSchedule.weeklySchedule[currentDayIndex].schedule];
+            updatedDaySchedule[itemIndex] = { ...updatedDaySchedule[itemIndex], time, task };
+            newSchedule.weeklySchedule[currentDayIndex] = {...newSchedule.weeklySchedule[currentDayIndex], schedule: updatedDaySchedule};
+            return newSchedule;
+        });
     };
     
     const removeItem = (itemIndex: number) => {
         if (!schedule) return;
-        const newSchedule = { ...schedule };
-        newSchedule.weeklySchedule[currentDayIndex].schedule.splice(itemIndex, 1);
-        setSchedule(newSchedule);
+         setSchedule(prev => {
+            if (!prev) return null;
+            const newSchedule = { ...prev };
+            const updatedDaySchedule = [...newSchedule.weeklySchedule[currentDayIndex].schedule];
+            updatedDaySchedule.splice(itemIndex, 1);
+            newSchedule.weeklySchedule[currentDayIndex] = {...newSchedule.weeklySchedule[currentDayIndex], schedule: updatedDaySchedule};
+            return newSchedule;
+        });
     };
 
     const goToPreviousDay = () => {
@@ -297,7 +340,7 @@ export default function PlannerPage() {
                             {isLoading && !schedule && (
                                 <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
                                     <Loader2 className="h-8 w-8 animate-spin" />
-                                    <p>Generating your optimized week...</p>
+                                    <p>Loading your schedule...</p>
                                 </div>
                             )}
                             {!isLoading && !schedule && (
@@ -308,21 +351,13 @@ export default function PlannerPage() {
                             )}
                             {schedule && currentDaySchedule && (
                                 <ScrollArea className="h-[calc(100vh-22rem)]">
-                                    <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
-                                        <SortableContext items={currentDaySchedule.schedule.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                                            <div className="space-y-2 pr-4">
-                                                {currentDaySchedule.schedule.map((item, itemIndex) => (
-                                                    <SortableItem 
-                                                        key={item.id}
-                                                        id={item.id}
-                                                        item={item} 
-                                                        isEditing={isEditing}
-                                                        onUpdate={(time, task) => updateItem(itemIndex, time, task)}
-                                                        onRemove={() => removeItem(itemIndex)}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </SortableContext>
+                                     <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+                                        <DailyScheduleView 
+                                            items={currentDaySchedule.schedule}
+                                            isEditing={isEditing}
+                                            onUpdateItem={updateItem}
+                                            onRemoveItem={removeItem}
+                                        />
                                     </DndContext>
                                 </ScrollArea>
                             )}
@@ -333,7 +368,3 @@ export default function PlannerPage() {
         </div>
     );
 }
-
-    
-
-    
