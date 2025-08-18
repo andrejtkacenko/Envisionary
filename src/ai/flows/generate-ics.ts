@@ -27,17 +27,17 @@ const DailyScheduleSchema = z.object({
   schedule: z.array(ScheduledItemSchema),
 });
 
-export const GenerateIcsInputSchema = z.object({
+const GenerateIcsInputSchema = z.object({
   schedule: DailyScheduleSchema,
   date: z.string().describe("The date for the schedule in ISO format (e.g., YYYY-MM-DDTHH:mm:ss.sssZ)."),
 });
-export type GenerateIcsInput = z.infer<typeof GenerateIcsInputSchema>;
+type GenerateIcsInput = z.infer<typeof GenerateIcsInputSchema>;
 
 
-export const GenerateIcsOutputSchema = z.object({
+const GenerateIcsOutputSchema = z.object({
     icsString: z.string().describe("The calendar event data as an .ics formatted string."),
 });
-export type GenerateIcsOutput = z.infer<typeof GenerateIcsOutputSchema>;
+type GenerateIcsOutput = z.infer<typeof GenerateIcsOutputSchema>;
 
 function parseTime(timeStr: string, referenceDate: Date): { start: Date, end: Date } | null {
     const timeParts = timeStr.split(' - ');
@@ -109,3 +109,4 @@ ai.defineFlow(
   },
   generateIcs
 );
+

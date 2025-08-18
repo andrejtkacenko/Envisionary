@@ -36,6 +36,12 @@ const formSchema = z.object({
   prompt: z.string().min(1, 'Please enter a prompt for your day.'),
 });
 
+// We define the types here because they are no longer exported from the flow
+type GenerateIcsInput = {
+    schedule: DailySchedule;
+    date: string;
+};
+
 export function DayScheduleDialog({ isOpen, onOpenChange, date }: DayScheduleDialogProps) {
   const [schedule, setSchedule] = useState<DailySchedule | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,7 +87,9 @@ export function DayScheduleDialog({ isOpen, onOpenChange, date }: DayScheduleDia
     setIsDownloading(true);
 
     try {
-        const { icsString } = await generateIcs({ schedule, date: date.toISOString() });
+        const icsInput: GenerateIcsInput = { schedule, date: date.toISOString() };
+        const { icsString } = await generateIcs(icsInput);
+
         if (!icsString) {
             throw new Error("Failed to generate .ics data.");
         }
