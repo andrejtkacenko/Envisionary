@@ -24,6 +24,7 @@ import {
   DragStartEvent,
   DragOverEvent,
   DragOverlay,
+  rectIntersection,
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove } from '@dnd-kit/sortable';
 import { KanbanCard } from '@/components/kanban-card';
@@ -163,44 +164,48 @@ export default function Home() {
     const activeId = active.id as string;
     const overId = over.id as string;
   
-    // Determine if we're dragging over a column or another goal
-    const overIsColumn = over.data.current?.type === 'Column';
-    
-    // Handle dropping on a column
-    if (overIsColumn) {
-      const activeGoalStatus = active.data.current?.goal.status;
-      if (activeGoalStatus !== overId) {
-        setGoals(currentGoals => {
-            const activeIndex = currentGoals.findIndex(g => g.id === activeId);
-            if (activeIndex === -1) return currentGoals;
-            currentGoals[activeIndex].status = overId as GoalStatus;
-            return arrayMove(currentGoals, activeIndex, activeIndex);
-        });
-      }
-      return;
-    }
+    const isActiveAGoal = active.data.current?.type === 'Goal';
+    const isOverAColumn = over.data.current?.type === 'Column';
 
-    // Handle dropping on another goal
-    const overGoal = over.data.current?.goal;
-    if (overGoal) {
+    // Handle dropping a Goal over a Column
+    if (isActiveAGoal && isOverAColumn) {
         const activeGoalStatus = active.data.current?.goal.status;
-        const overGoalStatus = overGoal.status;
-
-        if (activeGoalStatus === overGoalStatus) {
-             setGoals(currentGoals => {
-                const oldIndex = currentGoals.findIndex(g => g.id === activeId);
-                const newIndex = currentGoals.findIndex(g => g.id === overId);
-                if (oldIndex === -1 || newIndex === -1) return currentGoals;
-                return arrayMove(currentGoals, oldIndex, newIndex);
+        const overColumnId = overId as GoalStatus;
+        if (activeGoalStatus !== overColumnId) {
+            setGoals(currentGoals => {
+                const activeIndex = currentGoals.findIndex(g => g.id === activeId);
+                if (activeIndex !== -1) {
+                    currentGoals[activeIndex].status = overColumnId;
+                    return arrayMove(currentGoals, activeIndex, activeIndex);
+                }
+                return currentGoals;
             });
+        }
+    }
+    
+    const isOverAGoal = over.data.current?.type === 'Goal';
+
+    // Handle dropping a Goal over another Goal (sorting)
+    if (isActiveAGoal && isOverAGoal) {
+        const activeGoalStatus = active.data.current?.goal.status;
+        const overGoalStatus = over.data.current?.goal.status;
+        
+        if (activeGoalStatus === overGoalStatus) {
+            const oldIndex = goals.findIndex(g => g.id === activeId);
+            const newIndex = goals.findIndex(g => g.id === overId);
+            if (oldIndex !== newIndex) {
+                 setGoals(currentGoals => arrayMove(currentGoals, oldIndex, newIndex));
+            }
         } else {
+             // Handle moving to a different column by dropping on a card
              setGoals(currentGoals => {
                 const activeIndex = currentGoals.findIndex(g => g.id === activeId);
-                let overIndex = currentGoals.findIndex(g => g.id === overId);
-                if (activeIndex === -1 || overIndex === -1) return currentGoals;
-                
-                currentGoals[activeIndex].status = overGoalStatus as GoalStatus;
-                return arrayMove(currentGoals, activeIndex, overIndex);
+                let newIndex = currentGoals.findIndex(g => g.id === overId);
+                if (activeIndex !== -1) {
+                    currentGoals[activeIndex].status = overGoalStatus;
+                    return arrayMove(currentGoals, activeIndex, newIndex);
+                }
+                return currentGoals;
             });
         }
     }
@@ -213,7 +218,7 @@ export default function Home() {
 
     const activeGoalId = active.id as string;
     const updatedGoal = goals.find(g => g.id === activeGoalId);
-
+    
     // Find the original state of the goal before drag started
     const originalGoal = goalsMap[activeGoalId];
 
@@ -251,11 +256,11 @@ export default function Home() {
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
-      collisionDetection={closestCenter}
+      collisionDetection={rectIntersection}
     >
         <div className="flex flex-col h-screen">
             <AppHeader allGoals={goals} />
-            <main className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-6">
+            <main className="flex-1 p-4 md:p-6 overflow-x-auto">
                 {isLoading ? (
                 <div className="flex w-full items-center justify-center py-24">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
