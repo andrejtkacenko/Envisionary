@@ -561,7 +561,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                             </DeleteGoalAlert>
                              <Button variant="outline" onClick={handleShare} disabled={isSharing}>
                                 {isSharing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
-                                Share
+                                {isSharing ? 'Sharing...' : 'Share'}
                             </Button>
                         </div>
                         <Button onClick={() => setIsEditing(true)}>

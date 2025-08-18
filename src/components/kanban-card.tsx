@@ -121,65 +121,42 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
         onGoalUpdate={onGoalUpdate}
         onGoalDelete={onGoalDelete}
         trigger={
-            <Card className="hover:shadow-lg transition-shadow duration-200 flex flex-col cursor-pointer">
+            <Card className="hover:shadow-md transition-shadow duration-200 flex flex-col cursor-pointer bg-card/50 backdrop-blur-sm">
                 <CardHeader className="p-4 pb-2">
                     <div className="flex items-start justify-between">
-                    <Badge variant="secondary">{goal.project}</Badge>
+                        <Badge variant="secondary">{goal.project}</Badge>
+                        <div className="flex items-center" title={priorityTooltips[goal.priority]}>
+                            {priorityIcons[goal.priority]}
+                        </div>
                     </div>
                     <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 pt-0 flex-grow">
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                            {goal.dueDate && (
-                                <div className="flex items-center gap-1">
-                                <CalendarIcon className="h-4 w-4" />
-                                <span>{format(goal.dueDate, "MMM d")}</span>
-                                </div>
-                            )}
-                            {goal.estimatedTime && (
-                                <Badge variant="outline" className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{goal.estimatedTime}</span>
-                                </Badge>
-                            )}
-                        </div>
-                    <div className="flex items-center" title={priorityTooltips[goal.priority]}>
-                        {priorityIcons[goal.priority]}
+                <CardContent className="p-4 pt-0 flex-grow space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {goal.dueDate && (
+                            <div className="flex items-center gap-1">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>{format(goal.dueDate, "MMM d")}</span>
+                            </div>
+                        )}
+                        {goal.estimatedTime && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>{goal.estimatedTime}</span>
+                            </Badge>
+                        )}
                     </div>
-                    </div>
+                    
                     {totalSubGoals > 0 && (
-                        <div className="mt-3">
+                        <div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                                <span>Sub-Goals</span>
+                                <span>Progress</span>
                                 <span>{completedSubGoals}/{totalSubGoals}</span>
                             </div>
                             <Progress value={progress} className="h-2" />
                         </div>
                     )}
                 </CardContent>
-            {goal.subGoals && goal.subGoals.length > 0 && (
-                <Collapsible open={isSubtasksOpen} onOpenChange={setIsSubtasksOpen} className="border-t mt-auto">
-                    <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="flex justify-between items-center w-full p-3 text-sm font-medium text-muted-foreground hover:bg-muted/50">
-                            <span>{isSubtasksOpen ? "Hide Sub-goals" : `Show ${totalSubGoals} Sub-goals`}</span>
-                            <ChevronDown className={cn("h-4 w-4 transition-transform", isSubtasksOpen && "rotate-180")} />
-                        </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="px-4 pb-4 space-y-2" onClick={(e) => e.stopPropagation()}>
-                        {goal.subGoals.map(sg => (
-                            <div key={sg.id} className="flex items-center gap-2 group">
-                                <Checkbox 
-                                    id={`card-${sg.id}`}
-                                    checked={sg.status === 'done'}
-                                    onCheckedChange={(checked) => handleSubGoalChange(sg.id, !!checked)}
-                                />
-                                <label htmlFor={`card-${sg.id}`} className={cn("text-sm flex-grow", sg.status === 'done' && 'line-through text-muted-foreground')}>{sg.title}</label>
-                            </div>
-                        ))}
-                    </CollapsibleContent>
-                </Collapsible>
-            )}
             </Card>
         }
         />

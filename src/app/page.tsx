@@ -9,7 +9,10 @@ import { KanbanBoard } from '@/components/kanban-board';
 import { KANBAN_COLUMNS } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { getGoals, addGoal, addGoals, updateGoal, deleteGoal } from '@/lib/goals-service';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Target, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+
 import {
   DndContext,
   closestCenter,
@@ -196,6 +199,19 @@ export default function Home() {
             <div className="flex h-full w-full items-center justify-center py-24">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+            ) : goals.length === 0 ? (
+                 <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] gap-4 text-center">
+                    <Target className="h-16 w-16 text-muted-foreground" />
+                    <h2 className="text-2xl font-semibold">Your Board is Empty</h2>
+                    <p className="text-muted-foreground max-w-sm">
+                        Create your first goal to get started on your journey to productivity.
+                    </p>
+                    <Button asChild>
+                        <Link href="/create-goal">
+                            <Plus className="mr-2 h-4 w-4" /> Create New Goal
+                        </Link>
+                    </Button>
+                </div>
             ) : (
             <KanbanBoard 
                 columns={columns} 

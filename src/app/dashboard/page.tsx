@@ -140,156 +140,173 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Goals</CardTitle>
-            <Target className="h-4 w-4 text-primary-foreground/70" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalGoals}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-green-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-white/70" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedGoals}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-yellow-500 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Goals</CardTitle>
-            <Clock className="h-4 w-4 text-white/70" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeGoals}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-sky-500 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Level</CardTitle>
-            <Star className="h-4 w-4 text-white/70" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-white/70">0 Points</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle>Progress by Category</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-              <PieChart>
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Pie
-                  data={categoryData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={80}
-                  strokeWidth={5}
-                >
-                 {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <ChartLegend
-                  content={<ChartLegendContent nameKey="name" />}
-                />
-              </PieChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Recent Achievements</CardTitle>
-          </CardHeader>
-          <CardContent>
-             <div className="text-center text-muted-foreground py-12">
-                <Award className="mx-auto h-12 w-12" />
-                <p className="mt-4">No achievements yet. Complete your first goal to earn a badge!</p>
-             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-         <Card className="lg:col-span-4">
-          <CardHeader className="flex flex-row items-center">
-            <div className="grid gap-2">
-                <CardTitle>Recent Goals</CardTitle>
-                <CardDescription>
-                    An overview of your most recent goals.
-                </CardDescription>
-            </div>
-            <Button asChild size="sm" className="ml-auto gap-1">
-                <Link href="/">
-                    View All
-                    <ChevronRight className="h-4 w-4" />
+      
+      {goals.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-15rem)] gap-4 text-center border bg-card rounded-lg">
+            <Target className="h-16 w-16 text-muted-foreground" />
+            <h2 className="text-2xl font-semibold">Your Dashboard is Waiting</h2>
+            <p className="text-muted-foreground max-w-sm">
+                Create your first goal to see your progress and insights here.
+            </p>
+            <Button asChild>
+                <Link href="/create-goal">
+                    <Plus className="mr-2 h-4 w-4" /> Create New Goal
                 </Link>
             </Button>
-          </CardHeader>
-          <CardContent>
-            {goals.length > 0 ? (
-                <div className="space-y-6">
-                {recentGoals.map((goal: Goal) => {
-                    const completedSub = goal.subGoals?.filter(sg => sg.status === 'done').length || 0
-                    const totalSub = goal.subGoals?.length || 0
-                    const progress = totalSub > 0 ? (completedSub / totalSub) * 100 : (goal.status === 'done' ? 100 : goal.status === 'inprogress' ? 50 : 0)
-                    
-                    return (
-                    <div key={goal.id}>
-                        <div className="flex items-center justify-between">
-                        <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
-                        <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{goal.project}</p>
-                        <Progress value={progress} className="h-2 mt-2" />
-                    </div>
-                    )
-                })}
-                </div>
-            ) : (
-                <div className="text-center text-muted-foreground py-12">
-                     <Target className="mx-auto h-12 w-12" />
-                     <p className="mt-4">No goals yet. Create one to get started!</p>
-                </div>
-            )}
-          </CardContent>
-        </Card>
+        </div>
+      ) : (
+      <>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="bg-primary text-primary-foreground">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Goals</CardTitle>
+                <Target className="h-4 w-4 text-primary-foreground/70" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{totalGoals}</div>
+            </CardContent>
+            </Card>
+            <Card className="bg-green-600 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                <CheckCircle className="h-4 w-4 text-white/70" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{completedGoals}</div>
+            </CardContent>
+            </Card>
+            <Card className="bg-yellow-500 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Goals</CardTitle>
+                <Clock className="h-4 w-4 text-white/70" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{activeGoals}</div>
+            </CardContent>
+            </Card>
+            <Card className="bg-sky-500 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Level</CardTitle>
+                <Star className="h-4 w-4 text-white/70" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">1</div>
+                <p className="text-xs text-white/70">0 Points</p>
+            </CardContent>
+            </Card>
+        </div>
 
-         <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>AI Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-             {isInsightsLoading ? (
-                 <div className="text-center text-muted-foreground py-12">
-                    <Loader2 className="mx-auto h-12 w-12 animate-spin" />
-                    <p className="mt-4">AI is analyzing your progress...</p>
-                 </div>
-             ) : insights ? (
-                <p className="text-sm whitespace-pre-wrap">{insights.summary}</p>
-             ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="lg:col-span-4">
+            <CardHeader>
+                <CardTitle>Progress by Category</CardTitle>
+            </CardHeader>
+            <CardContent className="pl-2">
+                <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                <PieChart>
+                    <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                    data={categoryData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={80}
+                    strokeWidth={5}
+                    >
+                    {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                    </Pie>
+                    <ChartLegend
+                    content={<ChartLegendContent nameKey="name" />}
+                    />
+                </PieChart>
+                </ChartContainer>
+            </CardContent>
+            </Card>
+            <Card className="lg:col-span-3">
+            <CardHeader>
+                <CardTitle>Recent Achievements</CardTitle>
+            </CardHeader>
+            <CardContent>
                 <div className="text-center text-muted-foreground py-12">
-                    <Zap className="mx-auto h-12 w-12" />
-                    <p className="mt-4">No insights generated yet. Click the button above to get personalized AI insights!</p>
+                    <Award className="mx-auto h-12 w-12" />
+                    <p className="mt-4">No achievements yet. Complete your first goal to earn a badge!</p>
                 </div>
-             )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+            </Card>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="lg:col-span-4">
+            <CardHeader className="flex flex-row items-center">
+                <div className="grid gap-2">
+                    <CardTitle>Recent Goals</CardTitle>
+                    <CardDescription>
+                        An overview of your most recent goals.
+                    </CardDescription>
+                </div>
+                <Button asChild size="sm" className="ml-auto gap-1">
+                    <Link href="/">
+                        View All
+                        <ChevronRight className="h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardHeader>
+            <CardContent>
+                {goals.length > 0 ? (
+                    <div className="space-y-6">
+                    {recentGoals.map((goal: Goal) => {
+                        const completedSub = goal.subGoals?.filter(sg => sg.status === 'done').length || 0
+                        const totalSub = goal.subGoals?.length || 0
+                        const progress = totalSub > 0 ? (completedSub / totalSub) * 100 : (goal.status === 'done' ? 100 : goal.status === 'inprogress' ? 50 : 0)
+                        
+                        return (
+                        <div key={goal.id}>
+                            <div className="flex items-center justify-between">
+                            <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
+                            <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{goal.project}</p>
+                            <Progress value={progress} className="h-2 mt-2" />
+                        </div>
+                        )
+                    })}
+                    </div>
+                ) : (
+                    <div className="text-center text-muted-foreground py-12">
+                        <Target className="mx-auto h-12 w-12" />
+                        <p className="mt-4">No goals yet. Create one to get started!</p>
+                    </div>
+                )}
+            </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-3">
+            <CardHeader>
+                <CardTitle>AI Insights</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isInsightsLoading ? (
+                    <div className="text-center text-muted-foreground py-12">
+                        <Loader2 className="mx-auto h-12 w-12 animate-spin" />
+                        <p className="mt-4">AI is analyzing your progress...</p>
+                    </div>
+                ) : insights ? (
+                    <p className="text-sm whitespace-pre-wrap">{insights.summary}</p>
+                ) : (
+                    <div className="text-center text-muted-foreground py-12">
+                        <Zap className="mx-auto h-12 w-12" />
+                        <p className="mt-4">No insights generated yet. Click the button above to get personalized AI insights!</p>
+                    </div>
+                )}
+            </CardContent>
+            </Card>
+        </div>
+      </>
+      )}
     </div>
   );
 }
