@@ -37,8 +37,9 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface KanbanCardProps {
   goal: Goal;
-  onGoalUpdate: (goal: Goal) => void;
-  onGoalDelete: (goalId: string) => void;
+  isOverlay?: boolean;
+  onGoalUpdate?: (goal: Goal) => void;
+  onGoalDelete?: (goalId: string) => void;
 }
 
 const priorityIcons: Record<GoalPriority, React.ReactNode> = {
@@ -53,7 +54,7 @@ const priorityTooltips: Record<GoalPriority, string> = {
   low: 'Low Priority'
 }
 
-export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps) {
+export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: KanbanCardProps) {
   const [isSubtasksOpen, setIsSubtasksOpen] = useState(false);
   
   const {
@@ -68,7 +69,8 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
     data: {
       type: 'Goal',
       goal,
-    }
+    },
+    disabled: !onGoalUpdate, // Disable sorting if no update function is passed
   });
 
   const style = {
@@ -76,14 +78,13 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
     transform: CSS.Transform.toString(transform),
   };
 
-
   const handleSubGoalChange = (subGoalId: string, checked: boolean) => {
       const updatedSubGoals = goal.subGoals?.map(sg => 
           sg.id === subGoalId ? { ...sg, status: checked ? 'done' : 'todo' } : sg
       );
       const updatedParentGoal = { ...goal, subGoals: updatedSubGoals };
       
-      onGoalUpdate(updatedParentGoal);
+      onGoalUpdate?.(updatedParentGoal);
   };
   
   const handleAddSubGoals = (newSubGoals: SubGoal[]) => {
@@ -97,69 +98,75 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
         dueDate: goal.dueDate,
         estimatedTime: sg.estimatedTime,
       }));
-      onGoalUpdate({...goal, subGoals: [...(goal.subGoals || []), ...newGoals]});
+      onGoalUpdate?.({...goal, subGoals: [...(goal.subGoals || []), ...newGoals]});
   }
 
   const completedSubGoals = goal.subGoals?.filter(sg => sg.status === 'done').length || 0;
   const totalSubGoals = goal.subGoals?.length || 0;
   const progress = totalSubGoals > 0 ? (completedSubGoals / totalSubGoals) * 100 : 0;
   
-  if (isDragging) {
-    return (
-        <div
-          ref={setNodeRef}
-          style={style}
-          className="bg-primary/20 border-2 border-primary rounded-lg h-32 w-full"
-        />
-    )
+  const cardContent = (
+    <Card 
+        className={cn(
+            "hover:shadow-md transition-shadow duration-200 flex flex-col bg-card/50 backdrop-blur-sm w-full sm:w-80",
+            isDragging && "opacity-30",
+            isOverlay && "shadow-lg scale-105"
+        )}
+    >
+        <CardHeader className="p-4 pb-2">
+            <div className="flex items-start justify-between">
+                <Badge variant="secondary">{goal.project}</Badge>
+                <div className="flex items-center" title={priorityTooltips[goal.priority]}>
+                    {priorityIcons[goal.priority]}
+                </div>
+            </div>
+            <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 flex-grow space-y-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {goal.dueDate && (
+                    <div className="flex items-center gap-1">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>{format(goal.dueDate, "MMM d")}</span>
+                    </div>
+                )}
+                {goal.estimatedTime && (
+                    <Badge variant="outline" className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{goal.estimatedTime}</span>
+                    </Badge>
+                )}
+            </div>
+            
+            {totalSubGoals > 0 && (
+                <div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                        <span>Progress</span>
+                        <span>{completedSubGoals}/{totalSubGoals}</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                </div>
+            )}
+        </CardContent>
+    </Card>
+  );
+
+  if (isOverlay) {
+    return cardContent;
   }
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-        <EditGoalDialog
-        goal={goal}
-        onGoalUpdate={onGoalUpdate}
-        onGoalDelete={onGoalDelete}
-        trigger={
-            <Card className="hover:shadow-md transition-shadow duration-200 flex flex-col cursor-pointer bg-card/50 backdrop-blur-sm">
-                <CardHeader className="p-4 pb-2">
-                    <div className="flex items-start justify-between">
-                        <Badge variant="secondary">{goal.project}</Badge>
-                        <div className="flex items-center" title={priorityTooltips[goal.priority]}>
-                            {priorityIcons[goal.priority]}
-                        </div>
-                    </div>
-                    <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 flex-grow space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {goal.dueDate && (
-                            <div className="flex items-center gap-1">
-                            <CalendarIcon className="h-4 w-4" />
-                            <span>{format(goal.dueDate, "MMM d")}</span>
-                            </div>
-                        )}
-                        {goal.estimatedTime && (
-                            <Badge variant="outline" className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{goal.estimatedTime}</span>
-                            </Badge>
-                        )}
-                    </div>
-                    
-                    {totalSubGoals > 0 && (
-                        <div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                                <span>Progress</span>
-                                <span>{completedSubGoals}/{totalSubGoals}</span>
-                            </div>
-                            <Progress value={progress} className="h-2" />
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        }
-        />
+        {onGoalUpdate && onGoalDelete ? (
+            <EditGoalDialog
+                goal={goal}
+                onGoalUpdate={onGoalUpdate}
+                onGoalDelete={onGoalDelete}
+                trigger={cardContent}
+            />
+        ) : (
+            cardContent
+        )}
     </div>
   );
 }
