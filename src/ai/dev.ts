@@ -10,5 +10,6 @@ import '@/ai/flows/recommend-goals.ts';
 import '@/ai/flows/generate-schedule.ts';
 import '@/ai/flows/generate-ics.ts';
 import '@/ai/flows/generate-schedule-template.ts';
+import '@/ai/tools/goal-tools.ts';
 
 
