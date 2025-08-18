@@ -1,32 +1,36 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Sparkles, Calendar, Edit, Save, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Sparkles, Calendar, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { generateSchedule, type GenerateScheduleInput, type GenerateScheduleOutput } from '@/ai/flows/generate-schedule';
-import { saveSchedule, getSchedule, type WeeklySchedule, type ScheduledItem } from '@/lib/goals-service';
+import { saveSchedule, getSchedule, getGoals, type WeeklySchedule, type ScheduledItem, type Goal, type DailyGoalTask } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { GoalSelectorPopover } from '@/components/goal-selector-popover';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const GenerateScheduleInputSchema = z.object({
     dailyGoals: z.array(z.object({
         day: z.string(),
-        tasks: z.string(),
+        tasks: z.array(z.object({
+            id: z.string(),
+            title: z.string(),
+            estimatedTime: z.string().optional(),
+        })),
     })),
     timeConstraints: z.string().optional(),
     priorities: z.string().optional(),
@@ -40,14 +44,20 @@ const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: Scheduled
         transform: CSS.Transform.toString(transform),
         transition,
     };
+    
+    // We need to stop propagation on blur events to prevent the drag-and-drop context from interfering.
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>, field: 'time' | 'task') => {
+        e.stopPropagation();
+        onUpdate(field === 'time' ? e.target.value : item.time, field === 'task' ? e.target.value : item.task);
+    };
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md touch-none">
             {isEditing ? (
                 <>
-                    <Input defaultValue={item.time} onBlur={(e) => onUpdate(e.target.value, item.task)} className="h-8 text-xs" />
-                    <Input defaultValue={item.task} onBlur={(e) => onUpdate(item.time, e.target.value)} className="h-8 text-xs" />
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onRemove}><X className="h-4 w-4" /></Button>
+                    <Textarea defaultValue={item.time} onBlur={(e) => handleBlur(e, 'time')} className="h-8 text-xs w-28 resize-none" rows={1} />
+                    <Textarea defaultValue={item.task} onBlur={(e) => handleBlur(e, 'task')} className="h-8 text-xs flex-grow resize-none" rows={1} />
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); onRemove();}}><X className="h-4 w-4" /></Button>
                 </>
             ) : (
                 <>
@@ -96,29 +106,35 @@ export default function PlannerPage() {
     const { user } = useAuth();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const [isDataLoading, setIsDataLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [schedule, setSchedule] = useState<GenerateScheduleOutput | null>(null);
+    const [goals, setGoals] = useState<Goal[]>([]);
     const [currentDayIndex, setCurrentDayIndex] = useState(new Date().getDay() - 1); 
 
     const form = useForm<GenerateScheduleInput>({
         resolver: zodResolver(GenerateScheduleInputSchema),
         defaultValues: {
-            dailyGoals: daysOfWeek.map(day => ({ day, tasks: "" })),
+            dailyGoals: daysOfWeek.map(day => ({ day, tasks: [] })),
             timeConstraints: "Work from 9 AM to 5 PM on weekdays.",
             priorities: "Focus on completing work tasks, but also make time for exercise and relaxation."
         }
     });
 
-    const { fields } = useFieldArray({ control: form.control, name: "dailyGoals" });
+    const { fields, update, replace } = useFieldArray({ control: form.control, name: "dailyGoals" });
 
     useEffect(() => {
         if (user) {
-            setIsLoading(true);
-            getSchedule(user.uid).then(savedSchedule => {
+            setIsDataLoading(true);
+            Promise.all([
+                getSchedule(user.uid),
+                getGoals(user.uid)
+            ]).then(([savedSchedule, userGoals]) => {
                 if (savedSchedule) {
                     setSchedule({ weeklySchedule: savedSchedule.scheduleData });
                 }
-            }).finally(() => setIsLoading(false));
+                setGoals(userGoals);
+            }).finally(() => setIsDataLoading(false));
         }
     }, [user]);
 
@@ -206,6 +222,20 @@ export default function PlannerPage() {
             return newSchedule;
         });
     };
+    
+    const handleGoalSelect = (dayIndex: number, goal: Goal) => {
+        const tasks: DailyGoalTask[] = goal.subGoals && goal.subGoals.length > 0
+            ? goal.subGoals.map(sg => ({ id: sg.id, title: `${goal.title}: ${sg.title}`, estimatedTime: sg.estimatedTime }))
+            : [{ id: goal.id, title: goal.title, estimatedTime: goal.estimatedTime }];
+        
+        const currentTasks = form.getValues(`dailyGoals.${dayIndex}.tasks`);
+        update(dayIndex, { day: daysOfWeek[dayIndex], tasks: [...currentTasks, ...tasks] });
+    };
+
+    const handleTaskRemove = (dayIndex: number, taskId: string) => {
+        const currentTasks = form.getValues(`dailyGoals.${dayIndex}.tasks`);
+        update(dayIndex, { day: daysOfWeek[dayIndex], tasks: currentTasks.filter(t => t.id !== taskId) });
+    };
 
     const goToPreviousDay = () => {
         setCurrentDayIndex(prev => (prev > 0 ? prev - 1 : daysOfWeek.length - 1));
@@ -225,7 +255,7 @@ export default function PlannerPage() {
                         <Calendar /> AI Weekly Planner
                     </h1>
                     <p className="text-muted-foreground">
-                        Define your weekly goals and let AI create an optimized schedule for you.
+                        Select goals for each day and let AI create an optimized schedule for you.
                     </p>
                 </div>
                 {schedule && (
@@ -254,9 +284,14 @@ export default function PlannerPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Define Your Week</CardTitle>
-                            <CardDescription>Enter tasks, priorities, and constraints.</CardDescription>
+                            <CardDescription>Select goals, set priorities and constraints.</CardDescription>
                         </CardHeader>
                         <CardContent>
+                             {isDataLoading ? (
+                                <div className="flex items-center justify-center h-64">
+                                    <Loader2 className="h-8 w-8 animate-spin" />
+                                </div>
+                            ) : (
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                                     <FormField
@@ -287,23 +322,32 @@ export default function PlannerPage() {
                                     />
                                     <div>
                                         <FormLabel>Daily Goals</FormLabel>
-                                        <div className="space-y-4 mt-2">
-                                            {fields.map((field, index) => (
-                                                <FormField
-                                                    key={field.id}
-                                                    control={form.control}
-                                                    name={`dailyGoals.${index}.tasks`}
-                                                    render={({ field: fieldProps }) => (
-                                                        <FormItem>
-                                                            <FormLabel className="font-normal">{daysOfWeek[index]}</FormLabel>
-                                                            <FormControl>
-                                                                <Input placeholder="e.g., Workout, finish report" {...fieldProps} />
-                                                            </FormControl>
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            ))}
-                                        </div>
+                                        <ScrollArea className="h-80 w-full mt-2">
+                                            <div className="space-y-4 pr-4">
+                                                {fields.map((field, index) => (
+                                                    <div key={field.id} className="space-y-2 rounded-lg border p-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <h4 className="font-medium">{daysOfWeek[index]}</h4>
+                                                             <GoalSelectorPopover goals={goals} onGoalSelect={(goal) => handleGoalSelect(index, goal)} />
+                                                        </div>
+                                                        {field.tasks.length > 0 ? (
+                                                            <div className="space-y-1">
+                                                                {field.tasks.map(task => (
+                                                                    <div key={task.id} className="flex items-center justify-between text-sm p-1.5 bg-muted/50 rounded-md">
+                                                                        <span className="truncate pr-2">{task.title}</span>
+                                                                        <Button variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0" onClick={() => handleTaskRemove(index, task.id)}>
+                                                                            <Trash2 className="h-3 w-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-xs text-muted-foreground text-center py-2">No goals selected.</p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
                                     </div>
                                     <Button type="submit" className="w-full" disabled={isLoading}>
                                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
@@ -311,6 +355,7 @@ export default function PlannerPage() {
                                     </Button>
                                 </form>
                             </Form>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -339,13 +384,20 @@ export default function PlannerPage() {
                             {isLoading && !schedule && (
                                 <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
                                     <Loader2 className="h-8 w-8 animate-spin" />
-                                    <p>Loading your schedule...</p>
+                                    <p>Generating your schedule...</p>
                                 </div>
                             )}
-                            {!isLoading && !schedule && (
+                            {isDataLoading && !schedule && !isLoading && (
                                 <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
-                                    <Calendar className="h-12 w-12" />
+                                    <Loader2 className="h-8 w-8 animate-spin" />
+                                    <p>Loading your data...</p>
+                                </div>
+                            )}
+                            {!isDataLoading && !isLoading && !schedule && (
+                                <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
+                                    <ListTodo className="h-12 w-12" />
                                     <p>Your schedule will appear here once generated.</p>
+                                    <p className="text-xs">Select some goals on the left to start.</p>
                                 </div>
                             )}
                             {schedule && currentDaySchedule && (
@@ -367,7 +419,3 @@ export default function PlannerPage() {
         </div>
     );
 }
-
-    
-
-    

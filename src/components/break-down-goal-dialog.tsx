@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Sparkles, Wand2, Plus, X, Clock } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Plus, X, Clock, ListX } from "lucide-react";
 import { breakDownGoal, BreakDownGoalOutput } from "@/ai/flows/break-down-goal";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ interface BreakDownGoalDialogProps {
   onSubGoalsAdd: (subGoals: SubGoal[]) => void;
 }
 
-export type SubGoal = BreakDownGoalOutput["subGoals"][0];
+export type SubGoal = BreakDownGoalOutput["subGoals"][0] & { estimatedTime?: string };
 
 export function BreakDownGoalDialog({ goal, children, onSubGoalsAdd }: BreakDownGoalDialogProps) {
   const [open, setOpen] = useState(false);
@@ -99,7 +99,7 @@ export function BreakDownGoalDialog({ goal, children, onSubGoalsAdd }: BreakDown
             Add Sub-goals
           </DialogTitle>
           <DialogDescription>
-            Use AI to break down your goal &quot;{goal.title}&quot; or add sub-goals manually.
+            Use AI to break down your goal &quot;{goal.title}&quot; or add sub-goals manually. This will create an execution plan.
           </DialogDescription>
         </DialogHeader>
 
@@ -133,19 +133,19 @@ export function BreakDownGoalDialog({ goal, children, onSubGoalsAdd }: BreakDown
 
             <Button onClick={handleGenerate} disabled={isLoading} className="w-full">
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                Generate with AI
+                Generate Plan with AI
             </Button>
             
             {isLoading && (
                 <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground py-8">
                     <Loader2 className="h-8 w-8 animate-spin" />
-                    <p>AI is working its magic...</p>
+                    <p>AI is building your plan...</p>
                 </div>
             )}
             {subGoals.length > 0 && (
                  <ScrollArea className="h-60 mt-4">
                     <div className="space-y-2 pr-4">
-                        <h4 className="text-sm font-medium text-muted-foreground">Sub-goal List</h4>
+                        <h4 className="text-sm font-medium text-muted-foreground">Execution Plan</h4>
                         {subGoals.map((sg, i) => (
                             <Card key={i}>
                                 <CardContent className="p-3 flex items-start justify-between gap-4">
@@ -171,8 +171,9 @@ export function BreakDownGoalDialog({ goal, children, onSubGoalsAdd }: BreakDown
         </div>
         
         {subGoals.length > 0 && (
-          <DialogFooter>
+          <DialogFooter className="sm:justify-between">
             <Button variant="ghost" onClick={() => setSubGoals([])}>
+                <ListX className="mr-2 h-4 w-4" />
                 Clear List
             </Button>
             <Button onClick={handleAddSubGoals}>

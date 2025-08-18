@@ -2,7 +2,7 @@
 "use client"
 
 import { useState } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, ChevronDown, Plus } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, ChevronDown, Plus, Clock } from "lucide-react";
 import { format } from "date-fns";
 
 import type { Goal, GoalPriority } from "@/types";
@@ -70,7 +70,8 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
         project: goal.project,
         status: 'todo',
         priority: goal.priority,
-        dueDate: goal.dueDate
+        dueDate: goal.dueDate,
+        estimatedTime: sg.estimatedTime,
       }));
       onGoalUpdate({...goal, subGoals: [...(goal.subGoals || []), ...newGoals]});
   }
@@ -94,12 +95,20 @@ export function KanbanCard({ goal, onGoalUpdate, onGoalDelete }: KanbanCardProps
             </CardHeader>
             <CardContent className="p-4 pt-0 flex-grow">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                {goal.dueDate && (
-                    <div className="flex items-center gap-1">
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>{format(goal.dueDate, "MMM d")}</span>
+                    <div className="flex items-center gap-2">
+                        {goal.dueDate && (
+                            <div className="flex items-center gap-1">
+                            <CalendarIcon className="h-4 w-4" />
+                            <span>{format(goal.dueDate, "MMM d")}</span>
+                            </div>
+                        )}
+                         {goal.estimatedTime && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>{goal.estimatedTime}</span>
+                            </Badge>
+                        )}
                     </div>
-                )}
                 <div className="flex items-center" title={priorityTooltips[goal.priority]}>
                     {priorityIcons[goal.priority]}
                 </div>

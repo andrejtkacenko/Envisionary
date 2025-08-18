@@ -52,6 +52,7 @@ const goalSchema = z.object({
   status: z.enum(["todo", "inprogress", "done"]),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
+  estimatedTime: z.string().optional(),
 });
 
 type GoalFormValues = z.infer<typeof goalSchema>;
@@ -75,6 +76,7 @@ export function GoalDialog({ goal, onSave, triggerButton }: GoalDialogProps) {
       status: goal?.status ?? "todo",
       priority: goal?.priority ?? "medium",
       dueDate: goal?.dueDate,
+      estimatedTime: goal?.estimatedTime ?? "",
     },
   });
 
@@ -184,45 +186,60 @@ export function GoalDialog({ goal, onSave, triggerButton }: GoalDialogProps) {
                 )}
               />
             </div>
-             <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Due Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Due Date</FormLabel>
+                        <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                                )}
+                            >
+                                {field.value ? (
+                                format(field.value, "PPP")
+                                ) : (
+                                <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))}
+                            initialFocus
+                            />
+                        </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="estimatedTime"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Estimated Time</FormLabel>
                         <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
+                            <Input placeholder="e.g. 2 hours" {...field} />
                         </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+            </div>
             <DialogFooter>
               <Button type="submit">Save Goal</Button>
             </DialogFooter>

@@ -24,12 +24,15 @@ const prompt = ai.definePrompt({
   output: {schema: z.custom<GenerateScheduleOutput>()},
   prompt: `You are a productivity expert who specializes in creating optimized weekly schedules. Your task is to generate a detailed, hour-by-hour schedule for a user from Monday to Sunday based on their inputs.
 
-Analyze the user's daily goals, time constraints, and overall priorities. Create a balanced and realistic schedule.
+Analyze the user's daily goals, which may include estimated times, along with their time constraints and overall priorities. Create a balanced and realistic schedule.
 
 **Inputs:**
 - **Daily Goals:**
 {{#each dailyGoals}}
-  - {{day}}: {{tasks}}
+  - {{day}}:
+  {{#each tasks}}
+    - Task: "{{title}}"{{#if estimatedTime}} (Estimated Time: {{estimatedTime}}){{/if}}
+  {{/each}}
 {{/each}}
 - **Time Constraints:** {{{timeConstraints}}}
 - **Priorities:** {{{priorities}}}
@@ -37,7 +40,7 @@ Analyze the user's daily goals, time constraints, and overall priorities. Create
 **Instructions:**
 1.  Create a schedule for all 7 days of the week (Monday to Sunday).
 2.  For each day, provide a list of scheduled items with a unique ID, a specific time range (e.g., "08:00 AM - 09:00 AM"), the task, and a priority level.
-3.  Incorporate the daily goals into the schedule.
+3.  Incorporate the daily goals into the schedule, paying close attention to any provided time estimates to allocate the correct amount of time.
 4.  Respect all specified time constraints.
 5.  Align the schedule with the user's stated priorities.
 6.  Ensure the schedule is realistic and includes breaks (e.g., Lunch Break).

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, Share2, Loader2, ListX } from "lucide-react";
+import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, Share2, Loader2, ListX, Clock } from "lucide-react";
 import { format } from "date-fns";
 
 import type { Goal } from "@/types";
@@ -62,6 +62,7 @@ const goalSchema = z.object({
   status: z.enum(["todo", "inprogress", "done"]),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
+  estimatedTime: z.string().optional(),
 });
 
 type GoalFormValues = z.infer<typeof goalSchema>;
@@ -92,6 +93,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
         status: goal.status,
         priority: goal.priority,
         dueDate: goal.dueDate,
+        estimatedTime: goal.estimatedTime || "",
       });
       setSubGoals(goal.subGoals || []);
     } else {
@@ -109,6 +111,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
       status: goal.status,
       priority: goal.priority,
       dueDate: goal.dueDate,
+      estimatedTime: goal.estimatedTime || "",
     },
   });
 
@@ -134,7 +137,8 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
         project: form.getValues('project'), // Use current project from form
         status: 'todo',
         priority: form.getValues('priority'), // Use current priority from form
-        dueDate: form.getValues('dueDate') // Use current due date from form
+        dueDate: form.getValues('dueDate'), // Use current due date from form
+        estimatedTime: sg.estimatedTime,
       }));
 
     setSubGoals(prev => [...prev, ...newGoals]);
@@ -170,6 +174,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
       status: goal.status,
       priority: goal.priority,
       dueDate: goal.dueDate,
+      estimatedTime: goal.estimatedTime || ""
     });
     setSubGoals(goal.subGoals || []);
     setIsEditing(false);
@@ -198,8 +203,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
             subGoals: subGoals.map(sg => ({ 
                 title: sg.title,
                 description: sg.description || "",
-                // This is a placeholder, as the sub-goal doesn't have estimatedTime
-                estimatedTime: "not set" 
+                estimatedTime: sg.estimatedTime || "not set" 
             })),
             authorId: user.uid,
             authorName: user.displayName || user.email || "Anonymous",
@@ -328,45 +332,60 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                     )}
                     />
                 </div>
-                <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                        <FormLabel>Due Date</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                )}
-                                >
-                                {field.value ? (
-                                    format(field.value, "PPP")
-                                ) : (
-                                    <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))}
-                                initialFocus
-                            />
-                            </PopoverContent>
-                        </Popover>
-                        <FormMessage />
+                 <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                            <FormLabel>Due Date</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full pl-3 text-left font-normal",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                    >
+                                    {field.value ? (
+                                        format(field.value, "PPP")
+                                    ) : (
+                                        <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))}
+                                    initialFocus
+                                />
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                    <FormField
+                      control={form.control}
+                      name="estimatedTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estimated Time</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. 2 hours" {...field} />
+                          </FormControl>
+                          <FormMessage />
                         </FormItem>
-                    )}
+                      )}
                     />
+                </div>
                 </div>
                 
                 {/* Right Column: Sub-goals */}
@@ -381,7 +400,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                     </BreakDownGoalDialog>
                 </div>
 
-                <ScrollArea className="h-[500px] border rounded-md p-2">
+                <ScrollArea className="h-[430px] border rounded-md p-2">
                     {subGoals.length > 0 ? (
                         <div className="space-y-2">
                             {subGoals.map(sg => (
@@ -442,32 +461,48 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
                 {/* Left Column: Details */}
                 <div className="space-y-4">
-                    <div className="space-y-1">
-                        <h4 className="text-sm font-medium text-muted-foreground">Status</h4>
-                        <p className="text-base">{goal.status}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <h4 className="text-sm font-medium text-muted-foreground">Priority</h4>
-                        <p className="text-base">{goal.priority}</p>
-                    </div>
-                    {goal.dueDate && (
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <h4 className="text-sm font-medium text-muted-foreground">Due Date</h4>
-                            <p className="text-base">{format(goal.dueDate, "PPP")}</p>
+                            <h4 className="text-sm font-medium text-muted-foreground">Status</h4>
+                            <p className="text-base">{goal.status}</p>
                         </div>
-                    )}
+                        <div className="space-y-1">
+                            <h4 className="text-sm font-medium text-muted-foreground">Priority</h4>
+                            <p className="text-base">{goal.priority}</p>
+                        </div>
+                    </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        {goal.dueDate && (
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-medium text-muted-foreground">Due Date</h4>
+                                <p className="text-base">{format(goal.dueDate, "PPP")}</p>
+                            </div>
+                        )}
+                        {goal.estimatedTime && (
+                            <div className="space-y-1">
+                                <h4 className="text-sm font-medium text-muted-foreground">Estimated Time</h4>
+                                <p className="text-base">{goal.estimatedTime}</p>
+                            </div>
+                        )}
+                     </div>
                 </div>
                 {/* Right Column: Sub-goals */}
                 <div className="space-y-4">
-                     <h4 className="text-sm font-medium text-muted-foreground">Sub-goals</h4>
-                     <ScrollArea className="h-[500px] border rounded-md p-2">
+                     <h4 className="text-sm font-medium text-muted-foreground">Sub-goals / Plan</h4>
+                     <ScrollArea className="h-[430px] border rounded-md p-2">
                         {subGoals.length > 0 ? (
                             <div className="space-y-2">
                                 {subGoals.map(sg => (
                                     <Card key={sg.id}>
                                         <CardContent className="p-3">
                                             <p className="font-semibold text-sm">{sg.title}</p>
-                                            {sg.description && <p className="text-sm text-muted-foreground">{sg.description}</p>}
+                                            {sg.description && <p className="text-sm text-muted-foreground mb-2">{sg.description}</p>}
+                                            {sg.estimatedTime && (
+                                                 <Badge variant="outline" className="flex-shrink-0 w-fit">
+                                                    <Clock className="mr-1.5 h-3 w-3"/>
+                                                    {sg.estimatedTime}
+                                                </Badge>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 ))}
@@ -505,5 +540,3 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
     </Dialog>
   );
 }
-
-    
