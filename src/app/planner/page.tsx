@@ -33,8 +33,8 @@ const GenerateScheduleInputSchema = z.object({
 });
 
 
-const SortableItem = ({ id, item, isEditing, onUpdate, onRemove }: { id: string, item: ScheduledItem, isEditing: boolean, onUpdate: (time: string, task: string) => void, onRemove: () => void }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: ScheduledItem, isEditing: boolean, onUpdate: (time: string, task: string) => void, onRemove: () => void }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -79,7 +79,6 @@ const DailyScheduleView = React.memo(function DailyScheduleView({
                 {items.map((item, itemIndex) => (
                     <SortableItem 
                         key={item.id}
-                        id={item.id}
                         item={item} 
                         isEditing={isEditing}
                         onUpdate={(time, task) => onUpdateItem(itemIndex, time, task)}
