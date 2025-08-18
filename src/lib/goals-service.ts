@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
-import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc } from "firebase/firestore";
-import type { Goal, WeeklySchedule, GoalTemplate } from "@/types";
+import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy } from "firebase/firestore";
+import type { Goal, WeeklySchedule, GoalTemplate, ScheduleTemplate } from "@/types";
 
 // Firestore data converter for Goals
 const goalConverter = {
@@ -47,7 +47,7 @@ const goalConverter = {
 
 // Firestore data converter for Goal Templates
 const goalTemplateConverter = {
-    toFirestore: (template: GoalTemplate) => {
+    toFirestore: (template: Omit<GoalTemplate, 'id'>) => {
         return {
             ...template,
             createdAt: Timestamp.now(),
@@ -69,7 +69,7 @@ const scheduleConverter = {
     toFirestore: (schedule: WeeklySchedule) => {
         return {
             ...schedule,
-            createdAt: Timestamp.now(),
+            lastUpdatedAt: Timestamp.now(),
         };
     },
     fromFirestore: (snapshot: any, options: any): WeeklySchedule => {
@@ -82,6 +82,23 @@ const scheduleConverter = {
     }
 };
 
+// Firestore data converter for Schedule Templates
+const scheduleTemplateConverter = {
+    toFirestore: (template: Omit<ScheduleTemplate, 'id'>) => {
+        return {
+            ...template,
+            createdAt: Timestamp.now(),
+        };
+    },
+    fromFirestore: (snapshot: any, options: any): ScheduleTemplate => {
+        const data = snapshot.data(options);
+        return {
+            ...data,
+            id: snapshot.id,
+        } as ScheduleTemplate;
+    }
+};
+
 
 const getGoalsCollection = (userId: string) => {
     return collection(db, "users", userId, "goals").withConverter(goalConverter);
@@ -91,11 +108,13 @@ const getGoalTemplatesCollection = () => {
     return collection(db, "goal_templates").withConverter(goalTemplateConverter);
 }
 
-
 const getSchedulesCollection = (userId: string) => {
     return collection(db, "users", userId, "schedules").withConverter(scheduleConverter);
 }
 
+const getScheduleTemplatesCollection = (userId: string) => {
+    return collection(db, "users", userId, "schedule_templates").withConverter(scheduleTemplateConverter);
+}
 
 // --- GOAL-RELATED FUNCTIONS ---
 
@@ -190,4 +209,32 @@ export const addGoalTemplate = async (templateData: Omit<GoalTemplate, 'id' | 'c
     };
     await setDoc(newDocRef, newTemplate);
     return newTemplate;
+};
+
+
+// --- SCHEDULE TEMPLATE FUNCTIONS ---
+
+// Get all schedule templates for a user
+export const getScheduleTemplates = async (userId: string): Promise<ScheduleTemplate[]> => {
+    const templatesCollection = getScheduleTemplatesCollection(userId);
+    const q = query(templatesCollection, orderBy("name"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data());
+};
+
+// Add a new schedule template
+export const addScheduleTemplate = async (userId: string, templateData: Omit<ScheduleTemplate, 'id'>): Promise<ScheduleTemplate> => {
+    const templatesCollection = getScheduleTemplatesCollection(userId);
+    const newDocRef = await addDoc(templatesCollection, templateData);
+    return {
+        ...templateData,
+        id: newDocRef.id,
+    };
+};
+
+// Delete a schedule template
+export const deleteScheduleTemplate = async (userId: string, templateId: string): Promise<void> => {
+    const templatesCollection = getScheduleTemplatesCollection(userId);
+    const docRef = doc(templatesCollection, templateId);
+    await deleteDoc(docRef);
 };

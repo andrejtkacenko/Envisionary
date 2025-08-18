@@ -9,5 +9,6 @@ import '@/ai/flows/coach-chat.ts';
 import '@/ai/flows/recommend-goals.ts';
 import '@/ai/flows/generate-schedule.ts';
 import '@/ai/flows/generate-ics.ts';
+import '@/ai/flows/generate-schedule-template.ts';
 
 

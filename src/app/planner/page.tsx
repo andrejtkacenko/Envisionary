@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, Sparkles, Calendar as CalendarIcon, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo, Trash2, Download } from 'lucide-react';
@@ -13,7 +13,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { generateSchedule, type GenerateScheduleInput, type GenerateScheduleOutput } from '@/ai/flows/generate-schedule';
 import { generateIcs } from '@/ai/flows/generate-ics';
 import { saveSchedule, getSchedule, getGoals, type WeeklySchedule, type ScheduledItem, type Goal, type DailyGoalTask, type DailySchedule } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
@@ -21,24 +20,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GoalSelectorPopover } from '@/components/goal-selector-popover';
 import { cn } from '@/lib/utils';
+import { ScheduleTemplates } from '@/components/schedule-templates';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-const GenerateScheduleInputSchema = z.object({
-    dailyGoals: z.array(z.object({
-        day: z.string(),
-        tasks: z.array(z.object({
-            id: z.string(),
-            title: z.string(),
-            estimatedTime: z.string().optional(),
-        })),
-    })),
-    timeConstraints: z.string().optional(),
-    priorities: z.string().optional(),
-});
-
 
 const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: ScheduledItem, isEditing: boolean, onUpdate: (time: string, task: string) => void, onRemove: () => void }) => {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
@@ -112,34 +97,24 @@ export default function PlannerPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isDataLoading, setIsDataLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [schedule, setSchedule] = useState<GenerateScheduleOutput | null>(null);
-    const [goals, setGoals] = useState<Goal[]>([]);
+    const [schedule, setSchedule] = useState<WeeklySchedule | null>(null);
     
     // Calendar state
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
 
-    const form = useForm<GenerateScheduleInput>({
-        resolver: zodResolver(GenerateScheduleInputSchema),
-        defaultValues: {
-            dailyGoals: daysOfWeek.map(day => ({ day, tasks: [] })),
-            timeConstraints: "Work from 9 AM to 5 PM on weekdays.",
-            priorities: "Focus on completing work tasks, but also make time for exercise and relaxation."
-        }
-    });
-    
-    const { fields, update, replace } = useFieldArray({ control: form.control, name: "dailyGoals" });
-
     const fetchScheduleData = useCallback((uid: string) => {
         setIsDataLoading(true);
-        Promise.all([
-            getSchedule(uid),
-            getGoals(uid)
-        ]).then(([savedSchedule, userGoals]) => {
+        getSchedule(uid).then((savedSchedule) => {
             if (savedSchedule) {
-                setSchedule({ weeklySchedule: savedSchedule.scheduleData });
+                setSchedule(savedSchedule);
+            } else {
+                // If no schedule exists, create a blank one
+                setSchedule({
+                    id: 'current_week',
+                    scheduleData: daysOfWeek.map(day => ({ day, schedule: [] })),
+                });
             }
-            setGoals(userGoals);
         }).finally(() => setIsDataLoading(false));
     }, []);
 
@@ -148,29 +123,6 @@ export default function PlannerPage() {
             fetchScheduleData(user.uid);
         }
     }, [user, fetchScheduleData]);
-
-    const onSubmit = async (data: GenerateScheduleInput) => {
-        setIsLoading(true);
-        setSchedule(null);
-        try {
-            const result = await generateSchedule(data);
-            setSchedule(result);
-            if (user && result) {
-                await saveSchedule(user.uid, { id: user.uid, scheduleData: result.weeklySchedule });
-                // Refetch to ensure consistency and get latest saved data
-                fetchScheduleData(user.uid);
-            }
-        } catch (error) {
-            console.error("Failed to generate schedule", error);
-            toast({
-                variant: "destructive",
-                title: "Generation Failed",
-                description: "Could not generate a schedule. Please try again.",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
     
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: {
@@ -182,11 +134,31 @@ export default function PlannerPage() {
       // getDay() is 0 for Sunday, 6 for Saturday. We want 0 for Monday, 6 for Sunday.
       return (selectedDate.getDay() + 6) % 7;
     }, [selectedDate]);
+    
+    const handleApplyTemplate = async (templateSchedule: DailySchedule[]) => {
+        if (!user) return;
+        setIsLoading(true);
+        try {
+            const newSchedule = {
+                id: 'current_week',
+                scheduleData: templateSchedule,
+            };
+            await saveSchedule(user.uid, newSchedule);
+            setSchedule(newSchedule);
+            toast({ title: "Template Applied", description: "Your weekly schedule has been updated." });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Failed to apply template" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id && schedule) {
-            const daySchedule = schedule.weeklySchedule[currentDayIndex].schedule;
+            const daySchedule = schedule.scheduleData[currentDayIndex].schedule;
             const oldIndex = daySchedule.findIndex(item => item.id === active.id);
             const newIndex = daySchedule.findIndex(item => item.id === over.id);
             
@@ -194,7 +166,7 @@ export default function PlannerPage() {
             
             const newFullSchedule = {
                 ...schedule,
-                weeklySchedule: schedule.weeklySchedule.map((day, index) => 
+                scheduleData: schedule.scheduleData.map((day, index) => 
                     index === currentDayIndex ? { ...day, schedule: newScheduleItems } : day
                 )
             };
@@ -206,7 +178,7 @@ export default function PlannerPage() {
         if (!user || !schedule) return;
         setIsLoading(true);
         try {
-            await saveSchedule(user.uid, { id: user.uid, scheduleData: schedule.weeklySchedule });
+            await saveSchedule(user.uid, schedule);
             toast({ title: "Schedule Saved", description: "Your weekly schedule has been updated." });
             setIsEditing(false);
         } catch (error) {
@@ -222,9 +194,9 @@ export default function PlannerPage() {
         setSchedule(prev => {
             if (!prev) return null;
             const newSchedule = { ...prev };
-            const updatedDaySchedule = [...newSchedule.weeklySchedule[currentDayIndex].schedule];
+            const updatedDaySchedule = [...newSchedule.scheduleData[currentDayIndex].schedule];
             updatedDaySchedule[itemIndex] = { ...updatedDaySchedule[itemIndex], time, task };
-            newSchedule.weeklySchedule[currentDayIndex] = {...newSchedule.weeklySchedule[currentDayIndex], schedule: updatedDaySchedule};
+            newSchedule.scheduleData[currentDayIndex] = {...newSchedule.scheduleData[currentDayIndex], schedule: updatedDaySchedule};
             return newSchedule;
         });
     };
@@ -234,28 +206,14 @@ export default function PlannerPage() {
          setSchedule(prev => {
             if (!prev) return null;
             const newSchedule = { ...prev };
-            const updatedDaySchedule = [...newSchedule.weeklySchedule[currentDayIndex].schedule];
+            const updatedDaySchedule = [...newSchedule.scheduleData[currentDayIndex].schedule];
             updatedDaySchedule.splice(itemIndex, 1);
-            newSchedule.weeklySchedule[currentDayIndex] = {...newSchedule.weeklySchedule[currentDayIndex], schedule: updatedDaySchedule};
+            newSchedule.scheduleData[currentDayIndex] = {...newSchedule.scheduleData[currentDayIndex], schedule: updatedDaySchedule};
             return newSchedule;
         });
     };
     
-    const handleGoalSelect = (dayIndex: number, goal: Goal) => {
-        const tasks: DailyGoalTask[] = goal.subGoals && goal.subGoals.length > 0
-            ? goal.subGoals.map(sg => ({ id: sg.id, title: `${goal.title}: ${sg.title}`, estimatedTime: sg.estimatedTime }))
-            : [{ id: goal.id, title: goal.title, estimatedTime: goal.estimatedTime }];
-        
-        const currentTasks = form.getValues(`dailyGoals.${dayIndex}.tasks`);
-        update(dayIndex, { day: daysOfWeek[dayIndex], tasks: [...currentTasks, ...tasks] });
-    };
-
-    const handleTaskRemove = (dayIndex: number, taskId: string) => {
-        const currentTasks = form.getValues(`dailyGoals.${dayIndex}.tasks`);
-        update(dayIndex, { day: daysOfWeek[dayIndex], tasks: currentTasks.filter(t => t.id !== taskId) });
-    };
-
-    const currentDaySchedule = schedule?.weeklySchedule[currentDayIndex];
+    const currentDaySchedule = schedule?.scheduleData[currentDayIndex];
 
     // Calendar logic
     const firstDayOfMonth = startOfMonth(currentMonth);
@@ -268,7 +226,7 @@ export default function PlannerPage() {
     const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
     const hasScheduleForDay = (day: Date) => {
         const index = (day.getDay() + 6) % 7;
-        return schedule?.weeklySchedule[index]?.schedule.length > 0;
+        return schedule?.scheduleData[index]?.schedule.length > 0;
     };
     
     const [isDownloading, setIsDownloading] = useState(false);
@@ -318,13 +276,13 @@ export default function PlannerPage() {
                         <CalendarIcon /> AI Planner
                     </h1>
                     <p className="text-muted-foreground">
-                        Define your week, generate a schedule, and export it to your calendar.
+                        Create schedule templates, apply them, and export to your calendar.
                     </p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Calendar + Definer */}
+                {/* Left Column: Calendar + Templates */}
                 <div className="lg:col-span-1 space-y-8">
                     <Card>
                          <CardHeader>
@@ -366,83 +324,7 @@ export default function PlannerPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Define Your Week</CardTitle>
-                            <CardDescription>Select goals, set priorities and constraints.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             {isDataLoading ? (
-                                <div className="flex items-center justify-center h-64">
-                                    <Loader2 className="h-8 w-8 animate-spin" />
-                                </div>
-                            ) : (
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                    <FormField
-                                        control={form.control}
-                                        name="priorities"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Weekly Priorities</FormLabel>
-                                                <FormControl>
-                                                    <Textarea placeholder="e.g., Health, project deadlines..." {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="timeConstraints"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Time Constraints</FormLabel>
-                                                <FormControl>
-                                                    <Textarea placeholder="e.g., Work 9-5, gym MWF evenings" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div>
-                                        <FormLabel>Daily Goals</FormLabel>
-                                        <ScrollArea className="h-80 w-full mt-2">
-                                            <div className="space-y-4 pr-4">
-                                                {fields.map((field, index) => (
-                                                    <div key={field.id} className="space-y-2 rounded-lg border p-3">
-                                                        <div className="flex justify-between items-center">
-                                                            <h4 className="font-medium">{daysOfWeek[index]}</h4>
-                                                             <GoalSelectorPopover goals={goals} onGoalSelect={(goal) => handleGoalSelect(index, goal)} />
-                                                        </div>
-                                                        {field.tasks.length > 0 ? (
-                                                            <div className="space-y-1">
-                                                                {field.tasks.map(task => (
-                                                                    <div key={task.id} className="flex items-center justify-between text-sm p-1.5 bg-muted/50 rounded-md">
-                                                                        <span className="truncate pr-2">{task.title}</span>
-                                                                        <Button variant="ghost" size="icon" className="h-5 w-5 flex-shrink-0" onClick={() => handleTaskRemove(index, task.id)}>
-                                                                            <Trash2 className="h-3 w-3" />
-                                                                        </Button>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <p className="text-xs text-muted-foreground text-center py-2">No goals selected.</p>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </ScrollArea>
-                                    </div>
-                                    <Button type="submit" className="w-full" disabled={isLoading}>
-                                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                        Generate Full Week Schedule
-                                    </Button>
-                                </form>
-                            </Form>
-                            )}
-                        </CardContent>
-                    </Card>
+                    <ScheduleTemplates onApplyTemplate={handleApplyTemplate} />
                 </div>
 
                  {/* Right Column: Schedule View */}
@@ -480,23 +362,17 @@ export default function PlannerPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {isLoading && !schedule && (
-                                <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
-                                    <Loader2 className="h-8 w-8 animate-spin" />
-                                    <p>Generating your schedule...</p>
-                                </div>
-                            )}
-                            {isDataLoading && !schedule && !isLoading && (
+                            {isDataLoading && (
                                 <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
                                     <Loader2 className="h-8 w-8 animate-spin" />
                                     <p>Loading your data...</p>
                                 </div>
                             )}
-                            {!isDataLoading && !isLoading && (!schedule || !currentDaySchedule || currentDaySchedule.schedule.length === 0) && (
+                            {!isDataLoading && (!schedule || !currentDaySchedule || currentDaySchedule.schedule.length === 0) && (
                                 <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
                                     <ListTodo className="h-12 w-12" />
                                     <p>No schedule for this day.</p>
-                                    <p className="text-xs">Generate a schedule or select a different day.</p>
+                                    <p className="text-xs">Create a schedule or apply a template.</p>
                                 </div>
                             )}
                             {schedule && currentDaySchedule && currentDaySchedule.schedule.length > 0 && (

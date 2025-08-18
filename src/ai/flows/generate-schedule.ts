@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview Generates a weekly schedule based on user inputs.
+ * This flow is deprecated and will be removed. Use generate-schedule-template instead.
  *
  * - generateSchedule - A function that generates the schedule.
  * - GenerateScheduleInput - The input type for the generateSchedule function.
@@ -11,7 +12,28 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { DailyGoal, DailySchedule, GenerateScheduleInput, GenerateScheduleOutput } from '@/types';
+import { nanoid } from 'nanoid';
+import type { DailyGoal, DailySchedule } from '@/types';
+
+
+export const GenerateScheduleInputSchema = z.object({
+    dailyGoals: z.array(z.object({
+        day: z.string(),
+        tasks: z.array(z.object({
+            id: z.string(),
+            title: z.string(),
+            estimatedTime: z.string().optional(),
+        })),
+    })),
+    timeConstraints: z.string().optional(),
+    priorities: z.string().optional(),
+});
+export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
+
+export const GenerateScheduleOutputSchema = z.object({
+  weeklySchedule: z.array(z.custom<DailySchedule>()),
+});
+export type GenerateScheduleOutput = z.infer<typeof GenerateScheduleOutputSchema>;
 
 
 export async function generateSchedule(input: GenerateScheduleInput): Promise<GenerateScheduleOutput> {
@@ -20,8 +42,8 @@ export async function generateSchedule(input: GenerateScheduleInput): Promise<Ge
 
 const prompt = ai.definePrompt({
   name: 'generateSchedulePrompt',
-  input: {schema: z.custom<GenerateScheduleInput>()},
-  output: {schema: z.custom<GenerateScheduleOutput>()},
+  input: {schema: GenerateScheduleInputSchema},
+  output: {schema: GenerateScheduleOutputSchema},
   prompt: `You are a productivity expert who specializes in creating optimized weekly schedules. Your task is to generate a detailed, hour-by-hour schedule for a user from Monday to Sunday based on their inputs.
 
 Analyze the user's daily goals, which may include estimated times, along with their time constraints and overall priorities. Create a balanced and realistic schedule.
@@ -51,8 +73,8 @@ Analyze the user's daily goals, which may include estimated times, along with th
 const generateScheduleFlow = ai.defineFlow(
   {
     name: 'generateScheduleFlow',
-    inputSchema: z.custom<GenerateScheduleInput>(),
-    outputSchema: z.custom<GenerateScheduleOutput>(),
+    inputSchema: GenerateScheduleInputSchema,
+    outputSchema: GenerateScheduleOutputSchema,
   },
   async input => {
     const {output} = await prompt(input);
@@ -61,7 +83,7 @@ const generateScheduleFlow = ai.defineFlow(
             day.schedule.forEach(item => {
                 // Failsafe: Ensure every item has a unique ID, even if the model forgets.
                 if (!item.id) {
-                    item.id = crypto.randomUUID();
+                    item.id = nanoid();
                 }
             });
         });

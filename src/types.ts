@@ -43,27 +43,6 @@ export type WeeklySchedule = {
   createdAt?: Timestamp;
 };
 
-export type DailyGoalTask = {
-    id: string;
-    title: string;
-    estimatedTime?: string;
-}
-
-export type DailyGoal = {
-  day: string;
-  tasks: DailyGoalTask[];
-};
-
-export type GenerateScheduleInput = {
-  dailyGoals: DailyGoal[];
-  timeConstraints?: string;
-  priorities?: string;
-};
-
-export type GenerateScheduleOutput = {
-  weeklySchedule: DailySchedule[];
-};
-
 // Types for Goal Library
 export type GoalTemplate = {
     id: string;
@@ -75,4 +54,12 @@ export type GoalTemplate = {
     authorName: string;
     likes: number;
     createdAt: Timestamp;
+};
+
+// Types for Schedule Templates
+export type ScheduleTemplate = {
+    id: string;
+    name: string;
+    type: 'day' | 'week';
+    data: DailySchedule[]; // For week templates, this will have 7 items. For day, just 1.
 };
