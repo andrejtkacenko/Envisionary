@@ -127,6 +127,22 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
     }
   }, [goal, open, form.reset]);
 
+  const handleSaveChanges = async () => {
+    // This function will be called from the AlertDialog.
+    // It needs to trigger form validation and submission.
+    const isValid = await form.trigger();
+    if (isValid) {
+      onSubmit(form.getValues());
+      setOpen(false); // Close the main dialog after saving.
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Validation Error",
+            description: "Please fix the errors before saving.",
+        });
+    }
+  };
+
   const onSubmit = (data: GoalFormValues) => {
     const updatedGoal = {
       ...goal,
@@ -566,17 +582,22 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
             <AlertDialogHeader>
             <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
             <AlertDialogDescription>
-                You have unsaved changes. Are you sure you want to discard them?
+                You have unsaved changes. Do you want to save them before closing?
             </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => setOpen(false)}>Discard</AlertDialogAction>
+                <AlertDialogCancel onClick={() => setShowUnsavedChangesAlert(false)}>
+                    Cancel
+                </AlertDialogCancel>
+                <Button variant="destructive" onClick={() => setOpen(false)}>
+                    Discard Changes
+                </Button>
+                <AlertDialogAction onClick={handleSaveChanges}>
+                    Save and Close
+                </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
     </>
   );
 }
-
-    
