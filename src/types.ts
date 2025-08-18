@@ -41,3 +41,18 @@ export type WeeklySchedule = {
   scheduleData: DailySchedule[];
   createdAt?: Timestamp;
 };
+
+export type DailyGoal = {
+  day: string;
+  tasks: string;
+};
+
+export type GenerateScheduleInput = {
+  dailyGoals: DailyGoal[];
+  timeConstraints?: string;
+  priorities?: string;
+};
+
+export type GenerateScheduleOutput = {
+  weeklySchedule: DailySchedule[];
+};

@@ -6,7 +6,7 @@ import { format, parse } from 'date-fns';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Sparkles, Send, Calendar, Clock } from 'lucide-react';
+import { Loader2, Sparkles, Download, Calendar, Clock } from 'lucide-react';
 
 import {
   Dialog,
@@ -20,8 +20,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { generateSchedule, type DailySchedule } from '@/ai/flows/generate-schedule';
-import { createCalendarEventFlow } from '@/ai/flows/create-calendar-event';
+import { generateSchedule } from '@/ai/flows/generate-schedule';
+import type { DailySchedule } from '@/types';
+import { generateIcs } from '@/ai/flows/generate-ics';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 
@@ -38,7 +39,7 @@ const formSchema = z.object({
 export function DayScheduleDialog({ isOpen, onOpenChange, date }: DayScheduleDialogProps) {
   const [schedule, setSchedule] = useState<DailySchedule | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<{ prompt: string }>({
@@ -72,56 +73,43 @@ export function DayScheduleDialog({ isOpen, onOpenChange, date }: DayScheduleDia
     }
   };
 
-  const handleSendToCalendar = async () => {
-    if (!schedule || !schedule.schedule || schedule.schedule.length === 0) {
-        toast({ variant: 'destructive', title: 'No schedule to send.' });
+  const handleDownloadIcs = async () => {
+    if (!schedule) {
+        toast({ variant: 'destructive', title: 'No schedule to download.' });
         return;
     }
-    setIsSending(true);
+    setIsDownloading(true);
 
     try {
-      const eventPromises = schedule.schedule.map(item => {
-        // Attempt to parse start and end times from a string like "09:00 AM - 10:00 AM"
-        const timeParts = item.time.split(' - ');
-        
-        let startDateTime, endDateTime;
-        try {
-            const startTime = parse(timeParts[0], 'hh:mm a', date);
-            const endTime = parse(timeParts[1], 'hh:mm a', date);
-
-            startDateTime = new Date(date);
-            startDateTime.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
-
-            endDateTime = new Date(date);
-            endDateTime.setHours(endTime.getHours(), endTime.getMinutes(), 0, 0);
-        } catch (e) {
-            console.warn(`Could not parse time: ${item.time}. Skipping event.`);
-            return null; // Skip if time format is unexpected
+        const { icsString } = await generateIcs({ schedule, date: date.toISOString() });
+        if (!icsString) {
+            throw new Error("Failed to generate .ics data.");
         }
 
-        return createCalendarEventFlow({
-            title: item.task,
-            description: `Priority: ${item.priority || 'not set'}`,
-            startDateTime: startDateTime.toISOString(),
-            endDateTime: endDateTime.toISOString(),
+        const blob = new Blob([icsString], { type: 'text/calendar' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `schedule-${format(date, 'yyyy-MM-dd')}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast({
+            title: "Schedule Downloaded",
+            description: "You can now import the .ics file into your calendar app.",
         });
-      });
 
-      const results = await Promise.all(eventPromises.filter(p => p !== null));
-      toast({
-        title: "Schedule Sent!",
-        description: `${results.length} events have been added to your Google Calendar.`,
-      });
-      onOpenChange(false);
     } catch (error) {
-      console.error("Failed to send events to calendar", error);
+      console.error("Failed to generate or download .ics file", error);
       toast({
         variant: "destructive",
-        title: "Sending Failed",
-        description: "Could not send events to Google Calendar. Ensure your credentials are set up correctly.",
+        title: "Download Failed",
+        description: "Could not create the calendar file. Please try again.",
       });
     } finally {
-        setIsSending(false);
+        setIsDownloading(false);
     }
   };
 
@@ -173,13 +161,13 @@ export function DayScheduleDialog({ isOpen, onOpenChange, date }: DayScheduleDia
                     </div>
                 </ScrollArea>
                 <DialogFooter className='sm:justify-between gap-2'>
-                     <Button variant="outline" onClick={() => setSchedule(null)} disabled={isSending}>
+                     <Button variant="outline" onClick={() => setSchedule(null)} disabled={isDownloading}>
                         <Sparkles className="mr-2 h-4 w-4" />
                         Regenerate
                     </Button>
-                    <Button onClick={handleSendToCalendar} disabled={isSending}>
-                        {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                        Send to Google Calendar
+                    <Button onClick={handleDownloadIcs} disabled={isDownloading}>
+                        {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        Download .ics File
                     </Button>
                 </DialogFooter>
             </div>

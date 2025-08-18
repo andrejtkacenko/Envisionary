@@ -11,37 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-
-const DailyGoalSchema = z.object({
-  day: z.string().describe('The day of the week (e.g., Monday).'),
-  tasks: z.string().describe('A comma-separated list of tasks or goals for that day.'),
-});
-
-const ScheduledItemSchema = z.object({
-    id: z.string().describe('A unique ID for the scheduled item.'),
-    time: z.string().describe('The suggested time for the activity (e.g., "09:00 AM - 10:00 AM").'),
-    task: z.string().describe('The name of the task or activity.'),
-    priority: z.enum(["low", "medium", "high"]).optional().describe('The priority of the task.'),
-});
-
-const DailyScheduleSchema = z.object({
-  day: z.string().describe('The day of the week.'),
-  schedule: z.array(ScheduledItemSchema).describe('The schedule for the day.'),
-});
-
-
-const GenerateScheduleInputSchema = z.object({
-  dailyGoals: z.array(DailyGoalSchema).describe('A list of goals for each day of the week.'),
-  timeConstraints: z.string().optional().describe('Any general time constraints, e.g., "Work 9am-5pm", "Free on weekends".'),
-  priorities: z.string().optional().describe('Overall priorities for the week, e.g., "Focus on health", "Complete the project".'),
-});
-export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
-
-
-const GenerateScheduleOutputSchema = z.object({
-  weeklySchedule: z.array(DailyScheduleSchema).describe('The generated schedule for the entire week.'),
-});
-export type GenerateScheduleOutput = z.infer<typeof GenerateScheduleOutputSchema>;
+import type { DailyGoal, DailySchedule, GenerateScheduleInput, GenerateScheduleOutput } from '@/types';
 
 
 export async function generateSchedule(input: GenerateScheduleInput): Promise<GenerateScheduleOutput> {
@@ -50,8 +20,8 @@ export async function generateSchedule(input: GenerateScheduleInput): Promise<Ge
 
 const prompt = ai.definePrompt({
   name: 'generateSchedulePrompt',
-  input: {schema: GenerateScheduleInputSchema},
-  output: {schema: GenerateScheduleOutputSchema},
+  input: {schema: z.custom<GenerateScheduleInput>()},
+  output: {schema: z.custom<GenerateScheduleOutput>()},
   prompt: `You are a productivity expert who specializes in creating optimized weekly schedules. Your task is to generate a detailed, hour-by-hour schedule for a user from Monday to Sunday based on their inputs.
 
 Analyze the user's daily goals, time constraints, and overall priorities. Create a balanced and realistic schedule.
@@ -78,8 +48,8 @@ Analyze the user's daily goals, time constraints, and overall priorities. Create
 const generateScheduleFlow = ai.defineFlow(
   {
     name: 'generateScheduleFlow',
-    inputSchema: GenerateScheduleInputSchema,
-    outputSchema: GenerateScheduleOutputSchema,
+    inputSchema: z.custom<GenerateScheduleInput>(),
+    outputSchema: z.custom<GenerateScheduleOutput>(),
   },
   async input => {
     const {output} = await prompt(input);
@@ -96,4 +66,3 @@ const generateScheduleFlow = ai.defineFlow(
     return output!;
   }
 );
-
