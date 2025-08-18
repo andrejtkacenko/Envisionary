@@ -3,10 +3,10 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Goal } from '@/types';
+import type { Goal, GoalStatus } from '@/types';
 import { AppHeader } from '@/components/app-header';
 import { KanbanBoard } from '@/components/kanban-board';
-import { KANBAN_COLUMNS, GoalStatus } from '@/types';
+import { KANBAN_COLUMNS } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { getGoals, addGoal, addGoals, updateGoal, deleteGoal } from '@/lib/goals-service';
 import { Loader2 } from 'lucide-react';
@@ -18,6 +18,7 @@ import {
   useSensors,
   DragEndEvent,
 } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 
 export default function Home() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -84,10 +85,10 @@ export default function Home() {
   const handleGoalUpdate = async (updatedGoal: Goal) => {
     if (!user) return;
     try {
-      await updateGoal(user.uid, updatedGoal);
       setGoals((prevGoals) => {
           return prevGoals.map(g => g.id === updatedGoal.id ? updatedGoal : g);
       });
+      await updateGoal(user.uid, updatedGoal);
     } catch (e) {
       console.error("Error updating goal:", e);
     }
@@ -126,17 +127,51 @@ export default function Home() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-        const activeGoalId = active.id as string;
-        const overContainerId = over.id as GoalStatus;
-        
-        const activeGoal = goals.find(g => g.id === activeGoalId);
+    if (!over) return;
 
-        if (activeGoal && activeGoal.status !== overContainerId) {
-            const updatedGoal = { ...activeGoal, status: overContainerId };
-            handleGoalUpdate(updatedGoal);
-        }
-    }
+    const activeGoalId = active.id as string;
+    const overId = over.id as string;
+    
+    setGoals((currentGoals) => {
+      const activeGoalIndex = currentGoals.findIndex((g) => g.id === activeGoalId);
+      if (activeGoalIndex === -1) {
+        return currentGoals; // Should not happen
+      }
+      
+      const activeGoal = currentGoals[activeGoalIndex];
+      let newGoals = [...currentGoals];
+
+      // Check if we dropped over a column (droppable container)
+      const isOverColumn = KANBAN_COLUMNS.some(c => c.id === overId);
+      if (isOverColumn) {
+          const newStatus = overId as GoalStatus;
+          if (activeGoal.status !== newStatus) {
+              newGoals[activeGoalIndex] = { ...activeGoal, status: newStatus };
+          }
+      } else { // Dropped over another goal card
+          const overGoalIndex = newGoals.findIndex((g) => g.id === overId);
+          if (overGoalIndex !== -1) {
+              const overGoal = newGoals[overGoalIndex];
+              // Move card within or between columns
+              newGoals = arrayMove(newGoals, activeGoalIndex, overGoalIndex);
+              // Update status if column is different
+              if (activeGoal.status !== overGoal.status) {
+                  const movedGoalIndex = newGoals.findIndex(g => g.id === activeGoalId);
+                  newGoals[movedGoalIndex] = { ...newGoals[movedGoalIndex], status: overGoal.status };
+              }
+          }
+      }
+      
+      // Persist the final state change
+      const finalChangedGoal = newGoals.find(g => g.id === activeGoalId);
+      if (finalChangedGoal && user) {
+        // Use a different variable to avoid issues with closure in async operations
+        const goalToUpdate = {...finalChangedGoal};
+        updateGoal(user.uid, goalToUpdate).catch(e => console.error("Failed to save goal update:", e));
+      }
+      
+      return newGoals;
+    });
   };
 
 
