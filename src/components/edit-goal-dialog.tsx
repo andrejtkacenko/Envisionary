@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, Share2, Loader2 } from "lucide-react";
+import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, Share2, Loader2, ListX } from "lucide-react";
 import { format } from "date-fns";
 
 import type { Goal } from "@/types";
@@ -417,10 +417,18 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                         </div>
                     )}
                 </ScrollArea>
-                <Button type="button" variant="secondary" className="w-full" onClick={handleAddManualSubGoal}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Sub-goal Manually
-                </Button>
+                 <div className="flex gap-2">
+                    <Button type="button" variant="secondary" className="w-full" onClick={handleAddManualSubGoal}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Sub-goal Manually
+                    </Button>
+                    {subGoals.length > 0 && (
+                        <Button type="button" variant="outline" onClick={() => setSubGoals([])}>
+                             <ListX className="mr-2 h-4 w-4" />
+                             Clear list
+                        </Button>
+                    )}
+                </div>
                 </div>
                 
                 <DialogFooter className="col-span-1 md:col-span-2">
