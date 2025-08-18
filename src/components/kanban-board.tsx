@@ -16,7 +16,7 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ columns, onGoalUpdate, onGoalDelete }: KanbanBoardProps) {
   return (
-    <div className="flex gap-6 h-full items-start">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
       {columns.map((col) => (
         <KanbanColumn
           key={col.id}

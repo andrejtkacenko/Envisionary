@@ -28,35 +28,31 @@ export function KanbanColumn({ column, onGoalUpdate, onGoalDelete }: KanbanColum
   });
 
   return (
-    <div 
-        className="flex flex-col w-full sm:w-80 sm:min-w-80 h-full"
-    >
-      <div className="flex items-center justify-between mb-4 px-1">
-        <h2 className="text-xl font-headline font-semibold">{column.title}</h2>
-        <span className="text-sm font-medium bg-muted text-muted-foreground rounded-full px-3 py-1">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between p-2 rounded-md bg-muted sticky top-0 z-10">
+        <h2 className="text-lg font-headline font-semibold">{column.title}</h2>
+        <span className="text-sm font-medium bg-background text-muted-foreground rounded-full px-3 py-1">
           {column.goals.length}
         </span>
       </div>
-      <ScrollArea className="flex-grow">
-        <div 
-            ref={setNodeRef} 
-            className={cn(
-                "flex flex-col gap-4 rounded-lg p-2 min-h-full transition-colors duration-200",
-                isOver ? "bg-primary/10" : "bg-muted/40"
-            )}
-        >
-            <SortableContext items={column.goals.map(g => g.id)} strategy={verticalListSortingStrategy}>
-                {column.goals.map((goal) => (
-                <KanbanCard 
-                    key={goal.id} 
-                    goal={goal} 
-                    onGoalUpdate={onGoalUpdate}
-                    onGoalDelete={onGoalDelete}
-                />
-                ))}
-            </SortableContext>
-        </div>
-      </ScrollArea>
+      <div
+        ref={setNodeRef} 
+        className={cn(
+            "flex flex-col gap-4 rounded-lg p-1 min-h-[100px] transition-colors duration-200",
+            isOver ? "bg-primary/10" : ""
+        )}
+      >
+        <SortableContext items={column.goals.map(g => g.id)} strategy={verticalListSortingStrategy}>
+            {column.goals.map((goal) => (
+            <KanbanCard 
+                key={goal.id} 
+                goal={goal} 
+                onGoalUpdate={onGoalUpdate}
+                onGoalDelete={onGoalDelete}
+            />
+            ))}
+        </SortableContext>
+      </div>
     </div>
   );
 }

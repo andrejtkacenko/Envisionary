@@ -25,7 +25,7 @@ import {
   DragOverEvent,
   DragOverlay,
 } from '@dnd-kit/core';
-import { arrayMove, SortableContext } from '@dnd-kit/sortable';
+import { SortableContext, arrayMove } from '@dnd-kit/sortable';
 import { KanbanCard } from '@/components/kanban-card';
 
 export default function Home() {
@@ -163,42 +163,47 @@ export default function Home() {
     const activeId = active.id as string;
     const overId = over.id as string;
   
-    const isActiveAGoal = active.data.current?.type === 'Goal';
-    if (!isActiveAGoal) return;
-
     // Determine if we're dragging over a column or another goal
-    const overIsAColumn = over.data.current?.type === 'Column';
-    const overIsAGoal = over.data.current?.type === 'Goal';
-
-    setGoals(currentGoals => {
-      let newGoals = [...currentGoals];
-      const activeIndex = newGoals.findIndex(g => g.id === activeId);
-      
-      // Dragging over a column
-      if (overIsAColumn && activeGoal.status !== overId) {
-          newGoals[activeIndex] = { ...newGoals[activeIndex], status: overId as GoalStatus };
-          return newGoals;
+    const overIsColumn = over.data.current?.type === 'Column';
+    
+    // Handle dropping on a column
+    if (overIsColumn) {
+      const activeGoalStatus = active.data.current?.goal.status;
+      if (activeGoalStatus !== overId) {
+        setGoals(currentGoals => {
+            const activeIndex = currentGoals.findIndex(g => g.id === activeId);
+            if (activeIndex === -1) return currentGoals;
+            currentGoals[activeIndex].status = overId as GoalStatus;
+            return arrayMove(currentGoals, activeIndex, activeIndex);
+        });
       }
+      return;
+    }
 
-      // Dragging over another goal
-      if (overIsAGoal) {
-          const overIndex = newGoals.findIndex(g => g.id === overId);
-          const overGoal = newGoals[overIndex];
+    // Handle dropping on another goal
+    const overGoal = over.data.current?.goal;
+    if (overGoal) {
+        const activeGoalStatus = active.data.current?.goal.status;
+        const overGoalStatus = overGoal.status;
 
-          // If goals are in different columns, move to the new column
-          if (activeGoal.status !== overGoal.status) {
-              newGoals[activeIndex] = { ...newGoals[activeIndex], status: overGoal.status };
-              return arrayMove(newGoals, activeIndex, overIndex);
-          }
-
-          // If in the same column, just reorder
-          if (activeIndex !== overIndex) {
-              return arrayMove(newGoals, activeIndex, overIndex);
-          }
-      }
-      
-      return currentGoals; // No change
-    });
+        if (activeGoalStatus === overGoalStatus) {
+             setGoals(currentGoals => {
+                const oldIndex = currentGoals.findIndex(g => g.id === activeId);
+                const newIndex = currentGoals.findIndex(g => g.id === overId);
+                if (oldIndex === -1 || newIndex === -1) return currentGoals;
+                return arrayMove(currentGoals, oldIndex, newIndex);
+            });
+        } else {
+             setGoals(currentGoals => {
+                const activeIndex = currentGoals.findIndex(g => g.id === activeId);
+                let overIndex = currentGoals.findIndex(g => g.id === overId);
+                if (activeIndex === -1 || overIndex === -1) return currentGoals;
+                
+                currentGoals[activeIndex].status = overGoalStatus as GoalStatus;
+                return arrayMove(currentGoals, activeIndex, overIndex);
+            });
+        }
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -214,10 +219,10 @@ export default function Home() {
 
     if (updatedGoal && originalGoal) {
         // Only trigger update if status or position actually changed
-        const hasChanged = originalGoal.status !== updatedGoal.status || 
-                           goals.findIndex(g => g.id === activeGoalId) !== Object.values(goalsMap).findIndex(g => g.id === activeGoalId);
+        const originalIndex = Object.values(goalsMap).findIndex(g => g.id === activeGoalId)
+        const newIndex = goals.findIndex(g => g.id === activeGoalId)
 
-        if (hasChanged) {
+        if (originalGoal.status !== updatedGoal.status || originalIndex !== newIndex) {
             updateGoal(user.uid, updatedGoal).catch(e => {
                 console.error("Failed to save goal update:", e);
                 toast({
@@ -249,33 +254,33 @@ export default function Home() {
       collisionDetection={closestCenter}
     >
         <div className="flex flex-col h-screen">
-        <AppHeader allGoals={goals} />
-        <main className="flex-1 overflow-x-auto p-4">
-            {isLoading ? (
-            <div className="flex w-full items-center justify-center py-24">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-            ) : goals.length === 0 ? (
-                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-                    <Target className="h-16 w-16 text-muted-foreground" />
-                    <h2 className="text-2xl font-semibold">Your Board is Empty</h2>
-                    <p className="text-muted-foreground max-w-sm">
-                        Create your first goal to get started on your journey to productivity.
-                    </p>
-                    <Button asChild>
-                        <Link href="/create-goal">
-                            <Plus className="mr-2 h-4 w-4" /> Create New Goal
-                        </Link>
-                    </Button>
+            <AppHeader allGoals={goals} />
+            <main className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-6">
+                {isLoading ? (
+                <div className="flex w-full items-center justify-center py-24">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-            ) : (
-            <KanbanBoard 
-                columns={columns} 
-                onGoalUpdate={handleGoalUpdate}
-                onGoalDelete={handleGoalDelete}
-            />
-            )}
-        </main>
+                ) : goals.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-[calc(100vh-15rem)] gap-4 text-center rounded-lg border bg-card">
+                        <Target className="h-16 w-16 text-muted-foreground" />
+                        <h2 className="text-2xl font-semibold">Your Board is Empty</h2>
+                        <p className="text-muted-foreground max-w-sm">
+                            Create your first goal to get started on your journey to productivity.
+                        </p>
+                        <Button asChild>
+                            <Link href="/create-goal">
+                                <Plus className="mr-2 h-4 w-4" /> Create New Goal
+                            </Link>
+                        </Button>
+                    </div>
+                ) : (
+                <KanbanBoard 
+                    columns={columns} 
+                    onGoalUpdate={handleGoalUpdate}
+                    onGoalDelete={handleGoalDelete}
+                />
+                )}
+            </main>
         </div>
         <DragOverlay>
             {activeGoal ? (
