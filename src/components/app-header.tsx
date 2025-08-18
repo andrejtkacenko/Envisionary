@@ -14,6 +14,8 @@ import {
   Zap,
   PanelLeft,
   Calendar,
+  LayoutDashboard,
+  KanbanSquare,
 } from "lucide-react";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -36,8 +38,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Logo } from "@/components/logo";
 import { ProgressReportDialog } from "@/components/progress-report-dialog";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 interface AppHeaderProps {
   allGoals: Goal[];
@@ -46,11 +49,20 @@ interface AppHeaderProps {
 export function AppHeader({ allGoals }: AppHeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   }
+
+  const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/", label: "Kanban Board", icon: KanbanSquare },
+    { href: "/coach", label: "AI Coach", icon: Zap },
+    { href: "/planner", label: "Planner", icon: Calendar },
+    { href: "/calendar", label: "Calendar", icon: Calendar },
+  ];
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -70,55 +82,31 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
                   <Zap className="h-5 w-5 transition-all group-hover:scale-110" />
                   <span className="sr-only">Zenith Flow</span>
                 </Link>
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                >
-                  <Home className="h-5 w-5" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/"
-                  className="flex items-center gap-4 px-2.5 text-foreground"
-                >
-                  <Users className="h-5 w-5" />
-                  Kanban Board
-                </Link>
-                 <Link
-                  href="/coach"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                >
-                  <Zap className="h-5 w-5" />
-                  AI Coach
-                </Link>
-                <Link
-                  href="/planner"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                >
-                  <Calendar className="h-5 w-5" />
-                  Planner
-                </Link>
-                 <Link
-                  href="/calendar"
-                  className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-                >
-                  <Calendar className="h-5 w-5" />
-                  Calendar
-                </Link>
+                {navItems.map((item) => (
+                   <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-4 px-2.5 hover:text-foreground",
+                      pathname === item.href ? "text-foreground" : "text-muted-foreground"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </Link>
+                ))}
               </nav>
             </SheetContent>
           </Sheet>
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <div className="ml-auto flex-1 sm:flex-initial">
-          <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
             <ProgressReportDialog allGoals={allGoals} />
-            <Button asChild>
+            <Button asChild size="sm">
               <Link href="/create-goal">
                 <Plus className="mr-2 h-4 w-4" /> New Goal
               </Link>
             </Button>
           </div>
-        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">

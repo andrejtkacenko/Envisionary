@@ -1,3 +1,4 @@
+
 "use client"
 
 import type { Goal } from "@/types";
@@ -15,14 +16,14 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({ column, onGoalUpdate, onGoalDelete }: KanbanColumnProps) {
   return (
-    <div className="flex flex-col w-80 min-w-80">
+    <div className="flex flex-col w-full sm:w-80 sm:min-w-80">
       <div className="flex items-center justify-between mb-4 px-1">
         <h2 className="text-xl font-headline font-semibold">{column.title}</h2>
         <span className="text-sm font-medium bg-muted text-muted-foreground rounded-full px-3 py-1">
           {column.goals.length}
         </span>
       </div>
-      <div className="flex flex-col gap-4 overflow-y-auto h-full pr-2">
+      <div className="flex flex-col gap-4 h-full sm:overflow-y-auto sm:pr-2">
         {column.goals.map((goal) => (
           <KanbanCard 
             key={goal.id} 

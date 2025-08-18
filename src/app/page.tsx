@@ -122,9 +122,9 @@ export default function Home() {
   }
 
   return (
-    <>
+    <div className="flex flex-col h-screen sm:h-auto">
       <AppHeader allGoals={goals} />
-      <main className="flex-1 overflow-x-auto p-4 sm:p-0">
+      <main className="flex-1 overflow-x-auto p-4">
         {isLoading ? (
            <div className="flex h-full w-full items-center justify-center">
              <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -137,6 +137,6 @@ export default function Home() {
           />
         )}
       </main>
-    </>
+    </div>
   );
 }

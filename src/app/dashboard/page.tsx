@@ -15,7 +15,7 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart"
-import { PieChart, Pie } from "recharts"
+import { PieChart, Pie, Cell } from "recharts"
 import type { Goal } from "@/types"
 import { getGoals } from "@/lib/goals-service"
 
@@ -65,17 +65,17 @@ export default function DashboardPage() {
 
   const categoryProgress = goals.reduce((acc, goal) => {
     if (!acc[goal.project]) {
-      acc[goal.project] = { total: 0, completed: 0 }
+      acc[goal.project] = { total: 0, completed: 0, name: goal.project }
     }
     acc[goal.project].total++
     if (goal.status === 'done') {
       acc[goal.project].completed++
     }
     return acc
-  }, {} as Record<string, { total: number; completed: number }>)
+  }, {} as Record<string, { name: string, total: number; completed: number }>)
 
-  const categoryData = Object.entries(categoryProgress).map(([name, data], index) => ({
-    name,
+  const categoryData = Object.values(categoryProgress).map((data, index) => ({
+    name: data.name,
     value: data.completed,
     fill: `hsl(var(--chart-${(index % 5) + 1}))`
   }));
@@ -97,9 +97,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-headline">
             Welcome back, {user?.displayName || user?.email || 'Achiever'}! 👋
           </h1>
           <p className="text-muted-foreground">
@@ -107,14 +107,14 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" size="sm">
             <Zap />
             Generate Insights
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-primary text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Goals</CardTitle>
@@ -173,6 +173,9 @@ export default function DashboardPage() {
                   innerRadius={80}
                   strokeWidth={5}
                 >
+                 {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
                 </Pie>
                 <ChartLegend
                   content={<ChartLegendContent nameKey="name" />}

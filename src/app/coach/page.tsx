@@ -111,7 +111,7 @@ export default function CoachPage() {
 
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
                         <Zap />AI Coach
@@ -120,13 +120,13 @@ export default function CoachPage() {
                         Get personalized insights, recommendations, and coaching support.
                     </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                    <Button variant="outline" onClick={handleAnalyzeProgress} disabled={isAnalysisLoading}>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    <Button variant="outline" onClick={handleAnalyzeProgress} disabled={isAnalysisLoading} className="justify-start">
                         {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Activity className="mr-2 h-4 w-4" />}
                          Analyze Progress
                     </Button>
                     <RecommendGoalsDialog allGoals={goals}>
-                        <Button variant="outline">
+                        <Button variant="outline" className="justify-start">
                             <Star className="mr-2 h-4 w-4" /> Get Recommendations
                         </Button>
                     </RecommendGoalsDialog>
@@ -146,7 +146,7 @@ export default function CoachPage() {
                             </Button>
                         </CardHeader>
                         <CardContent className="flex-grow flex flex-col gap-4">
-                           <ScrollArea className="h-[500px] w-full pr-4">
+                           <ScrollArea className="h-[50vh] lg:h-[500px] w-full pr-4">
                                 <div className="space-y-6">
                                     {chatHistory.map((msg, index) => (
                                         <div key={index} className={cn("flex items-start gap-3", msg.role === 'user' && "flex-row-reverse")}>
@@ -156,7 +156,7 @@ export default function CoachPage() {
                                                     {msg.role === 'user' ? (user?.email?.[0]?.toUpperCase() ?? <User/>) : <Zap/>}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div className={cn("p-3 rounded-lg max-w-md", msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                            <div className={cn("p-3 rounded-lg max-w-sm", msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
                                                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                                             </div>
                                         </div>
@@ -178,7 +178,7 @@ export default function CoachPage() {
                                     value={userInput}
                                     onChange={(e) => setUserInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                                    placeholder="Ask me anything about your goals, progress, or need advice..."
+                                    placeholder="Ask me anything..."
                                     disabled={isLoading}
                                 />
                                 <Button onClick={handleSendMessage} disabled={isLoading}>

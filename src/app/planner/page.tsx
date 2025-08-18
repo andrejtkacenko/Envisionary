@@ -52,7 +52,7 @@ const SortableItem = ({ id, item, isEditing, onUpdate, onRemove }: { id: string,
                 </>
             ) : (
                 <>
-                    <Badge variant="secondary" className="w-28 justify-center">{item.time}</Badge>
+                    <Badge variant="secondary" className="w-24 sm:w-28 justify-center text-xs">{item.time}</Badge>
                     <p className="text-sm flex-grow">{item.task}</p>
                     {item.priority && <Badge variant={item.priority === 'high' ? 'destructive' : item.priority === 'medium' ? 'secondary' : 'outline'}>{item.priority}</Badge>}
                 </>
@@ -67,7 +67,7 @@ export default function PlannerPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [schedule, setSchedule] = useState<GenerateScheduleOutput | null>(null);
-    const [currentDayIndex, setCurrentDayIndex] = useState(0);
+    const [currentDayIndex, setCurrentDayIndex] = useState(new Date().getDay() - 1); // Monday is 0
 
     const form = useForm<GenerateScheduleInput>({
         resolver: zodResolver(GenerateScheduleInputSchema),
@@ -177,7 +177,7 @@ export default function PlannerPage() {
 
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
                         <Calendar /> AI Weekly Planner
@@ -195,12 +195,12 @@ export default function PlannerPage() {
                                 </Button>
                                 <Button onClick={handleSaveSchedule} disabled={isLoading}>
                                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                    Save Schedule
+                                    Save
                                 </Button>
                             </>
                         ) : (
                             <Button onClick={() => setIsEditing(true)}>
-                                <Edit className="mr-2 h-4 w-4" /> Edit Schedule
+                                <Edit className="mr-2 h-4 w-4" /> Edit
                             </Button>
                         )}
                     </div>
@@ -276,16 +276,16 @@ export default function PlannerPage() {
                 <div className="lg:col-span-2">
                     <Card className="h-full">
                         <CardHeader>
-                            <div className="flex justify-between items-center">
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                                  <div>
                                     <CardTitle>Your AI-Generated Schedule</CardTitle>
                                     <CardDescription>Drag and drop to reorder tasks in edit mode.</CardDescription>
                                  </div>
-                                 <div className="flex items-center gap-2">
+                                 <div className="flex items-center gap-2 w-full sm:w-auto">
                                     <Button variant="outline" size="icon" onClick={goToPreviousDay}>
                                         <ChevronLeft className="h-4 w-4" />
                                     </Button>
-                                    <span className="font-semibold text-lg w-28 text-center">{daysOfWeek[currentDayIndex]}</span>
+                                    <span className="font-semibold text-lg w-full sm:w-28 text-center">{daysOfWeek[currentDayIndex]}</span>
                                      <Button variant="outline" size="icon" onClick={goToNextDay}>
                                         <ChevronRight className="h-4 w-4" />
                                     </Button>
@@ -307,7 +307,7 @@ export default function PlannerPage() {
                                 </div>
                             )}
                             {schedule && currentDaySchedule && (
-                                <ScrollArea className="h-[calc(100vh-20rem)]">
+                                <ScrollArea className="h-[calc(100vh-22rem)]">
                                     <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
                                         <SortableContext items={currentDaySchedule.schedule.map(i => i.id)} strategy={verticalListSortingStrategy}>
                                             <div className="space-y-2 pr-4">

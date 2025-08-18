@@ -55,7 +55,7 @@ export default function CalendarPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
                     <CalendarIcon /> Calendar
@@ -66,12 +66,12 @@ export default function CalendarPage() {
             </div>
         </div>
 
-        <div className="bg-card rounded-lg border p-4">
+        <div className="bg-card rounded-lg border p-2 sm:p-4">
             <div className="flex items-center justify-between mb-4">
                 <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <h2 className="text-xl font-semibold font-headline">
+                <h2 className="text-lg sm:text-xl font-semibold font-headline text-center">
                     {format(currentDate, 'MMMM yyyy')}
                 </h2>
                 <Button variant="outline" size="icon" onClick={goToNextMonth}>
@@ -79,7 +79,7 @@ export default function CalendarPage() {
                 </Button>
             </div>
 
-            <div className="grid grid-cols-7 text-center font-semibold text-sm text-muted-foreground">
+            <div className="grid grid-cols-7 text-center font-semibold text-xs sm:text-sm text-muted-foreground">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="py-2">{day}</div>
                 ))}
@@ -91,19 +91,19 @@ export default function CalendarPage() {
                         key={index}
                         onClick={() => handleDayClick(day)}
                         className={cn(
-                            "relative flex flex-col h-28 p-2 border rounded-md cursor-pointer transition-colors hover:bg-muted/50",
+                            "relative flex flex-col h-20 sm:h-28 p-1 sm:p-2 border rounded-md cursor-pointer transition-colors hover:bg-muted/50",
                             format(day, 'M') !== format(currentDate, 'M') && "text-muted-foreground/50 bg-muted/20",
                             isToday(day) && "bg-primary/10 border-primary/50",
                             hasEvent(day) && "bg-accent/20"
                         )}
                     >
-                        <span className={cn("font-medium", isToday(day) && "text-primary")}>
+                        <span className={cn("text-xs sm:text-sm font-medium", isToday(day) && "text-primary")}>
                             {format(day, 'd')}
                         </span>
                         {/* Event indicators would go here */}
                          {hasEvent(day) && (
                             <div className="mt-1 flex-grow overflow-hidden">
-                                <div className="h-2 w-2 rounded-full bg-accent mx-auto"></div>
+                                <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-accent mx-auto"></div>
                             </div>
                         )}
                     </div>
@@ -112,7 +112,7 @@ export default function CalendarPage() {
         </div>
         {/* Placeholder for dialog logic */}
         {isDialogOpen && selectedDate && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={() => setIsDialogOpen(false)}>
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setIsDialogOpen(false)}>
                 <div className="bg-card p-6 rounded-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
                     <h3 className="font-headline text-lg">Schedule for {format(selectedDate, 'PPP')}</h3>
                     <p className="text-muted-foreground text-sm mt-2">Dialog for scheduling AI tasks would appear here.</p>
