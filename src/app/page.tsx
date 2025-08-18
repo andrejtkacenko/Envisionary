@@ -6,10 +6,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { Goal } from '@/types';
 import { AppHeader } from '@/components/app-header';
 import { KanbanBoard } from '@/components/kanban-board';
-import { KANBAN_COLUMNS } from '@/types';
+import { KANBAN_COLUMNS, GoalStatus } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { getGoals, addGoal, addGoals, updateGoal, deleteGoal } from '@/lib/goals-service';
 import { Loader2 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
 
 export default function Home() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -68,9 +76,7 @@ export default function Home() {
   useEffect(() => {
     const hasNewGoals = searchParams.get('newGoal') || searchParams.get('newGoals');
     if (hasNewGoals) {
-      // New goal(s) were added, so we refetch from the database to ensure consistency
       fetchGoals();
-      // Clean the URL
       router.replace('/', { scroll: false });
     }
   }, [searchParams, fetchGoals, router]);
@@ -104,14 +110,35 @@ export default function Home() {
             allSubGoalIds.add(sg.id);
         });
     });
-
     const topLevelGoals = goals.filter(goal => !allSubGoalIds.has(goal.id));
-
     return KANBAN_COLUMNS.map(col => ({
         ...col,
         goals: topLevelGoals.filter(goal => goal.status === col.id),
     }));
   }, [goals]);
+
+  const sensors = useSensors(useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8,
+    },
+  }));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+        const activeGoalId = active.id as string;
+        const overContainerId = over.id as GoalStatus;
+        
+        const activeGoal = goals.find(g => g.id === activeGoalId);
+
+        if (activeGoal && activeGoal.status !== overContainerId) {
+            const updatedGoal = { ...activeGoal, status: overContainerId };
+            handleGoalUpdate(updatedGoal);
+        }
+    }
+  };
+
 
   if (authLoading || !user) {
     return (
@@ -122,21 +149,27 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col h-screen sm:h-auto">
-      <AppHeader allGoals={goals} />
-      <main className="flex-1 overflow-x-auto p-4">
-        {isLoading ? (
-           <div className="flex h-full w-full items-center justify-center">
-             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-           </div>
-        ) : (
-          <KanbanBoard 
-            columns={columns} 
-            onGoalUpdate={handleGoalUpdate}
-            onGoalDelete={handleGoalDelete}
-          />
-        )}
-      </main>
-    </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+        <div className="flex flex-col h-screen sm:h-auto">
+        <AppHeader allGoals={goals} />
+        <main className="flex-1 overflow-x-auto p-4">
+            {isLoading ? (
+            <div className="flex h-full w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+            ) : (
+            <KanbanBoard 
+                columns={columns} 
+                onGoalUpdate={handleGoalUpdate}
+                onGoalDelete={handleGoalDelete}
+            />
+            )}
+        </main>
+        </div>
+    </DndContext>
   );
 }
