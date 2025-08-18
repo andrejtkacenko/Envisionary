@@ -20,6 +20,7 @@ import type { Goal } from "@/types"
 import { getGoals } from "@/lib/goals-service"
 import { summarizeProgress, SummarizeProgressOutput } from "@/ai/flows/summarize-progress";
 import { useToast } from "@/hooks/use-toast"
+import { calculateGoalStats } from "@/lib/goal-stats"
 
 const chartConfig = {
   completed: {
@@ -83,13 +84,7 @@ export default function DashboardPage() {
     }
   };
 
-
-  // Process goal data for stats and charts
-  const allTasks = goals.flatMap(g => [g, ...(g.subGoals || [])]);
-
-  const totalGoals = allTasks.length;
-  const completedGoals = allTasks.filter(g => g.status === 'done').length;
-  const activeGoals = allTasks.filter(g => g.status === 'inprogress').length;
+  const { totalCount, doneCount, inprogressCount } = calculateGoalStats(goals);
   const recentGoals = goals.slice(-4).reverse();
 
   const categoryProgress = goals.reduce((acc, goal) => {
@@ -107,14 +102,14 @@ export default function DashboardPage() {
 
   const categoryData = Object.values(categoryProgress).map((data, index) => ({
     name: data.name,
-    value: data.total, // Changed from data.completed to data.total
+    value: data.total,
     fill: `hsl(var(--chart-${(index % 5) + 1}))`
   }));
   
   const chartData = [
-    { name: "Completed", value: completedGoals, fill: "hsl(var(--chart-2))" },
-    { name: "In Progress", value: activeGoals, fill: "hsl(var(--chart-4))" },
-    { name: "To Do", value: allTasks.filter(g => g.status === 'todo').length, fill: "hsl(var(--muted))" },
+    { name: "Completed", value: doneCount, fill: "hsl(var(--chart-2))" },
+    { name: "In Progress", value: inprogressCount, fill: "hsl(var(--chart-4))" },
+    { name: "To Do", value: totalCount - doneCount - inprogressCount, fill: "hsl(var(--muted))" },
   ]
 
   if (isLoading) {
@@ -167,7 +162,7 @@ export default function DashboardPage() {
                 <Target className="h-4 w-4 text-primary-foreground/70" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{totalGoals}</div>
+                <div className="text-2xl font-bold">{totalCount}</div>
             </CardContent>
             </Card>
             <Card className="bg-green-600 text-white">
@@ -176,7 +171,7 @@ export default function DashboardPage() {
                 <CheckCircle className="h-4 w-4 text-white/70" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{completedGoals}</div>
+                <div className="text-2xl font-bold">{doneCount}</div>
             </CardContent>
             </Card>
             <Card className="bg-yellow-500 text-white">
@@ -185,7 +180,7 @@ export default function DashboardPage() {
                 <Clock className="h-4 w-4 text-white/70" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">{activeGoals}</div>
+                <div className="text-2xl font-bold">{inprogressCount}</div>
             </CardContent>
             </Card>
             <Card className="bg-sky-500 text-white">
