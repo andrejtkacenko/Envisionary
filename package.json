@@ -1,4 +1,3 @@
-
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -48,6 +47,8 @@
     "feather-icons": "^4.29.2",
     "firebase": "^11.9.1",
     "genkit": "^1.14.1",
+    "google-auth-library": "^9.11.0",
+    "googleapis": "^140.0.0",
     "lucide-react": "^0.475.0",
     "next": "15.3.3",
     "patch-package": "^8.0.0",

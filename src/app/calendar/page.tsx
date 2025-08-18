@@ -18,8 +18,7 @@ import { ChevronLeft, ChevronRight, PlusCircle, Calendar as CalendarIcon } from 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
-// We will create this component in the next step
-// import { DayScheduleDialog } from '@/components/day-schedule-dialog'; 
+import { DayScheduleDialog } from '@/components/day-schedule-dialog'; 
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -38,18 +37,17 @@ export default function CalendarPage() {
   const goToNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
-  // Dummy state for the dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const handleDayClick = (day: Date) => {
-    // This will eventually open the DayScheduleDialog
     setSelectedDate(day);
     setIsDialogOpen(true);
-    console.log("Day clicked:", day);
   };
   
   const hasEvent = (day: Date) => {
+      // This is a placeholder. In a real app, you would check if a schedule
+      // has been saved for this day in your database.
       return events.some(event => isSameDay(new Date(event.date), day));
   }
 
@@ -100,7 +98,6 @@ export default function CalendarPage() {
                         <span className={cn("text-xs sm:text-sm font-medium", isToday(day) && "text-primary")}>
                             {format(day, 'd')}
                         </span>
-                        {/* Event indicators would go here */}
                          {hasEvent(day) && (
                             <div className="mt-1 flex-grow overflow-hidden">
                                 <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-accent mx-auto"></div>
@@ -110,15 +107,13 @@ export default function CalendarPage() {
                 ))}
             </div>
         </div>
-        {/* Placeholder for dialog logic */}
-        {isDialogOpen && selectedDate && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setIsDialogOpen(false)}>
-                <div className="bg-card p-6 rounded-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
-                    <h3 className="font-headline text-lg">Schedule for {format(selectedDate, 'PPP')}</h3>
-                    <p className="text-muted-foreground text-sm mt-2">Dialog for scheduling AI tasks would appear here.</p>
-                    <Button className="mt-4 w-full" onClick={() => setIsDialogOpen(false)}>Close</Button>
-                </div>
-            </div>
+        
+        {selectedDate && (
+           <DayScheduleDialog
+                isOpen={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                date={selectedDate}
+            />
         )}
     </div>
   );
