@@ -91,15 +91,17 @@ export default function DashboardPage() {
   const recentGoals = goals.slice(-4).reverse()
 
   const categoryProgress = goals.reduce((acc, goal) => {
-    if (!acc[goal.project]) {
-      acc[goal.project] = { total: 0, completed: 0, name: goal.project }
+    const projectName = goal.project || "Uncategorized";
+    if (!acc[projectName]) {
+      acc[projectName] = { total: 0, completed: 0, name: projectName };
     }
-    acc[goal.project].total++
+    acc[projectName].total++;
     if (goal.status === 'done') {
-      acc[goal.project].completed++
+      acc[projectName].completed++;
     }
-    return acc
-  }, {} as Record<string, { name: string, total: number; completed: number }>)
+    return acc;
+  }, {} as Record<string, { name: string, total: number; completed: number }>);
+
 
   const categoryData = Object.values(categoryProgress).map((data, index) => ({
     name: data.name,
