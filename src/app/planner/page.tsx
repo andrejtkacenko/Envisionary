@@ -78,7 +78,7 @@ const DailyScheduleView = React.memo(function DailyScheduleView({
             <div className="space-y-2 pr-4">
                 {items.map((item, itemIndex) => (
                     <SortableItem 
-                        key={item.id}
+                        key={`${item.id}-${itemIndex}`}
                         item={item} 
                         isEditing={isEditing}
                         onUpdate={(time, task) => onUpdateItem(itemIndex, time, task)}
@@ -367,5 +367,7 @@ export default function PlannerPage() {
         </div>
     );
 }
+
+    
 
     
