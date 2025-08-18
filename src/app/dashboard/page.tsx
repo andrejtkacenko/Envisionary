@@ -85,10 +85,12 @@ export default function DashboardPage() {
 
 
   // Process goal data for stats and charts
-  const totalGoals = goals.length
-  const completedGoals = goals.filter(g => g.status === 'done').length
-  const activeGoals = goals.filter(g => g.status === 'inprogress').length
-  const recentGoals = goals.slice(-4).reverse()
+  const allTasks = goals.flatMap(g => [g, ...(g.subGoals || [])]);
+
+  const totalGoals = allTasks.length;
+  const completedGoals = allTasks.filter(g => g.status === 'done').length;
+  const activeGoals = allTasks.filter(g => g.status === 'inprogress').length;
+  const recentGoals = goals.slice(-4).reverse();
 
   const categoryProgress = goals.reduce((acc, goal) => {
     const projectName = goal.project || "Uncategorized";
@@ -105,14 +107,14 @@ export default function DashboardPage() {
 
   const categoryData = Object.values(categoryProgress).map((data, index) => ({
     name: data.name,
-    value: data.completed,
+    value: data.total, // Changed from data.completed to data.total
     fill: `hsl(var(--chart-${(index % 5) + 1}))`
   }));
   
   const chartData = [
     { name: "Completed", value: completedGoals, fill: "hsl(var(--chart-2))" },
     { name: "In Progress", value: activeGoals, fill: "hsl(var(--chart-4))" },
-    { name: "To Do", value: goals.filter(g => g.status === 'todo').length, fill: "hsl(var(--muted))" },
+    { name: "To Do", value: allTasks.filter(g => g.status === 'todo').length, fill: "hsl(var(--muted))" },
   ]
 
   if (isLoading) {
