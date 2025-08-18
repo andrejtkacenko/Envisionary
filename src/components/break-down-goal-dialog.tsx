@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Sparkles, Wand2, Plus, X } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Plus, X, Clock } from "lucide-react";
 import { breakDownGoal, BreakDownGoalOutput } from "@/ai/flows/break-down-goal";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 interface BreakDownGoalDialogProps {
   goal: Goal;
@@ -71,7 +72,7 @@ export function BreakDownGoalDialog({ goal, children, onSubGoalsAdd }: BreakDown
 
   const handleManualAdd = () => {
     if (manualInput.trim() === "") return;
-    setSubGoals(prev => [...prev, { title: manualInput.trim(), description: "Manually added task." }]);
+    setSubGoals(prev => [...prev, { title: manualInput.trim(), description: "Manually added task.", estimatedTime: "N/A" }]);
     setManualInput("");
   }
 
@@ -147,14 +148,20 @@ export function BreakDownGoalDialog({ goal, children, onSubGoalsAdd }: BreakDown
                         <h4 className="text-sm font-medium text-muted-foreground">Sub-goal List</h4>
                         {subGoals.map((sg, i) => (
                             <Card key={i}>
-                                <CardContent className="p-3 flex items-center justify-between">
-                                    <div>
+                                <CardContent className="p-3 flex items-start justify-between gap-4">
+                                    <div className="flex-grow">
                                         <p className="font-semibold text-sm">{sg.title}</p>
                                         <p className="text-sm text-muted-foreground">{sg.description}</p>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveSubGoal(i)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex items-center gap-4">
+                                      <Badge variant="outline" className="flex-shrink-0">
+                                          <Clock className="mr-1.5 h-3 w-3"/>
+                                          {sg.estimatedTime}
+                                      </Badge>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => handleRemoveSubGoal(i)}>
+                                          <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
                                 </CardContent>
                             </Card>
                         ))}

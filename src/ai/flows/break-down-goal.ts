@@ -20,10 +20,11 @@ export type BreakDownGoalInput = z.infer<typeof BreakDownGoalInputSchema>;
 const SubGoalSchema = z.object({
     title: z.string().describe('The title of the sub-goal.'),
     description: z.string().describe('A brief description of the sub-goal.'),
+    estimatedTime: z.string().describe('An estimation of how long the sub-goal will take to complete (e.g., "30 minutes", "2 hours").'),
 });
 
 const BreakDownGoalOutputSchema = z.object({
-  subGoals: z.array(SubGoalSchema).describe('A list of suggested sub-goals.'),
+  subGoals: z.array(SubGoalSchema).describe('A list of suggested sub-goals with time estimates.'),
 });
 export type BreakDownGoalOutput = z.infer<typeof BreakDownGoalOutputSchema>;
 
@@ -35,7 +36,7 @@ const prompt = ai.definePrompt({
   name: 'breakDownGoalPrompt',
   input: {schema: BreakDownGoalInputSchema},
   output: {schema: BreakDownGoalOutputSchema},
-  prompt: `You are a productivity expert. Your task is to break down a complex goal into smaller, actionable sub-goals. For each sub-goal, provide a clear title and a one-sentence description.
+  prompt: `You are a productivity expert. Your task is to break down a complex goal into smaller, actionable sub-goals. For each sub-goal, provide a clear title, a one-sentence description, and an estimated time to complete it.
 
 Goal Title: {{{title}}}
 {{#if description}}
