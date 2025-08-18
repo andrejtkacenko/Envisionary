@@ -62,7 +62,6 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
     { href: "/", label: "Kanban Board", icon: KanbanSquare },
     { href: "/coach", label: "AI Coach", icon: Zap },
     { href: "/planner", label: "Planner", icon: Calendar },
-    { href: "/calendar", label: "Calendar", icon: Calendar },
     { href: "/library", label: "Library", icon: Library },
   ];
 

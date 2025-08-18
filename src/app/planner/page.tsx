@@ -5,7 +5,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Sparkles, Calendar, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo, Trash2 } from 'lucide-react';
+import { Loader2, Sparkles, Calendar as CalendarIcon, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo, Trash2, Download } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,13 +14,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { generateSchedule, type GenerateScheduleInput, type GenerateScheduleOutput } from '@/ai/flows/generate-schedule';
-import { saveSchedule, getSchedule, getGoals, type WeeklySchedule, type ScheduledItem, type Goal, type DailyGoalTask } from '@/lib/goals-service';
+import { generateIcs } from '@/ai/flows/generate-ics';
+import { saveSchedule, getSchedule, getGoals, type WeeklySchedule, type ScheduledItem, type Goal, type DailyGoalTask, type DailySchedule } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GoalSelectorPopover } from '@/components/goal-selector-popover';
+import { cn } from '@/lib/utils';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -46,9 +49,10 @@ const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: Scheduled
     };
     
     // We need to stop propagation on blur events to prevent the drag-and-drop context from interfering.
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>, field: 'time' | 'task') => {
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>, field: 'time' | 'task') => {
         e.stopPropagation();
-        onUpdate(field === 'time' ? e.target.value : item.time, field === 'task' ? e.target.value : item.task);
+        const target = e.target as HTMLInputElement | HTMLTextAreaElement;
+        onUpdate(field === 'time' ? target.value : item.time, field === 'task' ? target.value : item.task);
     };
 
     return (
@@ -110,7 +114,10 @@ export default function PlannerPage() {
     const [isEditing, setIsEditing] = useState(false);
     const [schedule, setSchedule] = useState<GenerateScheduleOutput | null>(null);
     const [goals, setGoals] = useState<Goal[]>([]);
-    const [currentDayIndex, setCurrentDayIndex] = useState(new Date().getDay() - 1); 
+    
+    // Calendar state
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(new Date());
 
     const form = useForm<GenerateScheduleInput>({
         resolver: zodResolver(GenerateScheduleInputSchema),
@@ -120,23 +127,27 @@ export default function PlannerPage() {
             priorities: "Focus on completing work tasks, but also make time for exercise and relaxation."
         }
     });
-
+    
     const { fields, update, replace } = useFieldArray({ control: form.control, name: "dailyGoals" });
+
+    const fetchScheduleData = useCallback((uid: string) => {
+        setIsDataLoading(true);
+        Promise.all([
+            getSchedule(uid),
+            getGoals(uid)
+        ]).then(([savedSchedule, userGoals]) => {
+            if (savedSchedule) {
+                setSchedule({ weeklySchedule: savedSchedule.scheduleData });
+            }
+            setGoals(userGoals);
+        }).finally(() => setIsDataLoading(false));
+    }, []);
 
     useEffect(() => {
         if (user) {
-            setIsDataLoading(true);
-            Promise.all([
-                getSchedule(user.uid),
-                getGoals(user.uid)
-            ]).then(([savedSchedule, userGoals]) => {
-                if (savedSchedule) {
-                    setSchedule({ weeklySchedule: savedSchedule.scheduleData });
-                }
-                setGoals(userGoals);
-            }).finally(() => setIsDataLoading(false));
+            fetchScheduleData(user.uid);
         }
-    }, [user]);
+    }, [user, fetchScheduleData]);
 
     const onSubmit = async (data: GenerateScheduleInput) => {
         setIsLoading(true);
@@ -146,6 +157,8 @@ export default function PlannerPage() {
             setSchedule(result);
             if (user && result) {
                 await saveSchedule(user.uid, { id: user.uid, scheduleData: result.weeklySchedule });
+                // Refetch to ensure consistency and get latest saved data
+                fetchScheduleData(user.uid);
             }
         } catch (error) {
             console.error("Failed to generate schedule", error);
@@ -164,6 +177,11 @@ export default function PlannerPage() {
           distance: 8,
         },
     }));
+
+    const currentDayIndex = useMemo(() => {
+      // getDay() is 0 for Sunday, 6 for Saturday. We want 0 for Monday, 6 for Sunday.
+      return (selectedDate.getDay() + 6) % 7;
+    }, [selectedDate]);
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -237,14 +255,59 @@ export default function PlannerPage() {
         update(dayIndex, { day: daysOfWeek[dayIndex], tasks: currentTasks.filter(t => t.id !== taskId) });
     };
 
-    const goToPreviousDay = () => {
-        setCurrentDayIndex(prev => (prev > 0 ? prev - 1 : daysOfWeek.length - 1));
-    }
-    const goToNextDay = () => {
-        setCurrentDayIndex(prev => (prev < daysOfWeek.length - 1 ? prev + 1 : 0));
-    }
-    
     const currentDaySchedule = schedule?.weeklySchedule[currentDayIndex];
+
+    // Calendar logic
+    const firstDayOfMonth = startOfMonth(currentMonth);
+    const lastDayOfMonth = endOfMonth(currentMonth);
+    const daysInMonth = eachDayOfInterval({
+        start: startOfWeek(firstDayOfMonth),
+        end: endOfWeek(lastDayOfMonth),
+    });
+    const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+    const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+    const hasScheduleForDay = (day: Date) => {
+        const index = (day.getDay() + 6) % 7;
+        return schedule?.weeklySchedule[index]?.schedule.length > 0;
+    };
+    
+    const [isDownloading, setIsDownloading] = useState(false);
+    const handleDownloadIcs = async () => {
+        if (!currentDaySchedule) {
+            toast({ variant: 'destructive', title: 'No schedule to download.' });
+            return;
+        }
+        setIsDownloading(true);
+
+        try {
+            const { icsString } = await generateIcs({ schedule: currentDaySchedule, date: selectedDate.toISOString() });
+            if (!icsString) {
+                throw new Error("Failed to generate .ics data.");
+            }
+            const blob = new Blob([icsString], { type: 'text/calendar' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `schedule-${format(selectedDate, 'yyyy-MM-dd')}.ics`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast({
+                title: "Schedule Downloaded",
+                description: "You can import the .ics file into your calendar app.",
+            });
+        } catch (error) {
+            console.error("Failed to generate or download .ics file", error);
+            toast({
+                variant: "destructive",
+                title: "Download Failed",
+                description: "Could not create the calendar file. Please try again.",
+            });
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
 
     return (
@@ -252,35 +315,57 @@ export default function PlannerPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-                        <Calendar /> AI Weekly Planner
+                        <CalendarIcon /> AI Planner
                     </h1>
                     <p className="text-muted-foreground">
-                        Select goals for each day and let AI create an optimized schedule for you.
+                        Define your week, generate a schedule, and export it to your calendar.
                     </p>
                 </div>
-                {schedule && (
-                    <div className="flex gap-2">
-                        {isEditing ? (
-                            <>
-                                <Button variant="outline" onClick={() => setIsEditing(false)}>
-                                    <X className="mr-2 h-4 w-4" /> Cancel
-                                </Button>
-                                <Button onClick={handleSaveSchedule} disabled={isLoading}>
-                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                    Save
-                                </Button>
-                            </>
-                        ) : (
-                            <Button onClick={() => setIsEditing(true)}>
-                                <Edit className="mr-2 h-4 w-4" /> Edit
-                            </Button>
-                        )}
-                    </div>
-                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1">
+                {/* Left Column: Calendar + Definer */}
+                <div className="lg:col-span-1 space-y-8">
+                    <Card>
+                         <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <h2 className="text-lg sm:text-xl font-semibold font-headline text-center">
+                                    {format(currentMonth, 'MMMM yyyy')}
+                                </h2>
+                                <Button variant="outline" size="icon" onClick={goToNextMonth}>
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="grid grid-cols-7 text-center font-semibold text-xs sm:text-sm text-muted-foreground">
+                                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                                    <div key={day} className="py-2">{day}</div>
+                                ))}
+                            </div>
+                             <div className="grid grid-cols-7 gap-1">
+                                {daysInMonth.map((day, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setSelectedDate(day)}
+                                        className={cn(
+                                            "relative flex h-10 w-10 items-center justify-center rounded-md text-sm transition-colors hover:bg-muted",
+                                            format(day, 'M') !== format(currentMonth, 'M') && "text-muted-foreground/50",
+                                            isToday(day) && "bg-primary/10 text-primary",
+                                            isSameDay(day, selectedDate) && "bg-primary text-primary-foreground",
+                                            hasScheduleForDay(day) && !isSameDay(day, selectedDate) && "bg-accent/20"
+                                        )}
+                                    >
+                                        <span>{format(day, 'd')}</span>
+                                        {hasScheduleForDay(day) && <div className="absolute bottom-1 h-1 w-1 rounded-full bg-accent"></div>}
+                                    </button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
                     <Card>
                         <CardHeader>
                             <CardTitle>Define Your Week</CardTitle>
@@ -351,7 +436,7 @@ export default function PlannerPage() {
                                     </div>
                                     <Button type="submit" className="w-full" disabled={isLoading}>
                                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                        Generate Schedule
+                                        Generate Full Week Schedule
                                     </Button>
                                 </form>
                             </Form>
@@ -360,25 +445,39 @@ export default function PlannerPage() {
                     </Card>
                 </div>
 
+                 {/* Right Column: Schedule View */}
                 <div className="lg:col-span-2">
                     <Card className="h-full">
                         <CardHeader>
-                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                                 <div>
-                                    <CardTitle>Your AI-Generated Schedule</CardTitle>
+                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <CardTitle>Schedule for {format(selectedDate, "eeee, MMMM do")}</CardTitle>
                                     <CardDescription>Drag and drop to reorder tasks in edit mode.</CardDescription>
-                                 </div>
-                                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                                    <Button variant="outline" size="icon" onClick={goToPreviousDay}>
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </Button>
-                                    <span className="font-semibold text-lg w-full sm:w-28 text-center">{daysOfWeek[currentDayIndex]}</span>
-                                     <Button variant="outline" size="icon" onClick={goToNextDay}>
-                                        <ChevronRight className="h-4 w-4" />
-                                    </Button>
-                                 </div>
+                                </div>
+                                {currentDaySchedule && (
+                                    <div className="flex gap-2 w-full sm:w-auto">
+                                        {isEditing ? (
+                                            <>
+                                                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                                                    <X className="mr-2 h-4 w-4" /> Cancel
+                                                </Button>
+                                                <Button onClick={handleSaveSchedule} disabled={isLoading}>
+                                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Button variant="outline" onClick={handleDownloadIcs} disabled={isDownloading}>
+                                                    {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                                </Button>
+                                                <Button onClick={() => setIsEditing(true)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                           
                         </CardHeader>
                         <CardContent>
                             {isLoading && !schedule && (
@@ -393,14 +492,14 @@ export default function PlannerPage() {
                                     <p>Loading your data...</p>
                                 </div>
                             )}
-                            {!isDataLoading && !isLoading && !schedule && (
+                            {!isDataLoading && !isLoading && (!schedule || !currentDaySchedule || currentDaySchedule.schedule.length === 0) && (
                                 <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
                                     <ListTodo className="h-12 w-12" />
-                                    <p>Your schedule will appear here once generated.</p>
-                                    <p className="text-xs">Select some goals on the left to start.</p>
+                                    <p>No schedule for this day.</p>
+                                    <p className="text-xs">Generate a schedule or select a different day.</p>
                                 </div>
                             )}
-                            {schedule && currentDaySchedule && (
+                            {schedule && currentDaySchedule && currentDaySchedule.schedule.length > 0 && (
                                 <ScrollArea className="h-[calc(100vh-22rem)]">
                                      <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
                                         <DailyScheduleView 

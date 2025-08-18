@@ -38,11 +38,6 @@ export function AppSidebar() {
         icon: CalendarIcon,
     },
     {
-        href: "/calendar",
-        label: "Calendar",
-        icon: CalendarIcon,
-    },
-    {
         href: "/library",
         label: "Library",
         icon: Library,
