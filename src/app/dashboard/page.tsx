@@ -18,6 +18,8 @@ import {
 import { PieChart, Pie, Cell } from "recharts"
 import type { Goal } from "@/types"
 import { getGoals } from "@/lib/goals-service"
+import { summarizeProgress, SummarizeProgressOutput } from "@/ai/flows/summarize-progress";
+import { useToast } from "@/hooks/use-toast"
 
 const chartConfig = {
   completed: {
@@ -36,8 +38,11 @@ const chartConfig = {
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const { toast } = useToast();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInsightsLoading, setIsInsightsLoading] = useState(false);
+  const [insights, setInsights] = useState<SummarizeProgressOutput | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -55,6 +60,28 @@ export default function DashboardPage() {
       fetchGoals();
     }
   }, [user]);
+  
+  const handleGenerateInsights = async () => {
+    setIsInsightsLoading(true);
+    setInsights(null);
+    try {
+        const taskString = goals
+            .map((goal) => `- ${goal.title} (Status: ${goal.status}, Priority: ${goal.priority})`)
+            .join("\n");
+        
+        const result = await summarizeProgress({ tasks: taskString || "No goals found." });
+        setInsights(result);
+    } catch (error) {
+        console.error("Analysis error:", error);
+        toast({
+            variant: "destructive",
+            title: "Analysis Failed",
+            description: "Could not generate progress analysis.",
+        });
+    } finally {
+        setIsInsightsLoading(false);
+    }
+  };
 
 
   // Process goal data for stats and charts
@@ -107,8 +134,8 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <Zap />
+          <Button variant="outline" size="sm" onClick={handleGenerateInsights} disabled={isInsightsLoading}>
+            {isInsightsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
             Generate Insights
           </Button>
         </div>
@@ -247,10 +274,19 @@ export default function DashboardPage() {
             <CardTitle>AI Insights</CardTitle>
           </CardHeader>
           <CardContent>
-             <div className="text-center text-muted-foreground py-12">
-                <Zap className="mx-auto h-12 w-12" />
-                <p className="mt-4">No insights generated yet. Click the button above to get personalized AI insights!</p>
-             </div>
+             {isInsightsLoading ? (
+                 <div className="text-center text-muted-foreground py-12">
+                    <Loader2 className="mx-auto h-12 w-12 animate-spin" />
+                    <p className="mt-4">AI is analyzing your progress...</p>
+                 </div>
+             ) : insights ? (
+                <p className="text-sm whitespace-pre-wrap">{insights.summary}</p>
+             ) : (
+                <div className="text-center text-muted-foreground py-12">
+                    <Zap className="mx-auto h-12 w-12" />
+                    <p className="mt-4">No insights generated yet. Click the button above to get personalized AI insights!</p>
+                </div>
+             )}
           </CardContent>
         </Card>
       </div>
