@@ -418,16 +418,16 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                     )}
                 </ScrollArea>
                  <div className="flex gap-2">
-                    <Button type="button" variant="secondary" className="w-full" onClick={handleAddManualSubGoal}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Sub-goal Manually
-                    </Button>
                     {subGoals.length > 0 && (
                         <Button type="button" variant="outline" onClick={() => setSubGoals([])}>
                              <ListX className="mr-2 h-4 w-4" />
                              Clear list
                         </Button>
                     )}
+                    <Button type="button" variant="secondary" className="w-full" onClick={handleAddManualSubGoal}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Sub-goal
+                    </Button>
                 </div>
                 </div>
                 
@@ -505,3 +505,5 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
     </Dialog>
   );
 }
+
+    
