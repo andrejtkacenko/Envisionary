@@ -35,7 +35,7 @@ export function KanbanColumn({ column, onGoalUpdate, onGoalDelete }: KanbanColum
       <div 
         ref={setNodeRef} 
         className={cn(
-            "flex flex-col gap-4 h-full sm:overflow-y-auto sm:pr-2 rounded-lg p-2 transition-colors duration-200",
+            "flex flex-col gap-4 rounded-lg p-2 transition-colors duration-200",
             isOver ? "bg-primary/10" : "bg-muted/40"
         )}
       >

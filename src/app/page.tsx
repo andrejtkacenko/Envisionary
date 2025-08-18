@@ -154,11 +154,11 @@ export default function Home() {
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-        <div className="flex flex-col h-screen sm:h-auto">
+        <div className="flex flex-col">
         <AppHeader allGoals={goals} />
-        <main className="flex-1 overflow-x-auto p-4">
+        <main className="flex-1 p-4">
             {isLoading ? (
-            <div className="flex h-full w-full items-center justify-center">
+            <div className="flex h-full w-full items-center justify-center py-24">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
             ) : (
