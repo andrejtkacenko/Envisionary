@@ -9,38 +9,16 @@ interface GoalStats {
 }
 
 /**
- * Calculates statistics for a list of goals, including their sub-goals.
+ * Calculates statistics for a list of goals.
+ * This function only considers top-level goals and does not count sub-goals.
  * @param goals - An array of Goal objects.
  * @returns An object containing counts for total, to-do, in-progress, and done goals.
  */
 export function calculateGoalStats(goals: Goal[]): GoalStats {
-  let totalCount = 0;
-  let todoCount = 0;
-  let inprogressCount = 0;
-  let doneCount = 0;
-
-  const countGoalsRecursively = (goalList: Goal[]) => {
-    for (const goal of goalList) {
-      totalCount++;
-      switch (goal.status) {
-        case "todo":
-          todoCount++;
-          break;
-        case "inprogress":
-          inprogressCount++;
-          break;
-        case "done":
-          doneCount++;
-          break;
-      }
-
-      if (goal.subGoals && goal.subGoals.length > 0) {
-        countGoalsRecursively(goal.subGoals);
-      }
-    }
-  };
-
-  countGoalsRecursively(goals);
+  const totalCount = goals.length;
+  const todoCount = goals.filter(g => g.status === 'todo').length;
+  const inprogressCount = goals.filter(g => g.status === 'inprogress').length;
+  const doneCount = goals.filter(g => g.status === 'done').length;
 
   return { totalCount, todoCount, inprogressCount, doneCount };
 }
