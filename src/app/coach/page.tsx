@@ -35,6 +35,11 @@ type ChatMessage = {
     toolResult?: any;
 };
 
+const initialMessage: ChatMessage = { 
+    role: 'assistant', 
+    content: "Hello! I'm your AI Coach. I can help you manage your goals. Try asking me to create a new goal or improve an existing one. How can I support you today?" 
+};
+
 const callTool = async (toolRequest: any, userId: string): Promise<any> => {
     const toolName = toolRequest.name;
     const args = toolRequest.input;
@@ -56,9 +61,7 @@ export default function CoachPage() {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
-        { role: 'assistant', content: "Hello! I'm your AI Coach. I can help you manage your goals. Try asking me to create a new goal or improve an existing one. How can I support you today?" }
-    ]);
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [userInput, setUserInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
@@ -71,6 +74,32 @@ export default function CoachPage() {
         "Improve my goal 'read more books'",
         "What are my current goals?",
     ];
+
+    // Load chat history from localStorage on mount
+    useEffect(() => {
+        try {
+            const savedHistory = localStorage.getItem('coachChatHistory');
+            if (savedHistory) {
+                setChatHistory(JSON.parse(savedHistory));
+            } else {
+                setChatHistory([initialMessage]);
+            }
+        } catch (error) {
+            console.error("Failed to load chat history from localStorage", error);
+            setChatHistory([initialMessage]);
+        }
+    }, []);
+
+    // Save chat history to localStorage whenever it changes
+    useEffect(() => {
+        if (chatHistory.length > 0) {
+            try {
+                localStorage.setItem('coachChatHistory', JSON.stringify(chatHistory));
+            } catch (error) {
+                console.error("Failed to save chat history to localStorage", error);
+            }
+        }
+    }, [chatHistory]);
 
     const fetchGoals = useCallback(async () => {
         if (user) {
@@ -153,9 +182,7 @@ export default function CoachPage() {
     };
     
     const handleClearChat = () => {
-        setChatHistory([
-            { role: 'assistant', content: "Hello! I'm your AI Coach. I'm here to help you achieve your goals with personalized insights and recommendations. How can I support you today?" }
-        ]);
+        setChatHistory([initialMessage]);
     };
 
     return (
@@ -313,3 +340,5 @@ export default function CoachPage() {
         </div>
     );
 }
+
+    
