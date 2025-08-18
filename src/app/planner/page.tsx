@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Sparkles, Calendar as CalendarIcon, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo, Trash2, Download } from 'lucide-react';
+import { Loader2, Sparkles, Calendar as CalendarIcon, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo, Trash2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { generateIcs } from '@/ai/flows/generate-ics';
 import { saveSchedule, getSchedule, getGoals, type WeeklySchedule, type ScheduledItem, type Goal, type DailyGoalTask, type DailySchedule } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -229,43 +228,6 @@ export default function PlannerPage() {
         return schedule?.scheduleData[index]?.schedule.length > 0;
     };
     
-    const [isDownloading, setIsDownloading] = useState(false);
-    const handleDownloadIcs = async () => {
-        if (!currentDaySchedule) {
-            toast({ variant: 'destructive', title: 'No schedule to download.' });
-            return;
-        }
-        setIsDownloading(true);
-
-        try {
-            const { icsString } = await generateIcs({ schedule: currentDaySchedule, date: selectedDate.toISOString() });
-            if (!icsString) {
-                throw new Error("Failed to generate .ics data.");
-            }
-            const blob = new Blob([icsString], { type: 'text/calendar' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `schedule-${format(selectedDate, 'yyyy-MM-dd')}.ics`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            toast({
-                title: "Schedule Downloaded",
-                description: "You can import the .ics file into your calendar app.",
-            });
-        } catch (error) {
-            console.error("Failed to generate or download .ics file", error);
-            toast({
-                variant: "destructive",
-                title: "Download Failed",
-                description: "Could not create the calendar file. Please try again.",
-            });
-        } finally {
-            setIsDownloading(false);
-        }
-    };
 
 
     return (
@@ -349,9 +311,6 @@ export default function PlannerPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <Button variant="outline" onClick={handleDownloadIcs} disabled={isDownloading}>
-                                                    {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                                                </Button>
                                                 <Button onClick={() => setIsEditing(true)}>
                                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                                 </Button>
@@ -394,3 +353,5 @@ export default function PlannerPage() {
         </div>
     );
 }
+
+    

@@ -48,7 +48,6 @@
     "feather-icons": "^4.29.2",
     "firebase": "^11.9.1",
     "genkit": "^1.14.1",
-    "ics": "^3.7.2",
     "lodash.isequal": "^4.5.0",
     "lucide-react": "^0.475.0",
     "nanoid": "^5.0.7",
