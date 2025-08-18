@@ -9,9 +9,10 @@ import { KanbanBoard } from '@/components/kanban-board';
 import { KANBAN_COLUMNS } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { getGoals, addGoal, addGoals, updateGoal, deleteGoal } from '@/lib/goals-service';
-import { Loader2, Target, Plus, AlertTriangle } from 'lucide-react';
+import { Loader2, Target, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 import {
   DndContext,
@@ -35,6 +36,7 @@ export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
 
   const fetchGoals = useCallback(async () => {
     if (!user) return;
@@ -100,16 +102,29 @@ export default function Home() {
       await updateGoal(user.uid, updatedGoal);
     } catch (e) {
       console.error("Error updating goal:", e);
+      // Optional: Revert state on failure
+      toast({
+          variant: "destructive",
+          title: "Update Failed",
+          description: "Could not save your changes. Please try again.",
+      });
+      fetchGoals(); // Re-fetch to ensure UI is consistent
     }
   };
   
   const handleGoalDelete = async (goalId: string) => {
     if (!user) return;
     try {
-      await deleteGoal(user.uid, goalId);
       setGoals((prev) => prev.filter((goal) => goal.id !== goalId));
+      await deleteGoal(user.uid, goalId);
     } catch (e) {
       console.error("Error deleting goal:", e);
+       toast({
+          variant: "destructive",
+          title: "Delete Failed",
+          description: "Could not delete the goal. Please try again.",
+      });
+      fetchGoals(); // Re-fetch to ensure UI is consistent
     }
   }
 
@@ -143,61 +158,74 @@ export default function Home() {
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    if (!over) return;
+    if (!over || !activeGoal) return;
   
     const activeId = active.id as string;
     const overId = over.id as string;
   
-    // Check if we are over a column or a card
-    const isActiveGoal = active.data.current?.type === 'Goal';
-    const isOverGoal = over.data.current?.type === 'Goal';
-    const isOverColumn = over.data.current?.type === 'Column';
+    const isActiveAGoal = active.data.current?.type === 'Goal';
+    if (!isActiveAGoal) return;
 
-    if (!isActiveGoal) return;
-  
+    // Determine if we're dragging over a column or another goal
+    const overIsAColumn = over.data.current?.type === 'Column';
+    const overIsAGoal = over.data.current?.type === 'Goal';
+
     setGoals(currentGoals => {
-      const activeIndex = currentGoals.findIndex(g => g.id === activeId);
-      if (activeIndex === -1) return currentGoals;
-  
       let newGoals = [...currentGoals];
-      const activeGoal = newGoals[activeIndex];
-  
-      if (isOverGoal) {
-        const overIndex = newGoals.findIndex(g => g.id === overId);
-        if (overIndex !== -1) {
-          const overGoal = newGoals[overIndex];
-          if (activeGoal.status !== overGoal.status) {
-            newGoals[activeIndex] = { ...activeGoal, status: overGoal.status };
-            newGoals = arrayMove(newGoals, activeIndex, overIndex);
-          } else if (activeIndex !== overIndex) {
-            newGoals = arrayMove(newGoals, activeIndex, overIndex);
-          }
-        }
-      } else if (isOverColumn) {
-        const overColumnId = overId as GoalStatus;
-        if (activeGoal.status !== overColumnId) {
-           newGoals[activeIndex] = { ...activeGoal, status: overColumnId };
-        }
+      const activeIndex = newGoals.findIndex(g => g.id === activeId);
+      
+      // Dragging over a column
+      if (overIsAColumn && activeGoal.status !== overId) {
+          newGoals[activeIndex] = { ...newGoals[activeIndex], status: overId as GoalStatus };
+          return newGoals;
       }
-      return newGoals;
+
+      // Dragging over another goal
+      if (overIsAGoal) {
+          const overIndex = newGoals.findIndex(g => g.id === overId);
+          const overGoal = newGoals[overIndex];
+
+          // If goals are in different columns, move to the new column
+          if (activeGoal.status !== overGoal.status) {
+              newGoals[activeIndex] = { ...newGoals[activeIndex], status: overGoal.status };
+              return arrayMove(newGoals, activeIndex, overIndex);
+          }
+
+          // If in the same column, just reorder
+          if (activeIndex !== overIndex) {
+              return arrayMove(newGoals, activeIndex, overIndex);
+          }
+      }
+      
+      return currentGoals; // No change
     });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveGoal(null);
     const { active, over } = event;
-    if (!over) return;
+    if (!over || !user) return;
 
     const activeGoalId = active.id as string;
-    const finalGoal = goals.find(g => g.id === activeGoalId);
+    const updatedGoal = goals.find(g => g.id === activeGoalId);
 
-    if (finalGoal && user) {
-        // Find the original state of the goal before drag started to check for changes
-        const originalGoal = goalsMap[activeGoalId];
-        if (originalGoal && (originalGoal.status !== finalGoal.status || originalGoal.id !== finalGoal.id)) {
-            updateGoal(user.uid, finalGoal).catch(e => {
+    // Find the original state of the goal before drag started
+    const originalGoal = goalsMap[activeGoalId];
+
+    if (updatedGoal && originalGoal) {
+        // Only trigger update if status or position actually changed
+        const hasChanged = originalGoal.status !== updatedGoal.status || 
+                           goals.findIndex(g => g.id === activeGoalId) !== Object.values(goalsMap).findIndex(g => g.id === activeGoalId);
+
+        if (hasChanged) {
+            updateGoal(user.uid, updatedGoal).catch(e => {
                 console.error("Failed to save goal update:", e);
-                // Optionally revert state on failure
+                toast({
+                    variant: "destructive",
+                    title: "Save Failed",
+                    description: "Your changes could not be saved. Reverting.",
+                });
+                setGoals(Object.values(goalsMap)); // Revert on failure
             });
         }
     }
@@ -218,12 +246,13 @@ export default function Home() {
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      collisionDetection={closestCenter}
     >
         <div className="flex flex-col h-screen">
         <AppHeader allGoals={goals} />
         <main className="flex-1 overflow-x-auto p-4">
             {isLoading ? (
-            <div className="flex h-full w-full items-center justify-center py-24">
+            <div className="flex w-full items-center justify-center py-24">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
             ) : goals.length === 0 ? (
