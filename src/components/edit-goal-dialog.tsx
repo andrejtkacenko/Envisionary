@@ -7,6 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, Share2, Loader2, ListX, Clock } from "lucide-react";
 import { format } from "date-fns";
+import isEqual from 'lodash.isequal';
+
 
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -20,6 +22,16 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Form,
   FormControl,
@@ -78,9 +90,20 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [subGoals, setSubGoals] = useState<Goal[]>(goal.subGoals || []);
+  const [subGoals, setSubGoals] = useState<Goal[]>([]);
+  const [showUnsavedChangesAlert, setShowUnsavedChangesAlert] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  const form = useForm<GoalFormValues>({
+    resolver: zodResolver(goalSchema),
+  });
+
+  const { formState: { isDirty } } = form;
+  const [initialSubGoals, setInitialSubGoals] = useState<Goal[]>([]);
+
+  const subGoalsAreDirty = !isEqual(subGoals, initialSubGoals);
+  const isFormDirty = isDirty || subGoalsAreDirty;
 
 
   useEffect(() => {
@@ -95,25 +118,14 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
         dueDate: goal.dueDate,
         estimatedTime: goal.estimatedTime || "",
       });
-      setSubGoals(goal.subGoals || []);
+      const initialSg = goal.subGoals || [];
+      setSubGoals(initialSg);
+      setInitialSubGoals(initialSg);
     } else {
         // Reset editing state when dialog closes
         setIsEditing(false);
     }
-  }, [goal, open]);
-
-  const form = useForm<GoalFormValues>({
-    resolver: zodResolver(goalSchema),
-    defaultValues: {
-      title: goal.title,
-      description: goal.description || "",
-      project: goal.project,
-      status: goal.status,
-      priority: goal.priority,
-      dueDate: goal.dueDate,
-      estimatedTime: goal.estimatedTime || "",
-    },
-  });
+  }, [goal, open, form.reset]);
 
   const onSubmit = (data: GoalFormValues) => {
     const updatedGoal = {
@@ -123,10 +135,20 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
     };
     onGoalUpdate(updatedGoal);
     setIsEditing(false); // Switch back to view mode after saving
+    setInitialSubGoals(subGoals); // Update initial state after save
+    form.reset(data); // Reset form state to not be dirty
     toast({
       title: "Goal Updated",
       description: `The goal "${data.title}" has been successfully updated.`,
     });
+  };
+  
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen && isFormDirty && isEditing) {
+      setShowUnsavedChangesAlert(true);
+    } else {
+      setOpen(isOpen);
+    }
   };
 
   const handleSubGoalAdd = (newSubGoals: SubGoal[]) => {
@@ -176,7 +198,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
       dueDate: goal.dueDate,
       estimatedTime: goal.estimatedTime || ""
     });
-    setSubGoals(goal.subGoals || []);
+    setSubGoals(initialSubGoals);
     setIsEditing(false);
   }
 
@@ -228,7 +250,8 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
 
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild onClick={(e) => { e.stopPropagation(); setOpen(true); }}>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-3xl" onPointerDownOutside={(e) => {if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) { e.preventDefault(); }}}>
         <DialogHeader>
@@ -538,5 +561,22 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
         )}
       </DialogContent>
     </Dialog>
+    <AlertDialog open={showUnsavedChangesAlert} onOpenChange={setShowUnsavedChangesAlert}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+                You have unsaved changes. Are you sure you want to discard them?
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setOpen(false)}>Discard</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
+
+    
