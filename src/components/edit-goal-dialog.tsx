@@ -59,7 +59,6 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent } from "./ui/card";
-import { DeleteSubGoalAlert } from "./delete-subgoal-alert";
 import { GoalDialog } from "./goal-dialog";
 import { BreakDownGoalDialog, SubGoal } from "./break-down-goal-dialog";
 import { Badge } from "./ui/badge";
@@ -459,11 +458,9 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                                                     </Button>
                                                 }
                                             />
-                                            <DeleteSubGoalAlert onConfirm={() => handleSubGoalDelete(sg.id)}>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive">
-                                                    <Trash className="h-4 w-4" />
-                                                </Button>
-                                            </DeleteSubGoalAlert>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => handleSubGoalDelete(sg.id)}>
+                                                <Trash className="h-4 w-4" />
+                                            </Button>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -589,7 +586,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                 <AlertDialogCancel onClick={() => setShowUnsavedChangesAlert(false)}>
                     Cancel
                 </AlertDialogCancel>
-                <Button variant="destructive" onClick={() => setOpen(false)}>
+                <Button variant="outline" onClick={() => setOpen(false)}>
                     Discard Changes
                 </Button>
                 <AlertDialogAction onClick={handleSaveChanges}>
