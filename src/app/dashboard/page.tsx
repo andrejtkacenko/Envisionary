@@ -1,11 +1,11 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Zap, Target, CheckCircle, Clock, Star, Award, ChevronRight, Loader2 } from "lucide-react"
+import { Plus, Zap, Target, CheckCircle, Clock, ListTodo, Award, ChevronRight, Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import Link from "next/link"
 import {
@@ -21,20 +21,13 @@ import { getGoals } from "@/lib/goals-service"
 import { summarizeProgress, SummarizeProgressOutput } from "@/ai/flows/summarize-progress";
 import { useToast } from "@/hooks/use-toast"
 
-const chartConfig = {
-  completed: {
-    label: "Completed",
-    color: "hsl(var(--chart-2))",
-  },
-  inprogress: {
-    label: "In Progress",
-    color: "hsl(var(--chart-4))",
-  },
-  todo: {
-    label: "To Do",
-    color: "hsl(var(--muted))",
-  },
-}
+const chartColors = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
+];
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -83,35 +76,45 @@ export default function DashboardPage() {
     }
   };
 
-  const totalCount = goals.length;
-  const doneCount = goals.filter(g => g.status === 'done').length;
-  const inprogressCount = goals.filter(g => g.status === 'inprogress').length;
-  const recentGoals = goals.slice(-4).reverse();
+  const { totalCount, doneCount, inprogressCount, todoCount, recentGoals, categoryData, chartConfig } = useMemo(() => {
+    const total = goals.length;
+    const done = goals.filter(g => g.status === 'done').length;
+    const inprogress = goals.filter(g => g.status === 'inprogress').length;
+    const todo = goals.filter(g => g.status === 'todo').length;
+    
+    const recent = goals.slice(-4).reverse();
 
-  const categoryProgress = goals.reduce((acc, goal) => {
-    const projectName = goal.project || "Uncategorized";
-    if (!acc[projectName]) {
-      acc[projectName] = { total: 0, completed: 0, name: projectName };
+    const categoryCounts = goals.reduce((acc, goal) => {
+      const projectName = goal.project || "Uncategorized";
+      if (!acc[projectName]) {
+        acc[projectName] = 0;
+      }
+      acc[projectName]++;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const catData = Object.entries(categoryCounts).map(([name, value], index) => ({
+        name,
+        value,
+        fill: chartColors[index % chartColors.length]
+    }));
+
+    const chConfig = catData.reduce((acc, item) => {
+        acc[item.name] = { label: item.name, color: item.fill };
+        return acc;
+    }, {} as any)
+
+    return {
+        totalCount: total,
+        doneCount: done,
+        inprogressCount: inprogress,
+        todoCount: todo,
+        recentGoals: recent,
+        categoryData: catData,
+        chartConfig: chConfig,
     }
-    acc[projectName].total++;
-    if (goal.status === 'done') {
-      acc[projectName].completed++;
-    }
-    return acc;
-  }, {} as Record<string, { name: string, total: number; completed: number }>);
+  }, [goals]);
 
-
-  const categoryData = Object.values(categoryProgress).map((data, index) => ({
-    name: data.name,
-    value: data.total,
-    fill: `hsl(var(--chart-${(index % 5) + 1}))`
-  }));
-  
-  const chartData = [
-    { name: "Completed", value: doneCount, fill: "hsl(var(--chart-2))" },
-    { name: "In Progress", value: inprogressCount, fill: "hsl(var(--chart-4))" },
-    { name: "To Do", value: totalCount - doneCount - inprogressCount, fill: "hsl(var(--muted))" },
-  ]
 
   if (isLoading) {
     return (
@@ -177,21 +180,20 @@ export default function DashboardPage() {
             </Card>
             <Card className="bg-yellow-500 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Goals</CardTitle>
+                <CardTitle className="text-sm font-medium">In Progress</CardTitle>
                 <Clock className="h-4 w-4 text-white/70" />
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">{inprogressCount}</div>
             </CardContent>
             </Card>
-            <Card className="bg-sky-500 text-white">
+            <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Level</CardTitle>
-                <Star className="h-4 w-4 text-white/70" />
+                <CardTitle className="text-sm font-medium">To Do</CardTitle>
+                <ListTodo className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">1</div>
-                <p className="text-xs text-white/70">0 Points</p>
+                <div className="text-2xl font-bold">{todoCount}</div>
             </CardContent>
             </Card>
         </div>
@@ -199,7 +201,8 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="lg:col-span-4">
             <CardHeader>
-                <CardTitle>Progress by Category</CardTitle>
+                <CardTitle>Goals by Category</CardTitle>
+                <CardDescription>Distribution of your goals across different projects.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
                 <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
@@ -215,12 +218,12 @@ export default function DashboardPage() {
                     innerRadius={80}
                     strokeWidth={5}
                     >
-                    {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                    {categoryData.map((entry) => (
+                        <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                     ))}
                     </Pie>
                     <ChartLegend
-                    content={<ChartLegendContent nameKey="name" />}
+                        content={<ChartLegendContent nameKey="name" />}
                     />
                 </PieChart>
                 </ChartContainer>
@@ -310,3 +313,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
