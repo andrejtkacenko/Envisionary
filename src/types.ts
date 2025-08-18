@@ -63,3 +63,13 @@ export type ScheduleTemplate = {
     type: 'day' | 'week';
     data: DailySchedule[]; // For week templates, this will have 7 items. For day, just 1.
 };
+
+// Represents a daily goal with tasks that have estimated times
+export type DailyGoal = {
+  day: string;
+  tasks: {
+    id: string;
+    title: string;
+    estimatedTime?: string;
+  }[];
+};

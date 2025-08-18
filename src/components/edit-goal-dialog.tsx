@@ -436,7 +436,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                         </div>
                     )}
                 </ScrollArea>
-                 <div className="flex gap-2">
+                <div className="flex gap-2">
                     {subGoals.length > 0 && (
                         <Button type="button" variant="outline" onClick={() => setSubGoals([])}>
                              <ListX className="mr-2 h-4 w-4" />
