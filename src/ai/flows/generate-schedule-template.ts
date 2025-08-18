@@ -16,7 +16,7 @@ import type { DailySchedule } from '@/types';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-export const GenerateScheduleTemplateInputSchema = z.object({
+const GenerateScheduleTemplateInputSchema = z.object({
   description: z.string().describe('A description of the template to generate, e.g., "A productive work day" or "A relaxed weekend schedule".'),
   type: z.enum(['day', 'week']).describe('The type of template to generate.'),
 });
@@ -34,7 +34,7 @@ const DailyScheduleSchema = z.object({
   schedule: z.array(ScheduledItemSchema),
 });
 
-export const GenerateScheduleTemplateOutputSchema = z.object({
+const GenerateScheduleTemplateOutputSchema = z.object({
   templateData: z.array(DailyScheduleSchema).describe("An array of daily schedules. For a 'day' template, it will contain one item. For a 'week' template, it will contain seven items."),
 });
 export type GenerateScheduleTemplateOutput = z.infer<typeof GenerateScheduleTemplateOutputSchema>;
