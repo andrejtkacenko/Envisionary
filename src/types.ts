@@ -56,3 +56,16 @@ export type GenerateScheduleInput = {
 export type GenerateScheduleOutput = {
   weeklySchedule: DailySchedule[];
 };
+
+// Types for Goal Library
+export type GoalTemplate = {
+    id: string;
+    title: string;
+    description?: string;
+    project: string;
+    subGoals: { title: string; description: string; estimatedTime: string; }[];
+    authorId: string;
+    authorName: string;
+    likes: number;
+    createdAt: Timestamp;
+};

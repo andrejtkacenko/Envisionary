@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc } from "firebase/firestore";
-import type { Goal, WeeklySchedule } from "@/types";
+import type { Goal, WeeklySchedule, GoalTemplate } from "@/types";
 
 // Firestore data converter for Goals
 const goalConverter = {
@@ -45,6 +45,25 @@ const goalConverter = {
     }
 };
 
+// Firestore data converter for Goal Templates
+const goalTemplateConverter = {
+    toFirestore: (template: GoalTemplate) => {
+        return {
+            ...template,
+            createdAt: Timestamp.now(),
+        };
+    },
+    fromFirestore: (snapshot: any, options: any): GoalTemplate => {
+        const data = snapshot.data(options);
+        return {
+            ...data,
+            id: snapshot.id,
+            createdAt: data.createdAt,
+        };
+    }
+};
+
+
 // Firestore data converter for Schedules
 const scheduleConverter = {
     toFirestore: (schedule: WeeklySchedule) => {
@@ -67,6 +86,11 @@ const scheduleConverter = {
 const getGoalsCollection = (userId: string) => {
     return collection(db, "users", userId, "goals").withConverter(goalConverter);
 }
+
+const getGoalTemplatesCollection = () => {
+    return collection(db, "goal_templates").withConverter(goalTemplateConverter);
+}
+
 
 const getSchedulesCollection = (userId: string) => {
     return collection(db, "users", userId, "schedules").withConverter(scheduleConverter);
@@ -143,4 +167,27 @@ export const getSchedule = async (userId: string): Promise<WeeklySchedule | null
         return docSnap.data();
     }
     return null;
+};
+
+
+// --- GOAL TEMPLATE FUNCTIONS ---
+
+// Get all goal templates
+export const getGoalTemplates = async (): Promise<GoalTemplate[]> => {
+    const templatesCollection = getGoalTemplatesCollection();
+    const snapshot = await getDocs(templatesCollection);
+    return snapshot.docs.map(doc => doc.data());
+};
+
+// Add a new goal template
+export const addGoalTemplate = async (templateData: Omit<GoalTemplate, 'id' | 'createdAt'>): Promise<GoalTemplate> => {
+    const templatesCollection = getGoalTemplatesCollection();
+    const newDocRef = doc(templatesCollection);
+    const newTemplate: GoalTemplate = { 
+        ...templateData, 
+        id: newDocRef.id,
+        createdAt: Timestamp.now(),
+    };
+    await setDoc(newDocRef, newTemplate);
+    return newTemplate;
 };

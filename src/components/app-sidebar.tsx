@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, KanbanSquare, Zap, Calendar as CalendarIcon } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Zap, Calendar as CalendarIcon, Library } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import {
@@ -41,6 +41,11 @@ export function AppSidebar() {
         href: "/calendar",
         label: "Calendar",
         icon: CalendarIcon,
+    },
+    {
+        href: "/library",
+        label: "Library",
+        icon: Library,
     }
   ];
 

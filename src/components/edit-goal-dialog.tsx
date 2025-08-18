@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, ArrowLeft } from "lucide-react";
+import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, Share2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 import type { Goal } from "@/types";
@@ -52,6 +52,8 @@ import { GoalDialog } from "./goal-dialog";
 import { BreakDownGoalDialog, SubGoal } from "./break-down-goal-dialog";
 import { Badge } from "./ui/badge";
 import { DeleteGoalAlert } from "./delete-goal-alert";
+import { useAuth } from "@/context/AuthContext";
+import { addGoalTemplate } from "@/lib/goals-service";
 
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -74,8 +76,11 @@ interface EditGoalDialogProps {
 export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: EditGoalDialogProps) {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [subGoals, setSubGoals] = useState<Goal[]>(goal.subGoals || []);
   const { toast } = useToast();
+  const { user } = useAuth();
+
 
   useEffect(() => {
     if (open) {
@@ -178,6 +183,45 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
         description: `The goal "${goal.title}" has been deleted.`,
     });
   }
+
+  const handleShare = async () => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Not authenticated." });
+        return;
+    }
+    setIsSharing(true);
+    try {
+        await addGoalTemplate({
+            title: goal.title,
+            description: goal.description,
+            project: goal.project,
+            subGoals: subGoals.map(sg => ({ 
+                title: sg.title,
+                description: sg.description || "",
+                // This is a placeholder, as the sub-goal doesn't have estimatedTime
+                estimatedTime: "not set" 
+            })),
+            authorId: user.uid,
+            authorName: user.displayName || user.email || "Anonymous",
+            likes: 0,
+        });
+        toast({
+            title: "Goal Shared!",
+            description: "Your goal is now available in the public library.",
+        });
+        setOpen(false);
+    } catch (e) {
+        console.error(e);
+        toast({
+            variant: "destructive",
+            title: "Sharing Failed",
+            description: "Could not share the goal. Please try again.",
+        });
+    } finally {
+        setIsSharing(false);
+    }
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -429,12 +473,18 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                 </div>
                 <DialogFooter className="col-span-1 md:col-span-2">
                     <div className="flex justify-between w-full">
-                        <DeleteGoalAlert onConfirm={handleDeleteGoal}>
-                            <Button variant="destructive">
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete
+                         <div className="flex gap-2">
+                            <DeleteGoalAlert onConfirm={handleDeleteGoal}>
+                                <Button variant="destructive">
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Delete
+                                </Button>
+                            </DeleteGoalAlert>
+                             <Button variant="outline" onClick={handleShare} disabled={isSharing}>
+                                {isSharing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Share2 className="mr-2 h-4 w-4" />}
+                                Share
                             </Button>
-                        </DeleteGoalAlert>
+                        </div>
                         <Button onClick={() => setIsEditing(true)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Goal
