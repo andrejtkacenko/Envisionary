@@ -66,6 +66,12 @@ export default function CoachPage() {
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [goals, setGoals] = useState<Goal[]>([]);
 
+    const suggestions = [
+        "Create a new goal to learn Next.js",
+        "Improve my goal 'read more books'",
+        "What are my current goals?",
+    ];
+
     const fetchGoals = useCallback(async () => {
         if (user) {
           getGoals(user.uid).then(setGoals);
@@ -120,6 +126,7 @@ export default function CoachPage() {
             setChatHistory(h => [...h, { role: 'assistant', content: errorMessage }]);
         } finally {
             setIsLoading(false);
+            fetchGoals(); // Refresh goals after any interaction in case they changed
         }
     };
     
@@ -226,17 +233,26 @@ export default function CoachPage() {
                                     )}
                                 </div>
                             </ScrollArea>
-                            <div className="flex gap-2">
-                                <Input
-                                    value={userInput}
-                                    onChange={(e) => setUserInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage(userInput)}
-                                    placeholder="Ask me anything..."
-                                    disabled={isLoading}
-                                />
-                                <Button onClick={() => handleSendMessage(userInput)} disabled={isLoading}>
-                                    <Send className="h-4 w-4" />
-                                </Button>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex gap-2 flex-wrap">
+                                    {suggestions.map((s) => (
+                                        <Button key={s} variant="outline" size="sm" onClick={() => handleSendMessage(s)} disabled={isLoading}>
+                                            {s}
+                                        </Button>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={userInput}
+                                        onChange={(e) => setUserInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage(userInput)}
+                                        placeholder="Ask me anything..."
+                                        disabled={isLoading}
+                                    />
+                                    <Button onClick={() => handleSendMessage(userInput)} disabled={isLoading}>
+                                        <Send className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
