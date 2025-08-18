@@ -83,7 +83,7 @@ You have access to tools to help the user manage their goals.
         prompt: message,
     });
     
-    const toolRequest = response.toolRequest();
+    const toolRequest = response.toolRequest;
     if (toolRequest) {
         return {
             response: response.text,
