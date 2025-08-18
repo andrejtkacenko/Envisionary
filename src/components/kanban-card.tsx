@@ -108,7 +108,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
   const cardContent = (
     <Card 
         className={cn(
-            "hover:shadow-md transition-shadow duration-200 flex flex-col bg-card/50 backdrop-blur-sm w-full sm:w-80",
+            "hover:shadow-md transition-shadow duration-200 flex flex-col bg-card/50 backdrop-blur-sm w-full",
             isDragging && "opacity-30",
             isOverlay && "shadow-lg scale-105"
         )}
