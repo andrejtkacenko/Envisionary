@@ -20,7 +20,6 @@ import type { Goal } from "@/types"
 import { getGoals } from "@/lib/goals-service"
 import { summarizeProgress, SummarizeProgressOutput } from "@/ai/flows/summarize-progress";
 import { useToast } from "@/hooks/use-toast"
-import { calculateGoalStats } from "@/lib/goal-stats"
 
 const chartConfig = {
   completed: {
@@ -84,7 +83,9 @@ export default function DashboardPage() {
     }
   };
 
-  const { totalCount, doneCount, inprogressCount } = calculateGoalStats(goals);
+  const totalCount = goals.length;
+  const doneCount = goals.filter(g => g.status === 'done').length;
+  const inprogressCount = goals.filter(g => g.status === 'inprogress').length;
   const recentGoals = goals.slice(-4).reverse();
 
   const categoryProgress = goals.reduce((acc, goal) => {
