@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
 import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';
 import { summarizeProgress, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
-import { getGoals } from '@/lib/goals-service';
+import { getGoalsSnapshot } from '@/lib/goals-service';
 import type { Goal } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -103,7 +103,7 @@ export default function CoachPage() {
 
     const fetchGoals = useCallback(async () => {
         if (user) {
-          getGoals(user.uid).then(setGoals);
+          getGoalsSnapshot(user.uid).then(setGoals);
         }
     }, [user]);
 
@@ -340,5 +340,6 @@ export default function CoachPage() {
         </div>
     );
 }
+
 
     

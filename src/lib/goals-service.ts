@@ -13,6 +13,10 @@ const goalConverter = {
             delete data.dueDate;
         }
 
+        if (!data.createdAt) {
+            data.createdAt = Timestamp.now();
+        }
+
         if (goal.subGoals) {
             data.subGoals = goal.subGoals.map(sg => {
                 const subGoalData: any = {...sg};
@@ -283,3 +287,5 @@ export const deleteScheduleTemplate = async (userId: string, templateId: string)
     const docRef = doc(templatesCollection, templateId);
     await deleteDoc(docRef);
 };
+
+    
