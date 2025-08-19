@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "telegram:webhook": "echo 'Remember to replace YOUR_BOT_TOKEN and YOUR_WEBHOOK_URL with your actual values!' && curl \"https://api.telegram.org/bot8319603419:AAH1uZJ9EubT0OTL76o7RHv8O8KEqRClaAQ/setWebhook?url=YOUR_WEBHOOK_URL/api/telegram/webhook\""
+    "telegram:webhook": "echo 'Remember to replace YOUR_WEBHOOK_URL with your actual values!' && curl \"https://api.telegram.org/bot8319603419:AAH1uZJ9EubT0OTL76o7RHv8O8KEqRClaAQ/setWebhook?url=YOUR_WEBHOOK_URL/api/telegram/webhook\""
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
