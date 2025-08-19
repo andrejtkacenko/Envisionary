@@ -232,4 +232,3 @@ export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
         </Card>
     );
 }
-
