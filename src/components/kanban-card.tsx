@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState } from "react";
@@ -56,6 +57,7 @@ const priorityTooltips: Record<GoalPriority, string> = {
 
 export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: KanbanCardProps) {
   const [isSubtasksOpen, setIsSubtasksOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const {
     attributes,
@@ -70,7 +72,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
       type: 'Goal',
       goal,
     },
-    disabled: !onGoalUpdate, // Disable sorting if no update function is passed
+    disabled: isDialogOpen,
   });
 
   const style = {
@@ -165,6 +167,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
                 goal={goal}
                 onGoalUpdate={onGoalUpdate}
                 onGoalDelete={onGoalDelete}
+                onOpenChange={setIsDialogOpen}
                 trigger={cardContent}
             />
         ) : (

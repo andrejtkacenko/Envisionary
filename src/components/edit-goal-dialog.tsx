@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -83,9 +84,10 @@ interface EditGoalDialogProps {
   onGoalUpdate: (goal: Goal) => void;
   onGoalDelete: (goalId: string) => void;
   trigger: React.ReactNode;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: EditGoalDialogProps) {
+export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger, onOpenChange }: EditGoalDialogProps) {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -159,11 +161,12 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
     });
   };
   
-  const handleOpenChange = (isOpen: boolean) => {
+  const handleDialogStateChange = (isOpen: boolean) => {
     if (!isOpen && isFormDirty && isEditing) {
       setShowUnsavedChangesAlert(true);
     } else {
       setOpen(isOpen);
+      onOpenChange?.(isOpen);
     }
   };
 
@@ -269,8 +272,8 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
 
   return (
     <>
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild onClick={(e) => { e.stopPropagation(); setOpen(true); }}>{trigger}</DialogTrigger>
+    <Dialog open={open} onOpenChange={handleDialogStateChange}>
+      <DialogTrigger asChild onClick={(e) => { e.stopPropagation(); handleDialogStateChange(true); }}>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-3xl" onPointerDownOutside={(e) => {if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) { e.preventDefault(); }}}>
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2">
@@ -586,10 +589,16 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
             </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setShowUnsavedChangesAlert(false)}>
+                <AlertDialogCancel onClick={() => {
+                    handleDialogStateChange(false);
+                    setShowUnsavedChangesAlert(false);
+                }}>
                     Cancel
                 </AlertDialogCancel>
-                <Button variant="outline" onClick={() => setOpen(false)}>
+                <Button variant="outline" onClick={() => {
+                    handleDialogStateChange(false)
+                    setShowUnsavedChangesAlert(false)
+                }}>
                     Discard Changes
                 </Button>
                 <AlertDialogAction onClick={handleSaveChanges}>
