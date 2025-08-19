@@ -242,7 +242,7 @@ export function ScheduleTemplates({ onApplyTemplate, allGoals }: ScheduleTemplat
                         <Loader2 className="h-8 w-8 animate-spin" />
                     </div>
                 ) : (
-                    <ScrollArea className="h-[450px]">
+                    <ScrollArea className="h-auto min-h-[450px]">
                         <div className="pr-4 space-y-3">
                              {templates.length === 0 && (
                                 <div className="text-center text-muted-foreground py-20">
