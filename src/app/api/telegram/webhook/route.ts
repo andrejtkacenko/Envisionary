@@ -6,10 +6,6 @@ import { createGoal, findGoals } from '@/ai/tools/goal-tools';
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
-// A simple in-memory store for chat history.
-// In a production app, you'd want to use a database like Firestore or Redis.
-const chatHistories: Record<string, any[]> = {};
-
 // Function to send a message back to the user
 async function sendMessage(chatId: number, text: string) {
   if (!text) return; // Don't send empty messages
@@ -82,12 +78,6 @@ export async function POST(req: NextRequest) {
         await sendMessage(chatId, welcomeMessage);
         return NextResponse.json({ status: 'ok' });
     }
-
-    // Get or initialize chat history
-    if (!chatHistories[userId]) {
-      chatHistories[userId] = [];
-    }
-    const userHistory = chatHistories[userId];
     
     try {
         // Send a "typing..." action to give user feedback
@@ -97,29 +87,44 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
         });
         
-        userHistory.push({ role: 'user', content: [{ text }] });
+        // Let's simplify and not use history for now for more reliability.
+        // We will just send the last message.
+        
+        let aiResponse = await telegramChat({ message: text, userId: userId });
 
-        // 1. Initial call to the AI
-        let aiResponse = await telegramChat({ message: text, userId: userId, history: userHistory });
-
-        // 2. Handle tool calls if any
+        // This loop is for a more advanced agent that might need multiple tool calls.
+        // For now, it will likely run once or not at all.
         while (aiResponse.toolRequest) {
             const toolRequest = aiResponse.toolRequest;
-            // Add assistant's partial response and tool request to history
-            userHistory.push({ role: 'model', content: [{ text: aiResponse.reply }, { toolRequest }] });
+            
+            // It's often good practice to let the user know what the bot is doing.
+            // await sendMessage(chatId, `Running tool: ${toolRequest.name}...`);
 
             const toolResult = await callTool(toolRequest, userId);
-            const toolResultMessage = { role: 'tool', content: [{ toolResult: { name: toolRequest.name, result: toolResult } }] };
-            userHistory.push(toolResultMessage);
             
-            // Send the tool result back to the model for a final response
-            aiResponse = await telegramChat({ message: "", userId, history: userHistory });
+            // To continue the conversation, we'd need to send the tool result back to the AI.
+            // This requires history support, which we've simplified for now.
+            // For a single tool call, we can just format the result and send it.
+            
+            // If the tool call itself returns a string, we can send it directly.
+            if (typeof toolResult === 'string') {
+                 await sendMessage(chatId, toolResult);
+                 return NextResponse.json({ status: 'ok' });
+            }
+            // If the tool returns an object, we might want to format it.
+            // Example: A new goal was created.
+            if (toolRequest.name === 'createGoal' && toolResult.id) {
+                await sendMessage(chatId, `✅ Goal created: "${toolResult.title}"`);
+                return NextResponse.json({ status: 'ok' });
+            }
+            
+            // If we get here, the tool call logic needs to be expanded.
+            // For now, we'll just send the AI's initial text if any.
+            await sendMessage(chatId, aiResponse.reply || "I've processed your request.");
+            return NextResponse.json({ status: 'ok' });
         }
         
-        // Add final AI response to history
-        userHistory.push({ role: 'model', content: [{ text: aiResponse.reply }] });
-
-        // 3. Send the final reply back to the user
+        // Send the final reply back to the user
         await sendMessage(chatId, aiResponse.reply);
 
     } catch (e: any) {

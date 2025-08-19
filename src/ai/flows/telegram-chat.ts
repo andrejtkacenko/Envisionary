@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Handles chat interactions from a Telegram bot.
@@ -14,7 +15,6 @@ import { createGoalTool, findGoalsTool } from '@/ai/tools/goal-tools';
 export const TelegramChatInputSchema = z.object({
   message: z.string().describe('The message from the Telegram user.'),
   userId: z.string().describe('The Telegram user ID.'),
-  history: z.array(z.any()).optional().describe('The chat history for context.'),
 });
 export type TelegramChatInput = z.infer<typeof TelegramChatInputSchema>;
 
@@ -34,25 +34,24 @@ const telegramChatFlow = ai.defineFlow(
     inputSchema: TelegramChatInputSchema,
     outputSchema: TelegramChatOutputSchema,
   },
-  async ({ message, userId, history }) => {
+  async ({ message, userId }) => {
 
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
       tools: [createGoalTool, findGoalsTool],
       system: `You are an AI assistant for a productivity app called Zenith Flow, interacting with a user via Telegram.
 Your primary role is to help the user manage their goals.
-- Use the createGoalTool to create new goals when the user asks.
+- Use the createGoalTool to create new goals when the user asks. For example, if the user says "create a goal to learn piano", call the tool with the title "learn piano".
 - Use the findGoalsTool to find and list goals when the user asks about their current tasks.
 - You must have the user's ID to use any tool.
 - The user's ID is: ${userId}`,
-      history: history || [],
       prompt: message,
     });
 
     const toolRequest = llmResponse.toolRequest;
     if (toolRequest) {
         return {
-            reply: llmResponse.text,
+            reply: llmResponse.text, // The model might have some text before calling the tool
             toolRequest: toolRequest,
         };
     }
