@@ -51,7 +51,7 @@ import { addGoal } from "@/lib/goals-service";
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  project: z.string().optional(),
+  category: z.string().optional(),
   status: z.enum(["todo", "inprogress", "done"]),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
@@ -70,7 +70,7 @@ export default function CreateGoalPage() {
     defaultValues: {
       title: "",
       description: "",
-      project: "",
+      category: "",
       status: "todo",
       priority: "medium",
       dueDate: undefined,
@@ -95,7 +95,7 @@ export default function CreateGoalPage() {
     try {
       await addGoal(user.uid, {
         ...data,
-        project: data.project || 'General' // Use 'General' if not provided
+        category: data.category || 'General' // Use 'General' if not provided
       });
       router.push('/');
 
@@ -153,7 +153,7 @@ export default function CreateGoalPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="project"
+                      name="category"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Category</FormLabel>

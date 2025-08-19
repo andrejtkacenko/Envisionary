@@ -16,10 +16,17 @@ const goalConverter = {
         if (!data.createdAt) {
             data.createdAt = Timestamp.now();
         }
+        
+        if (!data.category) {
+            data.category = 'General';
+        }
 
         if (goal.subGoals) {
             data.subGoals = goal.subGoals.map(sg => {
                 const subGoalData: any = {...sg};
+                 if (!subGoalData.category) {
+                    subGoalData.category = 'General';
+                }
                 if (sg.dueDate) {
                     subGoalData.dueDate = Timestamp.fromDate(sg.dueDate);
                 } else {
@@ -37,7 +44,7 @@ const goalConverter = {
              title: data.title,
              status: data.status,
              priority: data.priority,
-             category: data.category,
+             category: data.category || 'General',
              description: data.description,
              subGoals: data.subGoals || [],
              estimatedTime: data.estimatedTime,
@@ -169,6 +176,7 @@ export const addGoal = async (userId: string, goalData: Omit<Goal, 'id' | 'creat
         id: newDocRef.id,
         status: goalData.status || 'todo',
         priority: goalData.priority || 'medium',
+        category: goalData.category || 'General',
         subGoals: goalData.subGoals || [],
         createdAt: Timestamp.now(),
     };
@@ -189,6 +197,7 @@ export const addGoals = async (userId: string, goalsData: Omit<Goal, 'id' | 'cre
             id: newDocRef.id,
             status: goalData.status || 'todo',
             priority: goalData.priority || 'medium',
+            category: goalData.category || 'General',
             subGoals: goalData.subGoals || [],
             createdAt: Timestamp.now(),
         };

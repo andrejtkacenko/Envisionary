@@ -69,7 +69,7 @@ import { addGoalTemplate } from "@/lib/goals-service";
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  project: z.string().optional(),
+  category: z.string().optional(),
   status: z.enum(["todo", "inprogress", "done"]),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
@@ -111,7 +111,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
       form.reset({
         title: goal.title,
         description: goal.description || "",
-        project: goal.project,
+        category: goal.category,
         status: goal.status,
         priority: goal.priority,
         dueDate: goal.dueDate,
@@ -146,6 +146,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
     const updatedGoal = {
       ...goal,
       ...data,
+      category: data.category || 'General',
       subGoals: subGoals,
     };
     onGoalUpdate(updatedGoal);
@@ -171,11 +172,12 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
         id: crypto.randomUUID(),
         title: sg.title,
         description: sg.description,
-        project: form.getValues('project') || 'General', // Use current project from form
+        category: form.getValues('category') || 'General', // Use current category from form
         status: 'todo',
         priority: form.getValues('priority'), // Use current priority from form
         dueDate: form.getValues('dueDate'), // Use current due date from form
         estimatedTime: sg.estimatedTime,
+        createdAt: new Date(),
       }));
 
     setSubGoals(prev => [...prev, ...newGoals]);
@@ -186,10 +188,11 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
         id: crypto.randomUUID(),
         title: "New sub-goal",
         description: "",
-        project: form.getValues('project') || 'General',
+        category: form.getValues('category') || 'General',
         status: 'todo',
         priority: form.getValues('priority'),
-        dueDate: form.getValues('dueDate')
+        dueDate: form.getValues('dueDate'),
+        createdAt: new Date(),
     };
     setSubGoals(prev => [...prev, newSubGoal]);
   };
@@ -207,7 +210,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
     form.reset({
       title: goal.title,
       description: goal.description || "",
-      project: goal.project,
+      category: goal.category,
       status: goal.status,
       priority: goal.priority,
       dueDate: goal.dueDate,
@@ -236,7 +239,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
         await addGoalTemplate({
             title: goal.title,
             description: goal.description,
-            project: goal.project || 'General',
+            category: goal.category || 'General',
             subGoals: subGoals.map(sg => ({ 
                 title: sg.title,
                 description: sg.description || "",
@@ -271,7 +274,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
       <DialogContent className="sm:max-w-3xl" onPointerDownOutside={(e) => {if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) { e.preventDefault(); }}}>
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2">
-            {isEditing ? <FilePenLine /> : <span className="text-sm"><Badge variant="secondary">{goal.project || 'Uncategorized'}</Badge></span>}
+            {isEditing ? <FilePenLine /> : <span className="text-sm"><Badge variant="secondary">{goal.category || 'Uncategorized'}</Badge></span>}
             {isEditing ? 'Edit Goal' : goal.title}
           </DialogTitle>
           <DialogDescription>
@@ -300,7 +303,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger }: Ed
                 />
                 <FormField
                     control={form.control}
-                    name="project"
+                    name="category"
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Category (optional)</FormLabel>
