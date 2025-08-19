@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Zap, Activity, Star, MessageCircle, Trash2, Headphones, Mic, Info, Briefcase, Aperture, Heart, Clock, User, Send, FileText, Wand2, Calendar } from 'lucide-react';
+import { Zap, Activity, Star, MessageCircle, Trash2, Info, Briefcase, Aperture, Heart, Clock, User, Send, FileText, Wand2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,6 @@ import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
 import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';
 import { getSchedule } from '@/ai/tools/schedule-tools';
 import { summarizeProgress, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
-import { generateAudio } from '@/ai/flows/generate-audio';
 import { getGoalsSnapshot } from '@/lib/goals-service';
 import type { Goal } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -72,8 +71,6 @@ export default function CoachPage() {
     const [analysisResult, setAnalysisResult] = useState<SummarizeProgressOutput | null>(null);
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [goals, setGoals] = useState<Goal[]>([]);
-    const [isAudioLoading, setIsAudioLoading] = useState(false);
-    const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
 
     const suggestions = [
         "Create a new goal to learn Next.js",
@@ -187,35 +184,6 @@ export default function CoachPage() {
         }
     };
 
-    const handleGenerateAudio = async () => {
-        setIsAudioLoading(true);
-        setAudioDataUri(null);
-        try {
-            const script = chatHistory
-                .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-                .map(msg => `${msg.role === 'user' ? 'You' : 'Coach'}: ${msg.content}`)
-                .join('\n\n');
-            
-            if (!script) {
-                toast({ title: "Chat is empty", description: "There's nothing to generate audio from yet."});
-                return;
-            }
-
-            const result = await generateAudio({ script });
-            setAudioDataUri(result.audioDataUri);
-
-        } catch (error) {
-            console.error("Audio generation error:", error);
-            toast({
-                variant: "destructive",
-                title: "Audio Generation Failed",
-                description: "Could not generate audio summary.",
-            });
-        } finally {
-            setIsAudioLoading(false);
-        }
-    };
-    
     const handleClearChat = () => {
         setChatHistory([initialMessage]);
     };
@@ -327,23 +295,6 @@ export default function CoachPage() {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Headphones /> Audio Overview</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-sm text-muted-foreground">Generate an audio summary of your conversation for listening on-the-go.</p>
-                             <Button variant="outline" className="w-full" onClick={handleGenerateAudio} disabled={isAudioLoading}>
-                                {isAudioLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2 h-4 w-4" />}
-                                {isAudioLoading ? 'Generating...' : 'Generate Audio'}
-                            </Button>
-                            {audioDataUri && (
-                                <audio controls src={audioDataUri} className="w-full">
-                                    Your browser does not support the audio element.
-                                </audio>
-                            )}
-                        </CardContent>
-                    </Card>
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Zap /> Quick Actions</CardTitle>
@@ -386,4 +337,3 @@ export default function CoachPage() {
         </div>
     );
 }
-
