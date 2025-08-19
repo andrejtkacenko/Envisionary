@@ -6,7 +6,6 @@ import { Zap, Activity, Star, MessageCircle, Trash2, Info, Briefcase, Aperture, 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
 import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
 import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';

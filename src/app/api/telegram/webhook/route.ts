@@ -87,32 +87,22 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
         });
         
-        // Let's simplify and not use history for now for more reliability.
-        // We will just send the last message.
-        
+        // We will just send the last message and not maintain history for now.
         let aiResponse = await telegramChat({ message: text, userId: userId });
 
-        // This loop is for a more advanced agent that might need multiple tool calls.
-        // For now, it will likely run once or not at all.
+        // This loop handles the case where the AI wants to call a tool.
         while (aiResponse.toolRequest) {
             const toolRequest = aiResponse.toolRequest;
             
-            // It's often good practice to let the user know what the bot is doing.
-            // await sendMessage(chatId, `Running tool: ${toolRequest.name}...`);
-
             const toolResult = await callTool(toolRequest, userId);
             
-            // To continue the conversation, we'd need to send the tool result back to the AI.
-            // This requires history support, which we've simplified for now.
             // For a single tool call, we can just format the result and send it.
-            
             // If the tool call itself returns a string, we can send it directly.
             if (typeof toolResult === 'string') {
                  await sendMessage(chatId, toolResult);
                  return NextResponse.json({ status: 'ok' });
             }
-            // If the tool returns an object, we might want to format it.
-            // Example: A new goal was created.
+            // If the tool returns an object, we format it.
             if (toolRequest.name === 'createGoal' && toolResult.id) {
                 await sendMessage(chatId, `✅ Goal created: "${toolResult.title}"`);
                 return NextResponse.json({ status: 'ok' });
@@ -124,7 +114,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ status: 'ok' });
         }
         
-        // Send the final reply back to the user
+        // Send the final reply back to the user if no tool was called
         await sendMessage(chatId, aiResponse.reply);
 
     } catch (e: any) {
