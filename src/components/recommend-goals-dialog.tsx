@@ -43,7 +43,7 @@ export function RecommendGoalsDialog({ allGoals, children }: RecommendGoalsDialo
     setRecommendations([]);
     try {
       const existingGoalsString = allGoals
-        .map((goal) => `- ${goal.title} (Category: ${goal.project || 'N/A'}, Status: ${goal.status})`)
+        .map((goal) => `- ${goal.title} (Category: ${goal.category || 'N/A'}, Status: ${goal.status})`)
         .join("\n");
       
       const result = await recommendGoals({ existingGoals: existingGoalsString || "No existing goals." });
@@ -79,6 +79,7 @@ export function RecommendGoalsDialog({ allGoals, children }: RecommendGoalsDialo
     try {
         const goalsToAdd = recommendations.map(rec => ({
             ...rec,
+            category: rec.project,
             status: 'todo' as const,
         }));
       await addGoals(user.uid, goalsToAdd);

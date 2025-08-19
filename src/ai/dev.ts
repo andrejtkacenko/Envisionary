@@ -13,5 +13,3 @@ import '@/ai/tools/goal-tools.ts';
 
 
 
-
-    

@@ -341,5 +341,3 @@ export default function CoachPage() {
     );
 }
 
-
-    
