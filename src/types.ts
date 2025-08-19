@@ -15,7 +15,7 @@ export type Goal = {
   dueDate?: Date;
   subGoals?: Goal[];
   estimatedTime?: string;
-  createdAt: Timestamp;
+  createdAt: any; // Allow Date or Timestamp
 };
 
 export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
@@ -71,4 +71,3 @@ export type DailyGoalTask = {
     title: string;
     estimatedTime?: string;
 };
-

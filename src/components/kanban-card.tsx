@@ -2,10 +2,10 @@
 "use client"
 
 import { useState } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, ChevronDown, Plus, Clock } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, ChevronDown, Plus, Clock, Circle, CheckCircle, Loader } from "lucide-react";
 import { format } from "date-fns";
 
-import type { Goal, GoalPriority } from "@/types";
+import type { Goal, GoalPriority, GoalStatus } from "@/types";
 import {
   Card,
   CardContent,
@@ -46,6 +46,12 @@ const priorityIcons: Record<GoalPriority, React.ReactNode> = {
   high: <ArrowUp className="h-4 w-4 text-destructive" />,
   medium: <ArrowRight className="h-4 w-4 text-yellow-500" />,
   low: <ArrowDown className="h-4 w-4 text-green-500" />,
+};
+
+const statusIcons: Record<GoalStatus, React.ReactNode> = {
+    todo: <Circle className="h-4 w-4 text-muted-foreground" />,
+    inprogress: <Loader className="h-4 w-4 text-blue-500 animate-spin" />,
+    done: <CheckCircle className="h-4 w-4 text-green-500" />,
 };
 
 const priorityTooltips: Record<GoalPriority, string> = {
@@ -92,11 +98,12 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
         id: crypto.randomUUID(),
         title: sg.title,
         description: sg.description,
-        project: goal.project,
+        category: goal.category,
         status: 'todo',
         priority: goal.priority,
         dueDate: goal.dueDate,
         estimatedTime: sg.estimatedTime,
+        createdAt: new Date(),
       }));
       onGoalUpdate?.({...goal, subGoals: [...(goal.subGoals || []), ...newGoals]});
   }
@@ -115,9 +122,14 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
     >
         <CardHeader className="p-4 pb-2">
             <div className="flex items-start justify-between">
-                <Badge variant="secondary">{goal.project || 'Uncategorized'}</Badge>
-                <div className="flex items-center" title={priorityTooltips[goal.priority]}>
-                    {priorityIcons[goal.priority]}
+                <Badge variant="secondary">{goal.category || 'Uncategorized'}</Badge>
+                <div className="flex items-center gap-2">
+                    <span title={priorityTooltips[goal.priority]}>
+                        {priorityIcons[goal.priority]}
+                    </span>
+                     <span title={`Status: ${goal.status}`}>
+                        {statusIcons[goal.status]}
+                    </span>
                 </div>
             </div>
             <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
