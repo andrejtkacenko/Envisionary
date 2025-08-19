@@ -1,12 +1,18 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { telegramChat } from '@/ai/flows/telegram-chat';
+import { createGoal, findGoals } from '@/ai/tools/goal-tools';
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
+// A simple in-memory store for chat history.
+// In a production app, you'd want to use a database like Firestore or Redis.
+const chatHistories: Record<string, any[]> = {};
+
 // Function to send a message back to the user
 async function sendMessage(chatId: number, text: string) {
+  if (!text) return; // Don't send empty messages
   const url = `${TELEGRAM_API_URL}/sendMessage`;
   try {
     const response = await fetch(url, {
@@ -28,6 +34,24 @@ async function sendMessage(chatId: number, text: string) {
   }
 }
 
+async function callTool(toolRequest: any, userId: string): Promise<any> {
+    const toolName = toolRequest.name;
+    const args = toolRequest.input;
+    args.userId = userId; // Ensure userId is passed to tools
+
+    switch (toolName) {
+        case 'createGoal':
+            return await createGoal(args);
+        case 'findGoals':
+             const goals = await findGoals(args);
+             // Format the output for better display in chat
+             if (goals.length === 0) return "No goals found matching that query.";
+             return `Found goals:\n${goals.map(g => `- ${g.title} (ID: ${g.id})`).join('\n')}`;
+        default:
+            throw new Error(`Unknown tool: ${toolName}`);
+    }
+};
+
 export async function POST(req: NextRequest) {
   if (!TELEGRAM_TOKEN) {
     console.error("TELEGRAM_BOT_TOKEN is not set.");
@@ -44,10 +68,15 @@ export async function POST(req: NextRequest) {
       const chatId = message.chat.id;
       const text = message.text;
       const userId = message.from.id.toString();
+
+      // Get or initialize chat history
+      if (!chatHistories[userId]) {
+        chatHistories[userId] = [];
+      }
+      const userHistory = chatHistories[userId];
       
-      // Don't wait for the AI response to send the initial "OK" to Telegram.
-      // Telegram has a short timeout, so we respond immediately.
-      // The actual reply will be sent via the sendMessage function.
+      // Respond to Telegram immediately to acknowledge receipt of the update
+      // The actual processing and reply will happen asynchronously.
       (async () => {
         try {
           // Send a "typing..." action to give user feedback
@@ -56,11 +85,30 @@ export async function POST(req: NextRequest) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
           });
-
-          // Call the Genkit flow
-          const aiResponse = await telegramChat({ message: text, userId: userId });
           
-          // Send the AI's reply back to the user
+          userHistory.push({ role: 'user', content: [{ text }] });
+
+          // 1. Initial call to the AI
+          let aiResponse = await telegramChat({ message: text, userId: userId, history: userHistory });
+
+          // 2. Handle tool calls if any
+          while (aiResponse.toolRequest) {
+            const toolRequest = aiResponse.toolRequest;
+             // Add assistant's partial response and tool request to history
+            userHistory.push({ role: 'model', content: [{ text: aiResponse.reply }, { toolRequest }] });
+
+            const toolResult = await callTool(toolRequest, userId);
+            const toolResultMessage = { role: 'tool', content: [{ toolResult: { name: toolRequest.name, result: toolResult } }] };
+            userHistory.push(toolResultMessage);
+            
+            // Send the tool result back to the model for a final response
+            aiResponse = await telegramChat({ message: "", userId, history: userHistory });
+          }
+          
+          // Add final AI response to history
+          userHistory.push({ role: 'model', content: [{ text: aiResponse.reply }] });
+
+          // 3. Send the final reply back to the user
           await sendMessage(chatId, aiResponse.reply);
 
         } catch (e: any) {
@@ -74,7 +122,6 @@ export async function POST(req: NextRequest) {
         console.log("Received a non-message update, ignoring.");
     }
 
-    // Respond to Telegram immediately to acknowledge receipt of the update
     return NextResponse.json({ status: 'ok' });
   } catch (error) {
     console.error('Error processing request:', error);

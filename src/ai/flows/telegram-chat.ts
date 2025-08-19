@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Handles chat interactions from a Telegram bot.
@@ -10,15 +9,18 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { createGoalTool, findGoalsTool } from '@/ai/tools/goal-tools';
 
 export const TelegramChatInputSchema = z.object({
   message: z.string().describe('The message from the Telegram user.'),
-  userId: z.string().optional().describe('The Telegram user ID.'),
+  userId: z.string().describe('The Telegram user ID.'),
+  history: z.array(z.any()).optional().describe('The chat history for context.'),
 });
 export type TelegramChatInput = z.infer<typeof TelegramChatInputSchema>;
 
 export const TelegramChatOutputSchema = z.object({
   reply: z.string().describe('The response to send back to the user.'),
+  toolRequest: z.any().optional().describe('A request from the AI to call a tool.'),
 });
 export type TelegramChatOutput = z.infer<typeof TelegramChatOutputSchema>;
 
@@ -32,17 +34,28 @@ const telegramChatFlow = ai.defineFlow(
     inputSchema: TelegramChatInputSchema,
     outputSchema: TelegramChatOutputSchema,
   },
-  async ({ message, userId }) => {
-    // For now, this is a simple echo, but it can be expanded.
-    // In the future, it will use tools to interact with goals, schedule, etc.
+  async ({ message, userId, history }) => {
+
     const llmResponse = await ai.generate({
-      model: 'googleai/gemini-pro',
-      prompt: `You are an AI assistant for a productivity app called Zenith Flow. A user is messaging you from Telegram.
-
-User message: "${message}"
-
-Keep your response concise and helpful. If the user ID is available, you can use tools in the future. User ID: ${userId || 'Not provided'}.`,
+      model: 'googleai/gemini-2.0-flash',
+      tools: [createGoalTool, findGoalsTool],
+      system: `You are an AI assistant for a productivity app called Zenith Flow, interacting with a user via Telegram.
+Your primary role is to help the user manage their goals.
+- Use the createGoalTool to create new goals when the user asks.
+- Use the findGoalsTool to find and list goals when the user asks about their current tasks.
+- You must have the user's ID to use any tool.
+- The user's ID is: ${userId}`,
+      history: history || [],
+      prompt: message,
     });
+
+    const toolRequest = llmResponse.toolRequest;
+    if (toolRequest) {
+        return {
+            reply: llmResponse.text,
+            toolRequest: toolRequest,
+        };
+    }
 
     return {
       reply: llmResponse.text,
