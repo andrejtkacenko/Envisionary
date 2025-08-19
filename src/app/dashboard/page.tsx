@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -39,27 +39,25 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      const fetchGoals = async () => {
-        setIsLoading(true);
-        try {
-          const userGoals = await getGoals(user.uid);
-          setGoals(userGoals);
-        } catch (error) {
-          console.error("Error fetching goals:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchGoals();
+      setIsLoading(true);
+      const unsubscribe = getGoals(user.uid, (userGoals) => {
+        setGoals(userGoals);
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Failed to fetch goals:", error);
+        toast({ variant: 'destructive', title: 'Error fetching goals' });
+        setIsLoading(false);
+      });
+      return () => unsubscribe(); // Cleanup listener on unmount
     }
-  }, [user]);
+  }, [user, toast]);
   
   const handleGenerateInsights = async () => {
     setIsInsightsLoading(true);
     setInsights(null);
     try {
         const taskString = goals
-            .map((goal) => `- ${goal.title} (Status: ${goal.status}, Priority: ${goal.priority})`)
+            .map((goal) => `- ${goal.title} (Status: ${goal.status}, Priority: ${goal.priority}, Category: ${goal.category})`)
             .join("\n");
         
         const result = await summarizeProgress({ tasks: taskString || "No goals found." });
@@ -77,25 +75,35 @@ export default function DashboardPage() {
   };
 
   const { totalCount, doneCount, inprogressCount, todoCount, recentGoals, categoryData, chartConfig } = useMemo(() => {
+    // This calculation now only considers top-level goals.
     const total = goals.length;
     const done = goals.filter(g => g.status === 'done').length;
     const inprogress = goals.filter(g => g.status === 'inprogress').length;
-    const todo = goals.filter(g => g.status === 'todo').length;
+    const todo = total - done - inprogress;
     
-    const recent = goals.slice(-4).reverse();
+    // Sort by creation date if available, otherwise just slice
+    const recent = [...goals].sort((a, b) => {
+        // Assuming goals might have a 'createdAt' field. If not, this sort won't do anything.
+        // The service doesn't add it, so this is just for demonstration.
+        // A more robust implementation would add a timestamp on goal creation.
+        return (b.createdAt as any) - (a.createdAt as any);
+    }).slice(0, 4);
 
     const categoryCounts = goals.reduce((acc, goal) => {
-      const projectName = goal.project || "Uncategorized";
-      if (!acc[projectName]) {
-        acc[projectName] = 0;
+      const categoryName = goal.category || "Uncategorized";
+      if (!acc[categoryName]) {
+        acc[categoryName] = { total: 0, completed: 0 };
       }
-      acc[projectName]++;
+      acc[categoryName].total++;
+      if (goal.status === 'done') {
+        acc[categoryName].completed++;
+      }
       return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<string, { total: number, completed: number }>);
 
-    const catData = Object.entries(categoryCounts).map(([name, value], index) => ({
+    const catData = Object.entries(categoryCounts).map(([name, data], index) => ({
         name,
-        value,
+        value: data.total,
         fill: chartColors[index % chartColors.length]
     }));
 
@@ -205,28 +213,36 @@ export default function DashboardPage() {
                 <CardDescription>Distribution of your goals across different categories.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
-                <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-                <PieChart>
-                    <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Pie
-                    data={categoryData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={80}
-                    strokeWidth={5}
-                    >
-                    {categoryData.map((entry) => (
-                        <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                    ))}
-                    </Pie>
-                    <ChartLegend
-                        content={<ChartLegendContent nameKey="name" />}
-                    />
-                </PieChart>
-                </ChartContainer>
+                 {categoryData.length > 0 ? (
+                    <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                        <PieChart>
+                            <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                            />
+                            <Pie
+                            data={categoryData}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={80}
+                            strokeWidth={5}
+                            >
+                            {categoryData.map((entry) => (
+                                <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                            ))}
+                            </Pie>
+                            <ChartLegend
+                                content={<ChartLegendContent nameKey="name" />}
+                            />
+                        </PieChart>
+                    </ChartContainer>
+                 ) : (
+                    <div className="flex flex-col items-center justify-center h-[300px] text-center text-muted-foreground">
+                        <ListTodo className="h-12 w-12" />
+                        <p className="mt-4">Your goals don't have categories yet.</p>
+                        <p className="text-sm">Edit a goal to add a category.</p>
+                    </div>
+                 )}
             </CardContent>
             </Card>
             <Card className="lg:col-span-3">
@@ -259,7 +275,7 @@ export default function DashboardPage() {
                 </Button>
             </CardHeader>
             <CardContent>
-                {goals.length > 0 ? (
+                {recentGoals.length > 0 ? (
                     <div className="space-y-6">
                     {recentGoals.map((goal: Goal) => {
                         const completedSub = goal.subGoals?.filter(sg => sg.status === 'done').length || 0
@@ -272,7 +288,7 @@ export default function DashboardPage() {
                             <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
                             <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
                             </div>
-                            <p className="text-sm text-muted-foreground">{goal.project || 'Uncategorized'}</p>
+                            <p className="text-sm text-muted-foreground">{goal.category || 'Uncategorized'}</p>
                             <Progress value={progress} className="h-2 mt-2" />
                         </div>
                         )

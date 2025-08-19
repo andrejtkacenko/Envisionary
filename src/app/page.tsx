@@ -40,6 +40,7 @@ export default function Home() {
   const { toast } = useToast();
 
   const fetchGoals = useCallback(async () => {
+    // This function can be used for one-time fetches if needed elsewhere
     if (!user) return;
     setIsLoading(true);
     try {
@@ -60,15 +61,27 @@ export default function Home() {
 
   useEffect(() => {
     if (user) {
-      fetchGoals();
+      setIsLoading(true);
+      // Set up the real-time listener
+      const unsubscribe = getGoals(user.uid, (userGoals) => {
+        setGoals(userGoals);
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Error fetching real-time goals:", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not fetch goals." });
+        setIsLoading(false);
+      });
+
+      // Cleanup subscription on component unmount
+      return () => unsubscribe();
     }
-  }, [user, fetchGoals]);
+  }, [user, toast]);
 
   const handleAddNewGoal = useCallback(async (newGoalData: Omit<Goal, 'id' | 'subGoals'>) => {
     if (!user) return;
     try {
         const newGoal = await addGoal(user.uid, newGoalData);
-        setGoals(prev => [...prev, newGoal]);
+        // setGoals(prev => [...prev, newGoal]); // No longer needed with real-time listener
         return newGoal;
     } catch(e) {
         console.error("Error adding goal:", e);
@@ -79,7 +92,7 @@ export default function Home() {
       if (!user) return;
       try {
         const newGoals = await addGoals(user.uid, newGoalsData);
-        setGoals(prev => [...prev, ...newGoals]);
+        // setGoals(prev => [...prev, ...newGoals]); // No longer needed with real-time listener
         return newGoals;
       } catch (e) {
         console.error("Error adding goals:", e);
@@ -87,36 +100,45 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => {
+    // This effect is to clear the query params, but fetchGoals is no longer needed
+    // as the listener will pick up the changes.
     const hasNewGoals = searchParams.get('newGoal') || searchParams.get('newGoals');
     if (hasNewGoals) {
-      fetchGoals();
       router.replace('/', { scroll: false });
     }
-  }, [searchParams, fetchGoals, router]);
+  }, [searchParams, router]);
 
   const handleGoalUpdate = async (updatedGoal: Goal) => {
     if (!user) return;
+    
+    // Optimistic UI update
+    const originalGoals = goals;
+    setGoals((prevGoals) => {
+        return prevGoals.map(g => g.id === updatedGoal.id ? updatedGoal : g);
+    });
+
     try {
-      setGoals((prevGoals) => {
-          return prevGoals.map(g => g.id === updatedGoal.id ? updatedGoal : g);
-      });
       await updateGoal(user.uid, updatedGoal);
     } catch (e) {
       console.error("Error updating goal:", e);
-      // Optional: Revert state on failure
+      // Revert state on failure
       toast({
           variant: "destructive",
           title: "Update Failed",
           description: "Could not save your changes. Please try again.",
       });
-      fetchGoals(); // Re-fetch to ensure UI is consistent
+      setGoals(originalGoals); // Revert
     }
   };
   
   const handleGoalDelete = async (goalId: string) => {
     if (!user) return;
+
+    // Optimistic UI update
+    const originalGoals = goals;
+    setGoals((prev) => prev.filter((goal) => goal.id !== goalId));
+
     try {
-      setGoals((prev) => prev.filter((goal) => goal.id !== goalId));
       await deleteGoal(user.uid, goalId);
     } catch (e) {
       console.error("Error deleting goal:", e);
@@ -125,7 +147,7 @@ export default function Home() {
           title: "Delete Failed",
           description: "Could not delete the goal. Please try again.",
       });
-      fetchGoals(); // Re-fetch to ensure UI is consistent
+      setGoals(originalGoals); // Revert
     }
   }
 

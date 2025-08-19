@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
-import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy } from "firebase/firestore";
-import type { Goal, WeeklySchedule, GoalTemplate, ScheduleTemplate } from "@/types";
+import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe } from "firebase/firestore";
+import type { Goal, WeeklySchedule, GoalTemplate, ScheduleTemplate, GoalStatus } from "@/types";
 
 // Firestore data converter for Goals
 const goalConverter = {
@@ -28,7 +28,16 @@ const goalConverter = {
     },
     fromFirestore: (snapshot: any, options: any): Goal => {
         const data = snapshot.data(options);
-        const goal: Goal = { ...data, id: snapshot.id };
+        const goal: Goal = {
+             id: snapshot.id,
+             title: data.title,
+             status: data.status,
+             priority: data.priority,
+             category: data.category,
+             description: data.description,
+             subGoals: data.subGoals || [],
+             estimatedTime: data.estimatedTime,
+        };
         if (data.dueDate) {
             goal.dueDate = (data.dueDate as Timestamp).toDate();
         }
@@ -118,18 +127,37 @@ const getScheduleTemplatesCollection = (userId: string) => {
 
 // --- GOAL-RELATED FUNCTIONS ---
 
-// Get all goals for a user
-export const getGoals = async (userId: string): Promise<Goal[]> => {
+// Get all goals for a user with real-time updates
+export const getGoals = (
+    userId: string, 
+    callback: (goals: Goal[]) => void,
+    onError: (error: Error) => void
+): Unsubscribe => {
     const goalsCollection = getGoalsCollection(userId);
-    const snapshot = await getDocs(goalsCollection);
-    return snapshot.docs.map(doc => doc.data());
+    const q = query(goalsCollection); // You can add orderBy here if needed
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const goals = querySnapshot.docs.map(doc => doc.data());
+        callback(goals);
+    }, (error) => {
+        console.error("Error listening to goals collection: ", error);
+        onError(error);
+    });
+
+    return unsubscribe;
 };
 
 // Add a single goal
 export const addGoal = async (userId: string, goalData: Omit<Goal, 'id'>): Promise<Goal> => {
     const goalsCollection = getGoalsCollection(userId);
     const newDocRef = doc(goalsCollection);
-    const newGoal: Goal = { ...goalData, id: newDocRef.id, subGoals: goalData.subGoals || [] };
+    const newGoal: Goal = { 
+        ...goalData, 
+        id: newDocRef.id,
+        status: goalData.status || 'todo',
+        priority: goalData.priority || 'medium',
+        subGoals: goalData.subGoals || [] 
+    };
     await setDoc(newDocRef, newGoal);
     return newGoal;
 };
@@ -142,7 +170,13 @@ export const addGoals = async (userId: string, goalsData: Omit<Goal, 'id'>[]): P
 
     goalsData.forEach(goalData => {
         const newDocRef = doc(goalsCollection);
-        const newGoal: Goal = { ...goalData, id: newDocRef.id, subGoals: goalData.subGoals || [] };
+        const newGoal: Goal = { 
+            ...goalData, 
+            id: newDocRef.id,
+            status: goalData.status || 'todo',
+            priority: goalData.priority || 'medium',
+            subGoals: goalData.subGoals || [] 
+        };
         batch.set(newDocRef, newGoal);
         newGoals.push(newGoal);
     });
@@ -194,7 +228,7 @@ export const getSchedule = async (userId: string): Promise<WeeklySchedule | null
 // Get all goal templates
 export const getGoalTemplates = async (): Promise<GoalTemplate[]> => {
     const templatesCollection = getGoalTemplatesCollection();
-    const snapshot = await getDocs(templatesCollection);
+    const snapshot = await getDocs(query(templatesCollection, orderBy("createdAt", "desc")));
     return snapshot.docs.map(doc => doc.data());
 };
 
