@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Zap, Activity, Star, MessageCircle, Trash2, Headphones, Mic, Info, Briefcase, Aperture, Heart, Clock, User, Send, FileText, Wand2 } from 'lucide-react';
+import { Zap, Activity, Star, MessageCircle, Trash2, Headphones, Mic, Info, Briefcase, Aperture, Heart, Clock, User, Send, FileText, Wand2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/context/AuthContext';
 import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
 import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';
+import { getSchedule } from '@/ai/tools/schedule-tools';
 import { summarizeProgress, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
 import { getGoalsSnapshot } from '@/lib/goals-service';
 import type { Goal } from '@/types';
@@ -37,7 +38,7 @@ type ChatMessage = {
 
 const initialMessage: ChatMessage = { 
     role: 'assistant', 
-    content: "Hello! I'm your AI Coach. I can help you manage your goals. Try asking me to create a new goal or improve an existing one. How can I support you today?" 
+    content: "Hello! I'm your AI Coach. I can help you manage your goals and schedule. Try asking me to create a new goal or to find time for an existing one. How can I support you today?" 
 };
 
 const callTool = async (toolRequest: any, userId: string): Promise<any> => {
@@ -52,6 +53,8 @@ const callTool = async (toolRequest: any, userId: string): Promise<any> => {
             return await updateGoal(args);
         case 'findGoals':
             return await findGoals(args);
+        case 'getSchedule':
+            return await getSchedule({ userId });
         default:
             throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -71,7 +74,7 @@ export default function CoachPage() {
 
     const suggestions = [
         "Create a new goal to learn Next.js",
-        "Improve my goal 'read more books'",
+        "When can I work on my 'read more' goal?",
         "What are my current goals?",
     ];
 
@@ -230,7 +233,12 @@ export default function CoachPage() {
                                                 <div key={index} className="text-xs text-center text-muted-foreground flex items-center gap-2 justify-center">
                                                     <Wand2 className="h-4 w-4" />
                                                     <span>Tool action: `{msg.toolResult?.name}` executed.</span>
-                                                    <Button variant="link" size="sm" onClick={fetchGoals} className="text-xs p-0 h-auto">Refresh Board</Button>
+                                                    { msg.toolResult?.name === 'getSchedule' ? (
+                                                         <a href="/planner" className="text-xs p-0 h-auto underline">View Schedule</a>
+                                                    ) : (
+                                                         <Button variant="link" size="sm" onClick={fetchGoals} className="text-xs p-0 h-auto">Refresh Board</Button>
+                                                    )
+                                                    }
                                                 </div>
                                             )
                                         }
