@@ -76,6 +76,13 @@ export async function POST(req: NextRequest) {
     const text = message.text;
     const userId = message.from.id.toString();
 
+    // Handle the /start command
+    if (text === '/start') {
+        const welcomeMessage = "Hello! I'm your AI assistant, Zenith Flow. I can help you manage your goals. Try asking me to 'create a new goal' or 'show me my current tasks'.";
+        await sendMessage(chatId, welcomeMessage);
+        return NextResponse.json({ status: 'ok' });
+    }
+
     // Get or initialize chat history
     if (!chatHistories[userId]) {
       chatHistories[userId] = [];
