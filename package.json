@@ -1,3 +1,4 @@
+
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -60,6 +61,7 @@
     "recharts": "^2.15.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "wav": "^1.0.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -67,6 +69,7 @@
     "@types/feather-icons": "^4.29.4",
     "@types/lodash.isequal": "^4.5.8",
     "@types/nanoid": "^3.0.0",
+    "@types/wav": "^1.0.3",
     "genkit-cli": "^1.14.1",
     "postcss": "^8",
     "prisma": "^6.14.0",
@@ -77,5 +80,3 @@
     "@types/react-dom": "^18"
   }
 }
-
-    

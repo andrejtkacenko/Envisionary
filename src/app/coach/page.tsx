@@ -12,6 +12,7 @@ import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
 import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';
 import { getSchedule } from '@/ai/tools/schedule-tools';
 import { summarizeProgress, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
+import { generateAudio } from '@/ai/flows/generate-audio';
 import { getGoalsSnapshot } from '@/lib/goals-service';
 import type { Goal } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -71,6 +72,8 @@ export default function CoachPage() {
     const [analysisResult, setAnalysisResult] = useState<SummarizeProgressOutput | null>(null);
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [goals, setGoals] = useState<Goal[]>([]);
+    const [isAudioLoading, setIsAudioLoading] = useState(false);
+    const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
 
     const suggestions = [
         "Create a new goal to learn Next.js",
@@ -181,6 +184,35 @@ export default function CoachPage() {
             });
         } finally {
             setIsAnalysisLoading(false);
+        }
+    };
+
+    const handleGenerateAudio = async () => {
+        setIsAudioLoading(true);
+        setAudioDataUri(null);
+        try {
+            const script = chatHistory
+                .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+                .map(msg => `${msg.role === 'user' ? 'You' : 'Coach'}: ${msg.content}`)
+                .join('\n\n');
+            
+            if (!script) {
+                toast({ title: "Chat is empty", description: "There's nothing to generate audio from yet."});
+                return;
+            }
+
+            const result = await generateAudio({ script });
+            setAudioDataUri(result.audioDataUri);
+
+        } catch (error) {
+            console.error("Audio generation error:", error);
+            toast({
+                variant: "destructive",
+                title: "Audio Generation Failed",
+                description: "Could not generate audio summary.",
+            });
+        } finally {
+            setIsAudioLoading(false);
         }
     };
     
@@ -299,11 +331,17 @@ export default function CoachPage() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Headphones /> Audio Overview</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground mb-4">Generate an audio summary of your progress or notes for listening on-the-go.</p>
-                             <Button variant="outline" className="w-full" disabled>
-                                <Mic className="mr-2 h-4 w-4" /> Generate Audio Script
+                        <CardContent className="space-y-4">
+                            <p className="text-sm text-muted-foreground">Generate an audio summary of your conversation for listening on-the-go.</p>
+                             <Button variant="outline" className="w-full" onClick={handleGenerateAudio} disabled={isAudioLoading}>
+                                {isAudioLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mic className="mr-2 h-4 w-4" />}
+                                {isAudioLoading ? 'Generating...' : 'Generate Audio'}
                             </Button>
+                            {audioDataUri && (
+                                <audio controls src={audioDataUri} className="w-full">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            )}
                         </CardContent>
                     </Card>
                      <Card>
