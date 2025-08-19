@@ -47,12 +47,13 @@ import { useToast } from "@/hooks/use-toast";
 import { SuggestGoalsPanel, type SuggestedGoal } from "@/components/suggest-goals-panel";
 import { useAuth } from "@/context/AuthContext";
 import { addGoal } from "@/lib/goals-service";
+import type { GoalStatus } from "@/types";
 
 const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   category: z.string().optional(),
-  status: z.enum(["todo", "inprogress", "done"]),
+  status: z.custom<GoalStatus>(),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
 });
@@ -201,6 +202,7 @@ export default function CreateGoalPage() {
                                 <SelectItem value="todo">To Do</SelectItem>
                                 <SelectItem value="inprogress">In Progress</SelectItem>
                                 <SelectItem value="done">Done</SelectItem>
+                                <SelectItem value="ongoing">Ongoing</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />

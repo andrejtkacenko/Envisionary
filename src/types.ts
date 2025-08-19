@@ -1,7 +1,7 @@
 
 import type { Timestamp } from "firebase/firestore";
 
-export type GoalStatus = "todo" | "inprogress" | "done";
+export type GoalStatus = "todo" | "inprogress" | "done" | "ongoing";
 
 export type GoalPriority = "low" | "medium" | "high";
 

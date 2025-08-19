@@ -6,12 +6,12 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, Share2, Loader2, ListX, Clock } from "lucide-react";
+import { CalendarIcon, Plus, Trash, Edit, Wand2, X, FilePenLine, Share2, Loader2, ListX, Clock, Repeat } from "lucide-react";
 import { format } from "date-fns";
 import isEqual from 'lodash.isequal';
 
 
-import type { Goal } from "@/types";
+import type { Goal, GoalStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -71,7 +71,7 @@ const goalSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   category: z.string().optional(),
-  status: z.enum(["todo", "inprogress", "done"]),
+  status: z.custom<GoalStatus>(),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.date().optional(),
   estimatedTime: z.string().optional(),
@@ -166,7 +166,9 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger, onOp
       setShowUnsavedChangesAlert(true);
     } else {
       setOpen(isOpen);
-      onOpenChange?.(isOpen);
+      if (onOpenChange) {
+        onOpenChange(isOpen);
+      }
     }
   };
 
@@ -347,6 +349,7 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger, onOp
                             <SelectItem value="todo">To Do</SelectItem>
                             <SelectItem value="inprogress">In Progress</SelectItem>
                             <SelectItem value="done">Done</SelectItem>
+                            <SelectItem value="ongoing">Ongoing</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -506,11 +509,14 @@ export function EditGoalDialog({ goal, onGoalUpdate, onGoalDelete, trigger, onOp
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <h4 className="text-sm font-medium text-muted-foreground">Status</h4>
-                            <p className="text-base">{goal.status}</p>
+                            <p className="text-base capitalize flex items-center gap-1">
+                                {goal.status === 'ongoing' && <Repeat className="h-4 w-4" />}
+                                {goal.status}
+                            </p>
                         </div>
                         <div className="space-y-1">
                             <h4 className="text-sm font-medium text-muted-foreground">Priority</h4>
-                            <p className="text-base">{goal.priority}</p>
+                            <p className="text-base capitalize">{goal.priority}</p>
                         </div>
                     </div>
                      <div className="grid grid-cols-2 gap-4">

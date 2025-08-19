@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Zap, Target, CheckCircle, Clock, ListTodo, Award, ChevronRight, Loader2 } from "lucide-react"
+import { Plus, Zap, Target, CheckCircle, Clock, ListTodo, Award, ChevronRight, Loader2, Repeat } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import Link from "next/link"
 import {
@@ -74,21 +74,30 @@ export default function DashboardPage() {
     }
   };
 
-  const { totalCount, doneCount, inprogressCount, todoCount, recentGoals, categoryData, chartConfig } = useMemo(() => {
-    const total = goals.length;
-    const done = goals.filter(g => g.status === 'done').length;
-    const inprogress = goals.filter(g => g.status === 'inprogress').length;
-    const todo = total - done - inprogress;
+  const { 
+    totalCount, 
+    doneCount, 
+    inprogressCount, 
+    todoCount, 
+    ongoingCount, 
+    recentGoals, 
+    categoryData, 
+    chartConfig, 
+    ongoingGoals 
+  } = useMemo(() => {
+    const activeGoals = goals.filter(g => g.status !== 'ongoing');
+    const ongoings = goals.filter(g => g.status === 'ongoing');
+
+    const total = activeGoals.length;
+    const done = activeGoals.filter(g => g.status === 'done').length;
+    const inprogress = activeGoals.filter(g => g.status === 'inprogress').length;
+    const todo = activeGoals.filter(g => g.status === 'todo').length;
     
-    // Sort by creation date if available, otherwise just slice
     const recent = [...goals].sort((a, b) => {
-        // Assuming goals might have a 'createdAt' field. If not, this sort won't do anything.
-        // The service doesn't add it, so this is just for demonstration.
-        // A more robust implementation would add a timestamp on goal creation.
         return (b.createdAt as any) - (a.createdAt as any);
     }).slice(0, 4);
 
-    const categoryCounts = goals.reduce((acc, goal) => {
+    const categoryCounts = activeGoals.reduce((acc, goal) => {
       const categoryName = goal.category || "Uncategorized";
       if (!acc[categoryName]) {
         acc[categoryName] = { total: 0, completed: 0 };
@@ -116,9 +125,11 @@ export default function DashboardPage() {
         doneCount: done,
         inprogressCount: inprogress,
         todoCount: todo,
+        ongoingCount: ongoings.length,
         recentGoals: recent,
         categoryData: catData,
         chartConfig: chConfig,
+        ongoingGoals: ongoings,
     }
   }, [goals]);
 
@@ -166,7 +177,7 @@ export default function DashboardPage() {
         </div>
       ) : (
       <>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <Card className="bg-primary text-primary-foreground">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Goals</CardTitle>
@@ -203,13 +214,22 @@ export default function DashboardPage() {
                 <div className="text-2xl font-bold">{todoCount}</div>
             </CardContent>
             </Card>
+            <Card className="bg-purple-600 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Ongoing</CardTitle>
+                <Repeat className="h-4 w-4 text-white/70" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{ongoingCount}</div>
+            </CardContent>
+            </Card>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="lg:col-span-4">
             <CardHeader>
                 <CardTitle>Goals by Category</CardTitle>
-                <CardDescription>Distribution of your goals across different categories.</CardDescription>
+                <CardDescription>Distribution of your active goals across different categories.</CardDescription>
             </CardHeader>
             <CardContent className="pl-2">
                  {categoryData.length > 0 ? (
@@ -246,13 +266,27 @@ export default function DashboardPage() {
             </Card>
             <Card className="lg:col-span-3">
             <CardHeader>
-                <CardTitle>Recent Achievements</CardTitle>
+                <CardTitle>Ongoing Goals & Habits</CardTitle>
+                 <CardDescription>Your permanent, long-term objectives.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="text-center text-muted-foreground py-12">
-                    <Award className="mx-auto h-12 w-12" />
-                    <p className="mt-4">No achievements yet. Complete your first goal to earn a badge!</p>
-                </div>
+                {ongoingGoals.length > 0 ? (
+                    <div className="space-y-4">
+                    {ongoingGoals.map((goal: Goal) => {
+                        return (
+                        <div key={goal.id}>
+                            <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
+                            <p className="text-sm text-muted-foreground">{goal.category || 'Uncategorized'}</p>
+                        </div>
+                        )
+                    })}
+                    </div>
+                ) : (
+                     <div className="text-center text-muted-foreground py-12">
+                        <Repeat className="mx-auto h-12 w-12" />
+                        <p className="mt-4">No ongoing goals yet. Create one to track your habits!</p>
+                    </div>
+                )}
             </CardContent>
             </Card>
         </div>

@@ -8,7 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { addGoal as addGoalToDb, getGoalsSnapshot, updateGoal as updateGoalInDb } from '@/lib/goals-service';
-import type { Goal } from '@/types';
+import type { Goal, GoalStatus } from '@/types';
 
 // Schema for creating a new goal
 const CreateGoalSchema = z.object({
@@ -27,7 +27,7 @@ const UpdateGoalSchema = z.object({
     description: z.string().optional().describe("The new description for the goal."),
     category: z.string().optional().describe("The new category for the goal."),
     priority: z.enum(["low", "medium", "high"]).optional().describe("The new priority."),
-    status: z.enum(["todo", "inprogress", "done"]).optional().describe("The new status."),
+    status: z.custom<GoalStatus>().optional().describe("The new status."),
 });
 
 // Schema for finding goals

@@ -3,10 +3,10 @@
 "use client"
 
 import { useState } from "react";
-import { ArrowDown, ArrowRight, ArrowUp, Calendar as CalendarIcon, MoreHorizontal, Trash, Edit, ChevronDown, Plus, Clock, Circle, CheckCircle, Loader } from "lucide-react";
+import { ArrowRight, Calendar as CalendarIcon, Clock, CheckCircle, Loader, Repeat } from "lucide-react";
 import { format } from "date-fns";
 
-import type { Goal, GoalPriority, GoalStatus } from "@/types";
+import type { Goal, GoalStatus } from "@/types";
 import {
   Card,
   CardContent,
@@ -14,24 +14,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { EditGoalDialog } from "./edit-goal-dialog";
-import { BreakDownGoalDialog, SubGoal } from "./break-down-goal-dialog";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -45,18 +30,13 @@ interface KanbanCardProps {
 
 const statusIcons: Record<GoalStatus, React.ReactNode> = {
     todo: <ArrowRight className="h-4 w-4 text-muted-foreground" />,
-    inprogress: <ArrowUp className="h-4 w-4 text-blue-500" />,
+    inprogress: <Loader className="h-4 w-4 text-blue-500 animate-spin" />,
     done: <CheckCircle className="h-4 w-4 text-green-500" />,
+    ongoing: <Repeat className="h-4 w-4 text-purple-500" />,
 };
 
-const priorityTooltips: Record<GoalPriority, string> = {
-  high: 'High Priority',
-  medium: 'Medium Priority',
-  low: 'Low Priority'
-}
 
 export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: KanbanCardProps) {
-  const [isSubtasksOpen, setIsSubtasksOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const {
@@ -79,30 +59,6 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
     transition,
     transform: CSS.Transform.toString(transform),
   };
-
-  const handleSubGoalChange = (subGoalId: string, checked: boolean) => {
-      const updatedSubGoals = goal.subGoals?.map(sg => 
-          sg.id === subGoalId ? { ...sg, status: checked ? 'done' : 'todo' } : sg
-      );
-      const updatedParentGoal = { ...goal, subGoals: updatedSubGoals };
-      
-      onGoalUpdate?.(updatedParentGoal);
-  };
-  
-  const handleAddSubGoals = (newSubGoals: SubGoal[]) => {
-     const newGoals: Goal[] = newSubGoals.map(sg => ({
-        id: crypto.randomUUID(),
-        title: sg.title,
-        description: sg.description,
-        category: goal.category,
-        status: 'todo',
-        priority: goal.priority,
-        dueDate: goal.dueDate,
-        estimatedTime: sg.estimatedTime,
-        createdAt: new Date(),
-      }));
-      onGoalUpdate?.({...goal, subGoals: [...(goal.subGoals || []), ...newGoals]});
-  }
 
   const completedSubGoals = goal.subGoals?.filter(sg => sg.status === 'done').length || 0;
   const totalSubGoals = goal.subGoals?.length || 0;

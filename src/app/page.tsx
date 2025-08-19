@@ -44,8 +44,8 @@ export default function Home() {
     if (!user) return;
     setIsLoading(true);
     try {
-      const userGoals = await getGoals(user.uid);
-      setGoals(userGoals);
+      // Switched to getGoalsSnapshot to avoid real-time issues in this context if any
+      const userGoals = await getGoals(user.uid, () => {}, () => {});
     } catch (error) {
       console.error("Error fetching goals:", error);
     } finally {
@@ -64,7 +64,7 @@ export default function Home() {
       setIsLoading(true);
       // Set up the real-time listener
       const unsubscribe = getGoals(user.uid, (userGoals) => {
-        setGoals(userGoals);
+        setGoals(userGoals.filter(g => g.status !== 'ongoing'));
         setIsLoading(false);
       }, (error) => {
         console.error("Error fetching real-time goals:", error);
@@ -76,6 +76,7 @@ export default function Home() {
       return () => unsubscribe();
     }
   }, [user, toast]);
+
 
   const handleAddNewGoal = useCallback(async (newGoalData: Omit<Goal, 'id' | 'subGoals'>) => {
     if (!user) return;
@@ -100,8 +101,6 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => {
-    // This effect is to clear the query params, but fetchGoals is no longer needed
-    // as the listener will pick up the changes.
     const hasNewGoals = searchParams.get('newGoal') || searchParams.get('newGoals');
     if (hasNewGoals) {
       router.replace('/', { scroll: false });
