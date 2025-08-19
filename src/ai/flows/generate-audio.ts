@@ -13,12 +13,12 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import wav from 'wav';
 
-export const GenerateAudioInputSchema = z.object({
+const GenerateAudioInputSchema = z.object({
   script: z.string().describe('The text script to convert to audio.'),
 });
 export type GenerateAudioInput = z.infer<typeof GenerateAudioInputSchema>;
 
-export const GenerateAudioOutputSchema = z.object({
+const GenerateAudioOutputSchema = z.object({
   audioDataUri: z.string().describe("The generated audio as a data URI in WAV format."),
 });
 export type GenerateAudioOutput = z.infer<typeof GenerateAudioOutputSchema>;
