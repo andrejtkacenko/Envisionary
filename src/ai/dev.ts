@@ -10,5 +10,6 @@ import '@/ai/flows/recommend-goals.ts';
 import '@/ai/flows/generate-schedule.ts';
 import '@/ai/flows/generate-schedule-template.ts';
 import '@/ai/flows/generate-audio.ts';
+import '@/ai/flows/telegram-chat.ts';
 import '@/ai/tools/goal-tools.ts';
 import '@/ai/tools/schedule-tools.ts';
