@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { saveSchedule, getSchedule, getGoals, type WeeklySchedule, type ScheduledItem, type Goal, type DailyGoalTask, type DailySchedule } from '@/lib/goals-service';
+import { saveSchedule, getSchedule, getGoalsSnapshot, type WeeklySchedule, type ScheduledItem, type Goal, type DailyGoalTask, type DailySchedule } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
