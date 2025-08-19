@@ -12,9 +12,17 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { createGoalTool, findGoalsTool } from '@/ai/tools/goal-tools';
 
+const ChatMessageSchema = z.object({
+    role: z.enum(['user', 'assistant', 'tool']),
+    content: z.string(),
+    toolResult: z.any().optional(),
+    toolRequest: z.any().optional(),
+});
+
 export const TelegramChatInputSchema = z.object({
   message: z.string().describe('The message from the Telegram user.'),
   userId: z.string().describe('The Telegram user ID.'),
+  history: z.array(ChatMessageSchema).optional().describe('The chat history.'),
 });
 export type TelegramChatInput = z.infer<typeof TelegramChatInputSchema>;
 
@@ -34,7 +42,24 @@ const telegramChatFlow = ai.defineFlow(
     inputSchema: TelegramChatInputSchema,
     outputSchema: TelegramChatOutputSchema,
   },
-  async ({ message, userId }) => {
+  async ({ message, userId, history }) => {
+    
+    const augmentedHistory = history?.map(m => {
+        const historyMessage: any = {
+            role: m.role === 'assistant' ? 'model' : m.role,
+            content: []
+        };
+        if (m.toolRequest) {
+            historyMessage.content.push({toolRequest: m.toolRequest});
+        }
+        if (m.toolResult) {
+            historyMessage.content.push({toolResult: m.toolResult});
+        }
+        if (m.content) {
+            historyMessage.content.push({text: m.content});
+        }
+        return historyMessage;
+    }) || [];
 
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
@@ -45,6 +70,7 @@ Your primary role is to help the user manage their goals.
 - Use the findGoalsTool to find and list goals when the user asks about their current tasks.
 - You must have the user's ID to use any tool.
 - The user's ID is: ${userId}`,
+      history: augmentedHistory,
       prompt: message,
     });
 

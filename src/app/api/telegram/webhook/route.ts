@@ -1,14 +1,25 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { telegramChat } from '@/ai/flows/telegram-chat';
+import { telegramChat, TelegramChatInput, TelegramChatOutput } from '@/ai/flows/telegram-chat';
 import { createGoal, findGoals } from '@/ai/tools/goal-tools';
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
+type ChatMessage = {
+    role: 'user' | 'assistant' | 'tool';
+    content: string;
+    toolRequest?: any;
+    toolResult?: any;
+};
+
+// This is a simplistic in-memory store. In a real app, use a database like Firestore.
+const chatHistories: Record<string, ChatMessage[]> = {};
+
+
 // Function to send a message back to the user
 async function sendMessage(chatId: number, text: string) {
-  if (!text) return; // Don't send empty messages
+  if (!text.trim()) return; 
   const url = `${TELEGRAM_API_URL}/sendMessage`;
   console.log(`Sending message to chat ID ${chatId}: "${text}"`);
   try {
@@ -37,6 +48,8 @@ async function callTool(toolRequest: any, userId: string): Promise<any> {
     const toolName = toolRequest.name;
     const args = toolRequest.input;
     args.userId = userId; // Ensure userId is passed to tools
+
+    console.log(`Calling tool: ${toolName} with args:`, args);
 
     switch (toolName) {
         case 'createGoal':
@@ -76,53 +89,52 @@ export async function POST(req: NextRequest) {
     if (text === '/start') {
         const welcomeMessage = "Hello! I'm your AI assistant, Zenith Flow. I can help you manage your goals. Try asking me to 'create a new goal' or 'show me my current tasks'.";
         await sendMessage(chatId, welcomeMessage);
+        chatHistories[userId] = []; // Clear history on start
         return NextResponse.json({ status: 'ok' });
     }
+
+    // Send a "typing..." action to give user feedback
+    await fetch(`${TELEGRAM_API_URL}/sendChatAction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
+    });
     
     try {
-        // Send a "typing..." action to give user feedback
-        await fetch(`${TELEGRAM_API_URL}/sendChatAction`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
-        });
-        
-        // We will just send the last message and not maintain history for now.
-        let aiResponse = await telegramChat({ message: text, userId: userId });
+        const userHistory = chatHistories[userId] || [];
+        userHistory.push({ role: 'user', content: text });
 
-        // This loop handles the case where the AI wants to call a tool.
-        while (aiResponse.toolRequest) {
-            const toolRequest = aiResponse.toolRequest;
-            
-            const toolResult = await callTool(toolRequest, userId);
-            
-            // For a single tool call, we can just format the result and send it.
-            // If the tool call itself returns a string, we can send it directly.
-            if (typeof toolResult === 'string') {
-                 await sendMessage(chatId, toolResult);
-                 return NextResponse.json({ status: 'ok' });
+        let aiResponse: TelegramChatOutput;
+
+        // Loop to handle potential tool calls
+        while (true) {
+            aiResponse = await telegramChat({ 
+                message: text, 
+                userId: userId,
+                history: userHistory,
+            });
+
+            if (aiResponse.toolRequest) {
+                // If the model wants to call a tool
+                userHistory.push({ role: 'assistant', content: aiResponse.reply, toolRequest: aiResponse.toolRequest });
+                const toolResult = await callTool(aiResponse.toolRequest, userId);
+                userHistory.push({ role: 'tool', content: "Tool result", toolResult: { name: aiResponse.toolRequest.name, result: toolResult } });
+                // We don't send anything here, we loop back to the model with the tool result
+            } else {
+                // If the model is done, send the final response and break the loop
+                userHistory.push({ role: 'assistant', content: aiResponse.reply });
+                await sendMessage(chatId, aiResponse.reply);
+                break;
             }
-            // If the tool returns an object, we format it.
-            if (toolRequest.name === 'createGoal' && toolResult.id) {
-                await sendMessage(chatId, `✅ Goal created: "${toolResult.title}"`);
-                return NextResponse.json({ status: 'ok' });
-            }
-            
-            // If we get here, the tool call logic needs to be expanded.
-            // For now, we'll just send the AI's initial text if any.
-            await sendMessage(chatId, aiResponse.reply || "I've processed your request.");
-            return NextResponse.json({ status: 'ok' });
         }
-        
-        // Send the final reply back to the user if no tool was called
-        await sendMessage(chatId, aiResponse.reply);
+
+        chatHistories[userId] = userHistory;
 
     } catch (e: any) {
         console.error("Error processing message with AI:", e);
         await sendMessage(chatId, "Sorry, I encountered an error. Please try again later.");
     }
     
-    // Respond to Telegram to acknowledge receipt of the update
     return NextResponse.json({ status: 'ok' });
 
   } catch (error) {
