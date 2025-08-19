@@ -81,7 +81,7 @@ Your primary role is to help the user manage their goals.
     const toolRequest = llmResponse.toolRequest;
     if (toolRequest) {
         return {
-            reply: ll.text, // The model might have some text before calling the tool
+            reply: llmResponse.text, // The model might have some text before calling the tool
             toolRequest: toolRequest,
         };
     }
