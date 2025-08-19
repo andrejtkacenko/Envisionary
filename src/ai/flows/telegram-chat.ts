@@ -46,17 +46,19 @@ const telegramChatFlow = ai.defineFlow(
     
     const augmentedHistory = history?.map(m => {
         const historyMessage: any = {
-            role: m.role === 'assistant' ? 'model' : m.role,
+            role: m.role === 'assistant' ? 'model' : 'tool', // Treat tool results as 'tool' role
             content: []
         };
         if (m.toolRequest) {
+            historyMessage.role = 'model';
             historyMessage.content.push({toolRequest: m.toolRequest});
-        }
-        if (m.toolResult) {
+            if (m.content) historyMessage.content.push({text: m.content});
+        } else if (m.toolResult) {
+            historyMessage.role = 'tool';
             historyMessage.content.push({toolResult: m.toolResult});
-        }
-        if (m.content) {
-            historyMessage.content.push({text: m.content});
+        } else {
+             historyMessage.role = m.role === 'assistant' ? 'model' : 'user';
+             historyMessage.content.push({text: m.content});
         }
         return historyMessage;
     }) || [];
@@ -69,7 +71,8 @@ Your primary role is to help the user manage their goals.
 - Use the createGoalTool to create new goals when the user asks. For example, if the user says "create a goal to learn piano", call the tool with the title "learn piano".
 - Use the findGoalsTool to find and list goals when the user asks about their current tasks.
 - You must have the user's ID to use any tool.
-- The user's ID is: ${userId}`,
+- The user's ID is: ${userId}
+- When you use a tool, you will get the result back. Use that result to formulate your final response to the user. For example, after createGoal, respond with "Goal created: [goal title]". After findGoals, list the goals you found.`,
       history: augmentedHistory,
       prompt: message,
     });
@@ -77,7 +80,7 @@ Your primary role is to help the user manage their goals.
     const toolRequest = llmResponse.toolRequest;
     if (toolRequest) {
         return {
-            reply: llmResponse.text, // The model might have some text before calling the tool
+            reply: ll.text, // The model might have some text before calling the tool
             toolRequest: toolRequest,
         };
     }
