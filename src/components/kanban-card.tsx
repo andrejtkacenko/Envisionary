@@ -42,15 +42,9 @@ interface KanbanCardProps {
   onGoalDelete?: (goalId: string) => void;
 }
 
-const priorityIcons: Record<GoalPriority, React.ReactNode> = {
-  high: <ArrowUp className="h-4 w-4 text-destructive" />,
-  medium: <ArrowRight className="h-4 w-4 text-yellow-500" />,
-  low: <ArrowDown className="h-4 w-4 text-green-500" />,
-};
-
 const statusIcons: Record<GoalStatus, React.ReactNode> = {
-    todo: <Circle className="h-4 w-4 text-muted-foreground" />,
-    inprogress: <Loader className="h-4 w-4 text-blue-500 animate-spin" />,
+    todo: <ArrowRight className="h-4 w-4 text-muted-foreground" />,
+    inprogress: <ArrowUp className="h-4 w-4 text-blue-500" />,
     done: <CheckCircle className="h-4 w-4 text-green-500" />,
 };
 
@@ -124,9 +118,6 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
             <div className="flex items-start justify-between">
                 <Badge variant="secondary">{goal.category || 'Uncategorized'}</Badge>
                 <div className="flex items-center gap-2">
-                    <span title={priorityTooltips[goal.priority]}>
-                        {priorityIcons[goal.priority]}
-                    </span>
                      <span title={`Status: ${goal.status}`}>
                         {statusIcons[goal.status]}
                     </span>
