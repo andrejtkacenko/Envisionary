@@ -9,7 +9,8 @@ const firebaseConfig = {
   "storageBucket": "zenith-flow-5x266.firebasestorage.app",
   "apiKey": "AIzaSyB8JxvjvJzcL0DPVhM1jzEcwUXSS7qPGnE",
   "authDomain": "zenith-flow-5x266.firebaseapp.com",
-  "messagingSenderId": "437158497095"
+  "messagingSenderId": "437158497095",
+  "measurementId": "G-S6X4G6H8QN"
 };
 
 // Initialize Firebase

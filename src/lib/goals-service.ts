@@ -175,6 +175,28 @@ export const findUserByTelegramId = async (telegramId: string): Promise<AppUser 
     return snapshot.docs[0].data();
 };
 
+// Link a telegram ID to a user account
+export const linkTelegramAccount = async (userId: string, telegramId: string): Promise<{success: boolean, message: string}> => {
+    // Check if another user already has this telegram ID
+    const existingUser = await findUserByTelegramId(telegramId);
+    if (existingUser && existingUser.uid !== userId) {
+        return { success: false, message: "This Telegram account is already linked to another user." };
+    }
+
+    const usersCollection = getUsersCollection();
+    const userRef = doc(usersCollection, userId);
+    
+    // Create user doc if it doesn't exist (e.g. for guest accounts)
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) {
+        await setDoc(userRef, { uid: userId, telegramId });
+    } else {
+        await setDoc(userRef, { telegramId }, { merge: true });
+    }
+
+    return { success: true, message: "Account linked successfully!" };
+};
+
 
 // --- GOAL-RELATED FUNCTIONS ---
 
@@ -335,5 +357,3 @@ export const deleteScheduleTemplate = async (userId: string, templateId: string)
     const docRef = doc(templatesCollection, templateId);
     await deleteDoc(docRef);
 };
-
-    
