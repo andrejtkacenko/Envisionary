@@ -70,9 +70,9 @@ const telegramChatFlow = ai.defineFlow(
 Your primary role is to help the user manage their goals.
 - Use the createGoalTool to create new goals when the user asks. For example, if the user says "create a goal to learn piano", call the tool with the title "learn piano".
 - Use the findGoalsTool to find and list goals when the user asks about their current tasks.
-- You must have the user's ID to use any tool.
-- The user's ID is: ${userId}
-- When you use a tool, you will get the result back. Use that result to formulate your final response to the user. For example, after createGoal, respond with "Goal created: [goal title]". After findGoals, list the goals you found.`,
+- You must have the user's ID to use any tool. The user's ID is: ${userId}
+- When you use a tool, you will get the result back. Use that result to formulate your final response to the user. For example, after createGoal, respond with "Goal created: [goal title]". After findGoals, list the goals you found.
+- If the user asks a general question, just answer it.`,
       history: augmentedHistory,
       prompt: message,
     });
@@ -80,7 +80,7 @@ Your primary role is to help the user manage their goals.
     const toolRequest = llmResponse.toolRequest;
     if (toolRequest) {
         return {
-            reply: ll.text, // The model might have some text before calling the tool
+            reply: llmResponse.text, // The model might have some text before calling the tool
             toolRequest: toolRequest,
         };
     }

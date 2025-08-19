@@ -149,7 +149,7 @@ Once connected, you'll be able to manage your goals from here.`;
 
             if (aiResponse.toolRequest) {
                 console.log("[AI Action] Tool requested:", aiResponse.toolRequest.name);
-                userHistory.push({ role: 'assistant', content: "", toolRequest: aiResponse.toolRequest });
+                userHistory.push({ role: 'assistant', content: aiResponse.reply || "", toolRequest: aiResponse.toolRequest });
                 
                 const toolResult = await callTool(aiResponse.toolRequest, userId);
                 console.log("[Tool Result] ", toolResult);
