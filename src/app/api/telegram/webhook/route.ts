@@ -14,6 +14,7 @@ const chatHistories: Record<string, any[]> = {};
 async function sendMessage(chatId: number, text: string) {
   if (!text) return; // Don't send empty messages
   const url = `${TELEGRAM_API_URL}/sendMessage`;
+  console.log(`Sending message to chat ID ${chatId}: "${text}"`);
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -28,6 +29,8 @@ async function sendMessage(chatId: number, text: string) {
     const data = await response.json();
     if (!data.ok) {
         console.error('Error sending message:', data.description);
+    } else {
+        console.log('Message sent successfully.');
     }
   } catch (error) {
     console.error('Failed to send message:', error);
@@ -79,15 +82,12 @@ export async function POST(req: NextRequest) {
     }
     const userHistory = chatHistories[userId];
     
-    // Process the message asynchronously to avoid blocking the response.
-    // A more robust solution would use a queueing system (e.g., Cloud Tasks).
-    const processMessage = async () => {
-      try {
+    try {
         // Send a "typing..." action to give user feedback
         await fetch(`${TELEGRAM_API_URL}/sendChatAction`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
         });
         
         userHistory.push({ role: 'user', content: [{ text }] });
@@ -97,16 +97,16 @@ export async function POST(req: NextRequest) {
 
         // 2. Handle tool calls if any
         while (aiResponse.toolRequest) {
-          const toolRequest = aiResponse.toolRequest;
+            const toolRequest = aiResponse.toolRequest;
             // Add assistant's partial response and tool request to history
-          userHistory.push({ role: 'model', content: [{ text: aiResponse.reply }, { toolRequest }] });
+            userHistory.push({ role: 'model', content: [{ text: aiResponse.reply }, { toolRequest }] });
 
-          const toolResult = await callTool(toolRequest, userId);
-          const toolResultMessage = { role: 'tool', content: [{ toolResult: { name: toolRequest.name, result: toolResult } }] };
-          userHistory.push(toolResultMessage);
-          
-          // Send the tool result back to the model for a final response
-          aiResponse = await telegramChat({ message: "", userId, history: userHistory });
+            const toolResult = await callTool(toolRequest, userId);
+            const toolResultMessage = { role: 'tool', content: [{ toolResult: { name: toolRequest.name, result: toolResult } }] };
+            userHistory.push(toolResultMessage);
+            
+            // Send the tool result back to the model for a final response
+            aiResponse = await telegramChat({ message: "", userId, history: userHistory });
         }
         
         // Add final AI response to history
@@ -115,16 +115,12 @@ export async function POST(req: NextRequest) {
         // 3. Send the final reply back to the user
         await sendMessage(chatId, aiResponse.reply);
 
-      } catch (e: any) {
-          console.error("Error processing message with AI:", e);
-          await sendMessage(chatId, "Sorry, I encountered an error. Please try again later.");
-      }
-    };
-
-    // Fire-and-forget the message processing
-    processMessage();
+    } catch (e: any) {
+        console.error("Error processing message with AI:", e);
+        await sendMessage(chatId, "Sorry, I encountered an error. Please try again later.");
+    }
     
-    // Respond to Telegram immediately to acknowledge receipt of the update
+    // Respond to Telegram to acknowledge receipt of the update
     return NextResponse.json({ status: 'ok' });
 
   } catch (error) {
