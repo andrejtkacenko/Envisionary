@@ -51,7 +51,9 @@ const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: Scheduled
                 <>
                     <Badge variant="secondary" className="w-24 sm:w-28 justify-center text-xs">{item.time}</Badge>
                     <p className="text-sm flex-grow">{item.task}</p>
-                    {item.priority && <Badge variant={item.priority === 'high' ? 'destructive' : item.priority === 'medium' ? 'secondary' : 'outline'}>{item.priority}</Badge>}
+                    <Badge variant={!item.priority ? "outline" : item.priority === 'high' ? 'destructive' : item.priority === 'medium' ? 'secondary' : 'outline'}>
+                        {!item.priority ? <ListTodo className="h-3 w-3" /> : item.priority}
+                    </Badge>
                 </>
             )}
         </div>
@@ -97,6 +99,7 @@ export default function PlannerPage() {
     const [isDataLoading, setIsDataLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [schedule, setSchedule] = useState<WeeklySchedule | null>(null);
+    const [goals, setGoals] = useState<Goal[]>([]);
     
     // Calendar state
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -120,6 +123,7 @@ export default function PlannerPage() {
     useEffect(() => {
         if (user) {
             fetchScheduleData(user.uid);
+            getGoalsSnapshot(user.uid).then(setGoals);
         }
     }, [user, fetchScheduleData]);
     
@@ -286,7 +290,7 @@ export default function PlannerPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    <ScheduleTemplates onApplyTemplate={handleApplyTemplate} />
+                    <ScheduleTemplates onApplyTemplate={handleApplyTemplate} allGoals={goals} />
                 </div>
 
                  {/* Right Column: Schedule View */}

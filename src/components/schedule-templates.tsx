@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Sparkles, Plus, Trash2, Wand2, FileText, Calendar } from 'lucide-react';
+import { Loader2, Sparkles, Plus, Trash2, Wand2, FileText, Calendar, Check, ListTodo } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -25,12 +25,14 @@ import {
 } from "@/components/ui/select";
 import { generateScheduleTemplate } from '@/ai/flows/generate-schedule-template';
 import { getScheduleTemplates, addScheduleTemplate, deleteScheduleTemplate } from '@/lib/goals-service';
-import type { ScheduleTemplate, DailySchedule } from '@/types';
+import type { ScheduleTemplate, DailySchedule, Goal } from '@/types';
 import { Badge } from './ui/badge';
+import { Checkbox } from './ui/checkbox';
 
 
 interface ScheduleTemplatesProps {
     onApplyTemplate: (schedule: DailySchedule[]) => void;
+    allGoals: Goal[];
 }
 
 const createTemplateSchema = z.object({
@@ -40,7 +42,7 @@ const createTemplateSchema = z.object({
 });
 type CreateTemplateFormValues = z.infer<typeof createTemplateSchema>;
 
-export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
+export function ScheduleTemplates({ onApplyTemplate, allGoals }: ScheduleTemplatesProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [templates, setTemplates] = useState<ScheduleTemplate[]>([]);
@@ -48,6 +50,7 @@ export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 
     const form = useForm<CreateTemplateFormValues>({
         resolver: zodResolver(createTemplateSchema),
@@ -75,10 +78,18 @@ export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
     const handleCreateTemplate = async (values: CreateTemplateFormValues) => {
         if (!user) return;
         setIsGenerating(true);
+        
+        const goalsToInclude = allGoals.filter(g => selectedGoals.includes(g.id)).map(g => ({
+            id: g.id,
+            title: g.title,
+            estimatedTime: g.estimatedTime,
+        }));
+
         try {
             const { templateData } = await generateScheduleTemplate({
                 description: values.description,
                 type: values.type,
+                goals: goalsToInclude,
             });
 
             if (!templateData || templateData.length === 0) {
@@ -94,6 +105,7 @@ export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
             
             toast({ title: "Template Created!", description: `"${values.name}" has been saved.`});
             form.reset();
+            setSelectedGoals([]);
             setIsCreateDialogOpen(false);
             fetchTemplates(); // Refresh the list
         } catch (error) {
@@ -119,6 +131,12 @@ export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
         }
     };
 
+    const handleGoalToggle = (goalId: string) => {
+        setSelectedGoals(prev => 
+            prev.includes(goalId) ? prev.filter(id => id !== goalId) : [...prev, goalId]
+        );
+    }
+
 
     return (
         <Card>
@@ -133,54 +151,80 @@ export function ScheduleTemplates({ onApplyTemplate }: ScheduleTemplatesProps) {
                             <Plus className="mr-2 h-4 w-4" /> New
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-2xl">
                         <DialogHeader>
                             <DialogTitle className="font-headline flex items-center gap-2"><Wand2 /> Create AI Schedule Template</DialogTitle>
                             <DialogDescription>
-                                Describe the kind of schedule you want, and the AI will generate a template for you.
+                                Describe the kind of schedule you want, select goals to include, and the AI will generate a template for you.
                             </DialogDescription>
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(handleCreateTemplate)} className="space-y-4 py-4">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Template Name</FormLabel>
-                                            <FormControl><Input placeholder="e.g., My Productive Week" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                 <FormField
-                                    control={form.control}
-                                    name="description"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Description</FormLabel>
-                                            <FormControl><Textarea placeholder="e.g., A 9-5 work schedule with morning workouts and evening study sessions." {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                 <FormField
-                                    control={form.control}
-                                    name="type"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Template Type</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="week">Full Week</SelectItem>
-                                                    <SelectItem value="day">Single Day</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Template Name</FormLabel>
+                                                    <FormControl><Input placeholder="e.g., My Productive Week" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="description"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Description</FormLabel>
+                                                    <FormControl><Textarea placeholder="e.g., A 9-5 work schedule with morning workouts and evening study sessions." {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="type"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Template Type</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="week">Full Week</SelectItem>
+                                                            <SelectItem value="day">Single Day</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <div>
+                                         <FormLabel>Attach Goals (Optional)</FormLabel>
+                                         <ScrollArea className="h-72 mt-2 border rounded-md p-2">
+                                            <div className="space-y-2">
+                                                {allGoals.length === 0 && (
+                                                    <div className="text-center text-muted-foreground p-4 text-sm">No goals to attach.</div>
+                                                )}
+                                                {allGoals.map(goal => (
+                                                    <div key={goal.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
+                                                        <Checkbox 
+                                                            id={`goal-${goal.id}`} 
+                                                            checked={selectedGoals.includes(goal.id)}
+                                                            onCheckedChange={() => handleGoalToggle(goal.id)}
+                                                        />
+                                                        <label htmlFor={`goal-${goal.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow">
+                                                            {goal.title}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                         </ScrollArea>
+                                    </div>
+                                </div>
                                 <DialogFooter>
                                     <Button type="submit" disabled={isGenerating}>
                                         {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}

@@ -16,9 +16,16 @@ import type { DailySchedule } from '@/types';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+const GoalSchema = z.object({
+    id: z.string(),
+    title: z.string(),
+    estimatedTime: z.string().optional(),
+});
+
 const GenerateScheduleTemplateInputSchema = z.object({
   description: z.string().describe('A description of the template to generate, e.g., "A productive work day" or "A relaxed weekend schedule".'),
   type: z.enum(['day', 'week']).describe('The type of template to generate.'),
+  goals: z.array(GoalSchema).optional().describe('A list of existing user goals to incorporate into the schedule.'),
 });
 export type GenerateScheduleTemplateInput = z.infer<typeof GenerateScheduleTemplateInputSchema>;
 
@@ -48,17 +55,24 @@ const prompt = ai.definePrompt({
   name: 'generateScheduleTemplatePrompt',
   input: { schema: GenerateScheduleTemplateInputSchema },
   output: { schema: GenerateScheduleTemplateOutputSchema },
-  prompt: `You are a productivity expert who creates optimized schedule templates. Your task is to generate a detailed, hour-by-hour schedule based on a user's description.
+  prompt: `You are a productivity expert who creates optimized schedule templates. Your task is to generate a detailed, hour-by-hour schedule based on a user's description and their selected goals.
 
 **Inputs:**
 - **Description:** {{{description}}}
 - **Template Type:** {{{type}}}
+{{#if goals}}
+- **Existing Goals to Incorporate:**
+  {{#each goals}}
+  - Task: "{{this.title}}"{{#if this.estimatedTime}} (Estimated Time: {{this.estimatedTime}}){{/if}}
+  {{/each}}
+{{/if}}
 
 **Instructions:**
 1. Based on the **Template Type**, create a schedule for either a single day or a full 7-day week (Monday to Sunday).
-2. For each day, provide a list of scheduled items with a unique ID, a specific time range (e.g., "08:00 AM - 09:00 AM"), a task description, and a priority level ('low', 'medium', or 'high').
-3. The generated schedule should be realistic and include breaks (e.g., Lunch Break).
-4. The output must be a valid JSON object matching the requested schema.
+2.  If the user provided goals, intelligently distribute them throughout the schedule. Pay attention to any provided time estimates to allocate the correct amount of time.
+3. For each day, provide a list of scheduled items with a unique ID, a specific time range (e.g., "08:00 AM - 09:00 AM"), a task description, and a priority level ('low', 'medium', or 'high').
+4. The generated schedule should be realistic and include breaks (e.g., Lunch Break).
+5. The output must be a valid JSON object matching the requested schema.
 `,
 });
 
