@@ -37,6 +37,7 @@ const goalConverter = {
              description: data.description,
              subGoals: data.subGoals || [],
              estimatedTime: data.estimatedTime,
+             createdAt: data.createdAt, // Keep timestamp for sorting
         };
         if (data.dueDate) {
             goal.dueDate = (data.dueDate as Timestamp).toDate();
@@ -134,7 +135,7 @@ export const getGoals = (
     onError: (error: Error) => void
 ): Unsubscribe => {
     const goalsCollection = getGoalsCollection(userId);
-    const q = query(goalsCollection); // You can add orderBy here if needed
+    const q = query(goalsCollection, orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const goals = querySnapshot.docs.map(doc => doc.data());
@@ -147,8 +148,16 @@ export const getGoals = (
     return unsubscribe;
 };
 
+// Get a one-time snapshot of goals (for server-side operations)
+export const getGoalsSnapshot = async (userId: string): Promise<Goal[]> => {
+    const goalsCollection = getGoalsCollection(userId);
+    const q = query(goalsCollection, orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data());
+};
+
 // Add a single goal
-export const addGoal = async (userId: string, goalData: Omit<Goal, 'id'>): Promise<Goal> => {
+export const addGoal = async (userId: string, goalData: Omit<Goal, 'id' | 'createdAt'>): Promise<Goal> => {
     const goalsCollection = getGoalsCollection(userId);
     const newDocRef = doc(goalsCollection);
     const newGoal: Goal = { 
@@ -156,14 +165,15 @@ export const addGoal = async (userId: string, goalData: Omit<Goal, 'id'>): Promi
         id: newDocRef.id,
         status: goalData.status || 'todo',
         priority: goalData.priority || 'medium',
-        subGoals: goalData.subGoals || [] 
+        subGoals: goalData.subGoals || [],
+        createdAt: Timestamp.now(),
     };
     await setDoc(newDocRef, newGoal);
     return newGoal;
 };
 
 // Add multiple goals
-export const addGoals = async (userId: string, goalsData: Omit<Goal, 'id'>[]): Promise<Goal[]> => {
+export const addGoals = async (userId: string, goalsData: Omit<Goal, 'id' | 'createdAt'>[]): Promise<Goal[]> => {
     const goalsCollection = getGoalsCollection(userId);
     const batch = writeBatch(db);
     const newGoals: Goal[] = [];
@@ -175,7 +185,8 @@ export const addGoals = async (userId: string, goalsData: Omit<Goal, 'id'>[]): P
             id: newDocRef.id,
             status: goalData.status || 'todo',
             priority: goalData.priority || 'medium',
-            subGoals: goalData.subGoals || [] 
+            subGoals: goalData.subGoals || [],
+            createdAt: Timestamp.now(),
         };
         batch.set(newDocRef, newGoal);
         newGoals.push(newGoal);

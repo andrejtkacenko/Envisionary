@@ -75,7 +75,6 @@ export default function DashboardPage() {
   };
 
   const { totalCount, doneCount, inprogressCount, todoCount, recentGoals, categoryData, chartConfig } = useMemo(() => {
-    // This calculation now only considers top-level goals.
     const total = goals.length;
     const done = goals.filter(g => g.status === 'done').length;
     const inprogress = goals.filter(g => g.status === 'inprogress').length;

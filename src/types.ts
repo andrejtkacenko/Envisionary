@@ -11,10 +11,11 @@ export type Goal = {
   description?: string;
   status: GoalStatus;
   priority: GoalPriority;
-  project: string; // This will now be treated as 'category' but we keep the name for DB compatibility
+  category: string;
   dueDate?: Date;
   subGoals?: Goal[];
   estimatedTime?: string;
+  createdAt: Timestamp;
 };
 
 export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
@@ -48,7 +49,7 @@ export type GoalTemplate = {
     id: string;
     title: string;
     description?: string;
-    project: string;
+    category: string;
     subGoals: { title: string; description: string; estimatedTime: string; }[];
     authorId: string;
     authorName: string;
@@ -65,11 +66,9 @@ export type ScheduleTemplate = {
 };
 
 // Represents a daily goal with tasks that have estimated times
-export type DailyGoal = {
-  day: string;
-  tasks: {
+export type DailyGoalTask = {
     id: string;
     title: string;
     estimatedTime?: string;
-  }[];
 };
+

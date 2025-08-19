@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { addGoal as addGoalToDb, getGoals, updateGoal as updateGoalInDb } from '@/lib/goals-service';
+import { addGoal as addGoalToDb, getGoalsSnapshot, updateGoal as updateGoalInDb } from '@/lib/goals-service';
 import type { Goal } from '@/types';
 
 // Schema for creating a new goal
@@ -15,7 +15,7 @@ const CreateGoalSchema = z.object({
   userId: z.string().describe("The ID of the user for whom to create the goal."),
   title: z.string().describe("The title of the goal."),
   description: z.string().optional().describe("A detailed description of the goal."),
-  project: z.string().optional().describe("The category for this goal (e.g., Work, Health)."),
+  category: z.string().optional().describe("The category for this goal (e.g., Work, Health)."),
   priority: z.enum(["low", "medium", "high"]).optional().describe("The priority of the goal."),
 });
 
@@ -25,7 +25,7 @@ const UpdateGoalSchema = z.object({
     goalId: z.string().describe("The ID of the goal to update."),
     title: z.string().optional().describe("The new title for the goal."),
     description: z.string().optional().describe("The new description for the goal."),
-    project: z.string().optional().describe("The new category for the goal."),
+    category: z.string().optional().describe("The new category for the goal."),
     priority: z.enum(["low", "medium", "high"]).optional().describe("The new priority."),
     status: z.enum(["todo", "inprogress", "done"]).optional().describe("The new status."),
 });
@@ -54,7 +54,7 @@ export const createGoalTool = ai.defineTool(
             ...goalData,
             status: 'todo', // Default status
             priority: goalData.priority || 'medium', // Default priority
-            project: goalData.project || 'General', // Default project
+            category: goalData.category || 'General', // Default category
         });
         return newGoal;
     }
@@ -83,7 +83,7 @@ export const updateGoalTool = ai.defineTool(
         const { userId, goalId, ...updates } = input;
         
         // First, fetch all goals to find the one to update
-        const goals = await getGoals(userId);
+        const goals = await getGoalsSnapshot(userId);
         const goalToUpdate = goals.find(g => g.id === goalId);
 
         if (!goalToUpdate) {
@@ -116,7 +116,7 @@ export const findGoalsTool = ai.defineTool(
     },
     async ({ userId, query }) => {
         console.log(`[Tool] findGoals called with query: "${query}" for user: ${userId}`);
-        const allGoals = await getGoals(userId);
+        const allGoals = await getGoalsSnapshot(userId);
         const lowerCaseQuery = query.toLowerCase();
 
         // Simple text search in title and description
@@ -126,7 +126,7 @@ export const findGoalsTool = ai.defineTool(
         );
 
         // Return only essential fields to the model to save tokens
-        return foundGoals.map(({ id, title, description, project }) => ({ id, title, description, project })) as Goal[];
+        return foundGoals.map(({ id, title, description, category }) => ({ id, title, description, category })) as Goal[];
     }
 );
 
