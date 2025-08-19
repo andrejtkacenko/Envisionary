@@ -1,7 +1,29 @@
 
 import { db } from "@/lib/firebase";
-import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe } from "firebase/firestore";
-import type { Goal, WeeklySchedule, GoalTemplate, ScheduleTemplate, GoalStatus } from "@/types";
+import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
+import type { Goal, WeeklySchedule, GoalTemplate, ScheduleTemplate, GoalStatus, AppUser } from "@/types";
+
+// Firestore data converter for Users
+const userConverter = {
+    toFirestore: (user: AppUser) => {
+        return {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            telegramId: user.telegramId,
+        };
+    },
+    fromFirestore: (snapshot: any, options: any): AppUser => {
+        const data = snapshot.data(options);
+        return {
+            uid: data.uid,
+            email: data.email,
+            displayName: data.displayName,
+            telegramId: data.telegramId,
+        };
+    }
+};
+
 
 // Firestore data converter for Goals
 const goalConverter = {
@@ -120,6 +142,9 @@ const scheduleTemplateConverter = {
     }
 };
 
+const getUsersCollection = () => {
+    return collection(db, "users").withConverter(userConverter);
+}
 
 const getGoalsCollection = (userId: string) => {
     return collection(db, "users", userId, "goals").withConverter(goalConverter);
@@ -136,6 +161,20 @@ const getSchedulesCollection = (userId: string) => {
 const getScheduleTemplatesCollection = (userId: string) => {
     return collection(db, "users", userId, "schedule_templates").withConverter(scheduleTemplateConverter);
 }
+
+// --- USER-RELATED FUNCTIONS ---
+
+// Find a user by their Telegram ID
+export const findUserByTelegramId = async (telegramId: string): Promise<AppUser | null> => {
+    const usersCollection = getUsersCollection();
+    const q = query(usersCollection, where("telegramId", "==", telegramId), limit(1));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return null;
+    }
+    return snapshot.docs[0].data();
+};
+
 
 // --- GOAL-RELATED FUNCTIONS ---
 

@@ -5,6 +5,14 @@ export type GoalStatus = "todo" | "inprogress" | "done" | "ongoing";
 
 export type GoalPriority = "low" | "medium" | "high";
 
+// This represents a user in our system.
+export type AppUser = {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  telegramId?: string; // The user's Telegram ID, linked for bot usage
+};
+
 export type Goal = {
   id: string;
   title: string;

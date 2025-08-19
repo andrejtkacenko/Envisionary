@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { telegramChat, TelegramChatInput, TelegramChatOutput } from '@/ai/flows/telegram-chat';
 import { createGoal, findGoals } from '@/ai/tools/goal-tools';
+import { findUserByTelegramId } from '@/lib/goals-service';
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
@@ -60,7 +61,6 @@ async function callTool(toolRequest: any, userId: string): Promise<any> {
                 return await createGoal(args);
             case 'findGoals':
                 const goals = await findGoals(args);
-                // Format the output for better display in chat and easier for AI to parse
                 if (goals.length === 0) return "No goals found matching that query.";
                 return `Found goals:\n${goals.map(g => `- ${g.title} (ID: ${g.id})`).join('\n')}`;
             default:
@@ -91,7 +91,25 @@ export async function POST(req: NextRequest) {
     
     const chatId = message.chat.id;
     const text = message.text;
-    const userId = message.from.id.toString();
+    const telegramId = message.from.id.toString();
+
+    // Try to find the app user associated with this telegram ID
+    const zenithFlowUser = await findUserByTelegramId(telegramId);
+    
+    if (!zenithFlowUser) {
+        const connectMessage = `Hello! To use this bot, you need to connect your Telegram account to your Zenith Flow account.
+
+1. Go to your Zenith Flow profile on the web app.
+2. Find the "Connect to Telegram" section.
+3. Enter the following command there: /connect ${telegramId}
+
+Once connected, you'll be able to manage your goals from here.`;
+        await sendMessage(chatId, connectMessage);
+        return NextResponse.json({ status: 'ok' });
+    }
+    
+    const userId = zenithFlowUser.uid; // Use the actual app user ID now
+
 
     // Handle the /start command separately
     if (text === '/start') {
@@ -109,25 +127,22 @@ export async function POST(req: NextRequest) {
     });
     
     try {
-        // Retrieve or initialize history
         if (!chatHistories[userId]) {
             chatHistories[userId] = [];
         }
         const userHistory = chatHistories[userId];
-
-        // Add the current user message to history
         userHistory.push({ role: 'user', content: text });
 
-        // Start the conversation loop
         let currentMessage = text;
-        while (true) {
+        let loopCount = 0; // Safety break
+        while (loopCount < 5) {
+            loopCount++;
             const aiResponse: TelegramChatOutput = await telegramChat({ 
                 message: currentMessage, 
                 userId: userId,
-                history: userHistory.filter(m => m.role !== 'user'), // Pass history without the user prompt which is passed separately
+                history: userHistory.filter(m => m.role !== 'user'), 
             });
             
-            // If there's a textual reply from the model before a tool call, add it to history
             if (aiResponse.reply) {
                  userHistory.push({ role: 'assistant', content: aiResponse.reply });
             }
@@ -139,12 +154,11 @@ export async function POST(req: NextRequest) {
                 const toolResult = await callTool(aiResponse.toolRequest, userId);
                 console.log("[Tool Result] ", toolResult);
                 
-                userHistory.push({ role: 'tool', content: "Tool result", toolResult: { name: aiResponse.toolRequest.name, result: toolResult } });
+                const toolResultContent = typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult);
                 
-                // Set message for the next loop iteration to the result, so AI can process it
-                currentMessage = JSON.stringify(toolResult); 
+                userHistory.push({ role: 'tool', content: toolResultContent, toolResult: { name: aiResponse.toolRequest.name, result: toolResult } });
+                currentMessage = toolResultContent;
             } else {
-                // If the model is done, send the final response and break the loop
                 console.log("[AI Action] Final response generated.");
                 await sendMessage(chatId, aiResponse.reply);
                 break;
