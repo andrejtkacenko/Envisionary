@@ -10,13 +10,14 @@ import { findUserByTelegramId } from '@/lib/goals-service';
 const chatHistories = new Map<string, any[]>();
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-if (!BOT_TOKEN) {
-  console.error('TELEGRAM_BOT_TOKEN is not set in environment variables!');
-  // We don't throw an error here to allow the app to build,
-  // but the bot will not work.
+let bot: Telegraf;
+
+if (BOT_TOKEN) {
+    bot = new Telegraf(BOT_TOKEN);
+} else {
+    console.error('TELEGRAM_BOT_TOKEN is not set in environment variables!');
 }
 
-const bot = new Telegraf(BOT_TOKEN);
 
 // Function to call a Genkit tool
 const callTool = async (toolRequest: any, userId: string): Promise<any> => {
@@ -39,81 +40,86 @@ const callTool = async (toolRequest: any, userId: string): Promise<any> => {
 
 
 // Handler for all text messages
-bot.on(message('text'), async (ctx) => {
-  const telegramUserId = ctx.from.id.toString();
-  const messageText = ctx.message.text;
+if (bot) {
+    bot.on(message('text'), async (ctx) => {
+      const telegramUserId = ctx.from.id.toString();
+      const messageText = ctx.message.text;
 
-  await ctx.telegram.sendChatAction(ctx.chat.id, 'typing');
+      await ctx.telegram.sendChatAction(ctx.chat.id, 'typing');
 
-  try {
-    const user = await findUserByTelegramId(telegramUserId);
-    if (!user) {
-      await ctx.reply("I don't recognize you. Please link your account in the Zenith Flow web app first.");
-      return;
-    }
+      try {
+        const user = await findUserByTelegramId(telegramUserId);
+        if (!user) {
+          await ctx.reply("I don't recognize you. Please link your account in the Zenith Flow web app first.");
+          return;
+        }
 
-    let history = chatHistories.get(telegramUserId) || [];
+        let history = chatHistories.get(telegramUserId) || [];
 
-    const flowInput: TelegramChatInput = {
-      message: messageText,
-      userId: user.uid,
-      history: history,
-    };
-    
-    let flowResult: TelegramChatOutput;
-    try {
-        flowResult = await telegramChat(flowInput);
-    } catch (e: any) {
-        console.error("[Telegram] Flow execution error:", e);
-        await ctx.reply("Sorry, I had trouble processing that. Please try again.");
-        return;
-    }
-
-    // Update history with the user's message
-    history.push({ role: 'user', content: messageText });
-
-    // Handle tool calls if requested
-    if (flowResult.toolRequest) {
-      if (flowResult.reply) {
-        await ctx.reply(flowResult.reply); // Send any text response before tool call
-      }
-      const toolResult = await callTool(flowResult.toolRequest, user.uid);
-
-      // We need to send the tool result back to the model for a final response
-      const followUpHistory = [
-          ...history,
-          { role: 'assistant', content: flowResult.reply, toolRequest: flowResult.toolRequest },
-          { role: 'tool', content: `Tool ${flowResult.toolRequest.name} called successfully.`, toolResult: { name: flowResult.toolRequest.name, result: toolResult } }
-      ];
-      
-      const finalResult = await telegramChat({
-          message: `Tool result for ${flowResult.toolRequest.name}: ${JSON.stringify(toolResult)}`,
+        const flowInput: TelegramChatInput = {
+          message: messageText,
           userId: user.uid,
-          history: followUpHistory,
-      });
+          history: history,
+        };
+        
+        let flowResult: TelegramChatOutput;
+        try {
+            flowResult = await telegramChat(flowInput);
+        } catch (e: any) {
+            console.error("[Telegram] Flow execution error:", e);
+            await ctx.reply("Sorry, I had trouble processing that. Please try again.");
+            return;
+        }
 
-      await ctx.reply(finalResult.reply);
-      history.push({ role: 'assistant', content: finalResult.reply });
+        // Update history with the user's message
+        history.push({ role: 'user', content: messageText });
 
-    } else {
-      await ctx.reply(flowResult.reply);
-      history.push({ role: 'assistant', content: flowResult.reply });
-    }
+        // Handle tool calls if requested
+        if (flowResult.toolRequest) {
+          if (flowResult.reply) {
+            await ctx.reply(flowResult.reply); // Send any text response before tool call
+          }
+          const toolResult = await callTool(flowResult.toolRequest, user.uid);
 
-    // Store the updated history
-    chatHistories.set(telegramUserId, history);
+          // We need to send the tool result back to the model for a final response
+          const followUpHistory = [
+              ...history,
+              { role: 'assistant', content: flowResult.reply, toolRequest: flowResult.toolRequest },
+              { role: 'tool', content: `Tool ${flowResult.toolRequest.name} called successfully.`, toolResult: { name: flowResult.toolRequest.name, result: toolResult } }
+          ];
+          
+          const finalResult = await telegramChat({
+              message: `Tool result for ${flowResult.toolRequest.name}: ${JSON.stringify(toolResult)}`,
+              userId: user.uid,
+              history: followUpHistory,
+          });
 
-  } catch (error: any) {
-    console.error('[Telegram] Error processing message:', error);
-    await ctx.reply('An unexpected error occurred. I have logged the issue.');
-  }
-});
+          await ctx.reply(finalResult.reply);
+          history.push({ role: 'assistant', content: finalResult.reply });
+
+        } else {
+          await ctx.reply(flowResult.reply);
+          history.push({ role: 'assistant', content: flowResult.reply });
+        }
+
+        // Store the updated history
+        chatHistories.set(telegramUserId, history);
+
+      } catch (error: any) {
+        console.error('[Telegram] Error processing message:', error);
+        await ctx.reply('An unexpected error occurred. I have logged the issue.');
+      }
+    });
+}
+
 
 // This function handles the incoming webhook requests from Telegram.
 export async function POST(req: NextRequest) {
+  if (!bot) {
+    return NextResponse.json({ status: 'error', message: 'Bot not initialized' }, { status: 500 });
+  }
   try {
     const payload = await req.json();
-    console.log('[Telegram] Received webhook payload:', JSON.stringify(payload, null, 2));
     await bot.handleUpdate(payload);
     return NextResponse.json({ status: 'ok' });
   } catch (error: any) {
@@ -135,7 +141,7 @@ async function setupWebhook() {
     : process.env.PUBLIC_URL; // Fallback for other environments
 
   if (!webhookUrl) {
-    console.error('Could not determine the webhook URL. Set VERCEL_URL or PUBLIC_URL.');
+    console.error('Could not determine the webhook URL. Set VERCEL_URL or PUBLIC_URL for automatic setup.');
     return;
   }
   
@@ -147,22 +153,22 @@ async function setupWebhook() {
     } else {
       console.error(`[Telegram] Failed to set webhook:`, result.description);
     }
-  } catch (error: any) {
-      console.error(`[Telegram] Error setting webhook:`, error.message);
+  } catch (error: any)      console.error(`[Telegram] Error setting webhook:`, error.message);
   }
 }
 
 
 // Automatically set the webhook when this module is loaded (e.g., on server startup).
 // This is more reliable for serverless environments.
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && process.env.VERCEL_URL) {
     setupWebhook();
 }
 
 
-// Handle GET requests for simple diagnostics
+// Handle GET requests for simple diagnostics or manual setup
 export async function GET(req: NextRequest) {
-  if (req.nextUrl.searchParams.get('setup_webhook') === 'true') {
+  const setup = req.nextUrl.searchParams.get('setup_webhook')
+  if (setup && setup === process.env.TELEGRAM_SETUP_SECRET) {
      await setupWebhook();
      return NextResponse.json({ message: "Webhook setup attempt finished. Check server logs." });
   }
