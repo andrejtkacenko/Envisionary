@@ -2,7 +2,7 @@
 import { Telegraf, type Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { type NextRequest, NextResponse } from 'next/server';
-import { telegramChat, TelegramChatInput, TelegramChatOutput } from '@/ai/flows/telegram-chat';
+import { telegramChat, type TelegramChatInput, type TelegramChatOutput } from '@/ai/flows/telegram-chat';
 import { findUserByTelegramId } from '@/lib/goals-service';
 
 // This is a makeshift "session" storage. In a real production app, you'd use a database.

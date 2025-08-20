@@ -19,14 +19,14 @@ const ChatMessageSchema = z.object({
     toolRequest: z.any().optional(),
 });
 
-export const TelegramChatInputSchema = z.object({
+const TelegramChatInputSchema = z.object({
   message: z.string().describe('The message from the Telegram user.'),
   userId: z.string().describe('The Telegram user ID.'),
   history: z.array(ChatMessageSchema).optional().describe('The chat history.'),
 });
 export type TelegramChatInput = z.infer<typeof TelegramChatInputSchema>;
 
-export const TelegramChatOutputSchema = z.object({
+const TelegramChatOutputSchema = z.object({
   reply: z.string().describe('The response to send back to the user.'),
   toolRequest: z.any().optional().describe('A request from the AI to call a tool.'),
 });
