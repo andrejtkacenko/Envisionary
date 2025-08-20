@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Telegraf } from 'telegraf';
 
+// This line is crucial for ensuring the full Node.js runtime is used.
+export const runtime = 'nodejs';
+
 // Ensure the bot token is set in the environment variables
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 if (!botToken) {
@@ -28,11 +31,7 @@ bot.on('text', async (ctx) => {
 // This function will be triggered by Telegram when a new message is sent to the bot.
 export async function POST(request: NextRequest) {
   try {
-    // We immediately respond to Telegram with a 200 OK to prevent timeouts.
-    // This is a best practice for serverless environments.
-    const response = NextResponse.json({ status: 'ok' });
-
-    // We process the update in the background after responding.
+    // We process the update in the background.
     const payload = await request.json();
     console.log('[Webhook] POST request received, processing in background.', payload);
     
@@ -42,7 +41,9 @@ export async function POST(request: NextRequest) {
         bot.handleUpdate(payload);
     }, 0);
 
-    return response;
+    // We immediately respond to Telegram with a 200 OK to prevent timeouts.
+    return NextResponse.json({ status: 'ok' });
+
   } catch (error) {
     console.error('[Webhook] Error in POST handler:', error);
     // If something goes wrong, return an error response.
