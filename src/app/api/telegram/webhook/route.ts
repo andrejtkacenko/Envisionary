@@ -15,7 +15,13 @@ let bot: Telegraf;
 if (BOT_TOKEN) {
     bot = new Telegraf(BOT_TOKEN);
 } else {
-    console.error('TELEGRAM_BOT_TOKEN is not set in environment variables!');
+    // During build time on Vercel, this might be called without env vars.
+    // We log a warning but don't throw an error to allow the build to complete.
+    if (process.env.VERCEL) {
+        console.warn('TELEGRAM_BOT_TOKEN is not set during build time. This is expected.');
+    } else {
+        console.error('TELEGRAM_BOT_TOKEN is not set in environment variables!');
+    }
 }
 
 
@@ -128,49 +134,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// This function can be used to set the webhook (e.g., on app startup or via a specific route).
-async function setupWebhook() {
-  if (!BOT_TOKEN) {
-    console.error('Cannot set webhook because TELEGRAM_BOT_TOKEN is not defined.');
-    return;
-  }
-  // Vercel provides this environment variable with the deployment URL.
-  // For local dev, you'd need to use a tool like ngrok and set this variable manually.
-  const webhookUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}/api/telegram/webhook`
-    : process.env.PUBLIC_URL; // Fallback for other environments
-
-  if (!webhookUrl) {
-    console.error('Could not determine the webhook URL. Set VERCEL_URL or PUBLIC_URL for automatic setup.');
-    return;
-  }
-  
-  try {
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=${webhookUrl}`);
-    const result = await response.json();
-    if (result.ok) {
-      console.log(`[Telegram] Webhook set successfully to: ${webhookUrl}`);
-    } else {
-      console.error(`[Telegram] Failed to set webhook:`, result.description);
-    }
-  } catch (error: any)      console.error(`[Telegram] Error setting webhook:`, error.message);
-  }
-}
-
-
-// Automatically set the webhook when this module is loaded (e.g., on server startup).
-// This is more reliable for serverless environments.
-if (process.env.NODE_ENV === 'production' && process.env.VERCEL_URL) {
-    setupWebhook();
-}
-
-
-// Handle GET requests for simple diagnostics or manual setup
+// Handle GET requests for simple diagnostics.
 export async function GET(req: NextRequest) {
-  const setup = req.nextUrl.searchParams.get('setup_webhook')
-  if (setup && setup === process.env.TELEGRAM_SETUP_SECRET) {
-     await setupWebhook();
-     return NextResponse.json({ message: "Webhook setup attempt finished. Check server logs." });
-  }
   return NextResponse.json({ message: "Bot is running. Use POST for updates." });
 }
