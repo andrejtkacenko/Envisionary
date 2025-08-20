@@ -1,23 +1,21 @@
+import { Telegraf } from 'telegraf';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { NextRequest } from 'next/server';
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
 
-export async function POST(req: NextRequest) {
-  console.log('[DIAGNOSTIC] Webhook received a POST request.');
-
-  try {
-    const body = await req.json();
-    console.log('[DIAGNOSTIC] Request Body:', JSON.stringify(body, null, 2));
-  } catch (error: any) {
-    console.error('[DIAGNOSTIC] Error parsing request body:', error.message);
-    const textBody = await req.text();
-    console.log('[DIAGNOSTIC] Raw text body:', textBody);
-  }
-
-  // Use the standard Web API Response object for maximum compatibility.
-  return new Response(JSON.stringify({ status: 'ok' }), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+if (!telegramBotToken) {
+  throw new Error('TELEGRAM_BOT_TOKEN is not set in environment variables');
 }
+
+const bot = new Telegraf(telegramBotToken);
+
+bot.start((ctx) => ctx.reply('Привет! Я бот на Next.js!'));
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === 'POST') {
+    await bot.handleUpdate(req.body);
+    res.status(200).end();
+  } else {
+    res.status(405).end();
+  };
+}; 
