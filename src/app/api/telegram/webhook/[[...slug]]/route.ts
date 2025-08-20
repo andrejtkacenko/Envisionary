@@ -11,10 +11,12 @@ const chatHistories: Record<string, any[]> = {};
 // Ensure the bot token is set
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 if (!botToken) {
-  throw new Error("TELEGRAM_BOT_TOKEN is not set in environment variables");
+  // We don't throw an error during build time anymore.
+  // Instead, we'll log an error if the token is missing at runtime.
+  console.error("TELEGRAM_BOT_TOKEN is not set in environment variables");
 }
 
-const bot = new Telegraf(botToken);
+const bot = new Telegraf(botToken || "dummy_token_for_init");
 
 // --- Bot Command Handlers ---
 
@@ -103,6 +105,11 @@ bot.on(message('text'), async (ctx) => {
 
 // This handler is for Vercel, which exposes the bot as a serverless function.
 export async function POST(req: NextRequest) {
+  if (!botToken) {
+    console.error("Fatal: TELEGRAM_BOT_TOKEN is not configured.");
+    return NextResponse.json({ status: 'error', message: 'Bot is not configured.' }, { status: 500 });
+  }
+
   try {
     const body = await req.json();
     await bot.handleUpdate(body);
