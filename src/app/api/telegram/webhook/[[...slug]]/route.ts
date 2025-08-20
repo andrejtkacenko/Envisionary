@@ -2,7 +2,7 @@
 import { Telegraf, type Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { type NextRequest, NextResponse } from 'next/server';
-import { telegramChat, type TelegramChatInput, type TelegramChatOutput } from '@/ai/flows/telegram-chat';
+import { telegramChat } from '@/ai/flows/telegram-chat';
 import { findUserByTelegramId } from '@/lib/goals-service';
 
 // This is a makeshift "session" storage. In a real production app, you'd use a database.
@@ -58,12 +58,7 @@ bot.on(message('text'), async (ctx) => {
     console.log(`[Bot] History length: ${history.length}`);
 
     // 3. Call the AI flow
-    let aiResponse: TelegramChatOutput;
-    let toolResult: any;
-    
-    // First call to the AI
-    console.log('[Bot] Calling AI flow (first pass)...');
-    aiResponse = await telegramChat({
+    let aiResponse = await telegramChat({
       message: userText,
       userId: appUser.uid,
       history: history,
@@ -74,13 +69,7 @@ bot.on(message('text'), async (ctx) => {
       console.log(`[Bot] AI requested tool: ${aiResponse.toolRequest.name}`);
       // In a real app, you would call the actual tool function here.
       // For now, we simulate a simple response based on the tool name.
-      if (aiResponse.toolRequest.name === 'createGoal') {
-         toolResult = { name: 'createGoal', result: `Goal '${aiResponse.toolRequest.input.title}' created successfully.` };
-      } else if (aiResponse.toolRequest.name === 'findGoals') {
-         toolResult = { name: 'findGoals', result: `Found goals related to '${aiResponse.toolRequest.input.query}'` };
-      } else {
-         toolResult = { name: aiResponse.toolRequest.name, result: 'Tool executed successfully.' };
-      }
+      const toolResult = { name: aiResponse.toolRequest.name, result: 'Tool executed successfully.' };
 
       // Add the tool request and result to history
       history.push({ role: 'assistant', content: aiResponse.reply, toolRequest: aiResponse.toolRequest });
@@ -121,8 +110,7 @@ export async function POST(req: NextRequest) {
   console.log('[Webhook] POST request received.');
   if (!botToken) {
     console.error("[Webhook] Fatal: TELEGRAM_BOT_TOKEN is not configured.");
-    // Return 200 OK even on error, so Telegram doesn't retry.
-    return NextResponse.json({ status: 'ok', message: 'Bot not configured, but received.' });
+    return NextResponse.json({ status: 'ok', message: 'Bot not configured, but received.' }, { status: 200 });
   }
 
   try {
@@ -134,12 +122,12 @@ export async function POST(req: NextRequest) {
     bot.handleUpdate(body).catch(err => console.error('[Webhook] Error handling update asynchronously:', err));
     
     console.log('[Webhook] Immediately returning 200 OK to Telegram.');
-    return NextResponse.json({ status: 'ok' });
+    return NextResponse.json({ status: 'ok' }, { status: 200 });
 
   } catch (error) {
     console.error('[Webhook] Error in POST handler:', error);
     // Still return 200 OK.
-    return NextResponse.json({ status: 'ok', message: 'Error processing, but received.' });
+    return NextResponse.json({ status: 'ok', message: 'Error processing, but received.' }, { status: 200 });
   }
 }
 
