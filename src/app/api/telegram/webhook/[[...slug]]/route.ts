@@ -89,3 +89,4 @@ export async function POST(req: NextRequest) {
 export async function GET() {
     return NextResponse.json({ message: "Telegram webhook is active. Use POST for messages." });
 }
+
