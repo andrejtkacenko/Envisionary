@@ -10,7 +10,6 @@ const userConverter = {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
-            telegramId: user.telegramId,
         };
     },
     fromFirestore: (snapshot: any, options: any): AppUser => {
@@ -19,7 +18,6 @@ const userConverter = {
             uid: data.uid,
             email: data.email,
             displayName: data.displayName,
-            telegramId: data.telegramId,
         };
     }
 };
@@ -163,39 +161,6 @@ const getScheduleTemplatesCollection = (userId: string) => {
 }
 
 // --- USER-RELATED FUNCTIONS ---
-
-// Find a user by their Telegram ID
-export const findUserByTelegramId = async (telegramId: string): Promise<AppUser | null> => {
-    const usersCollection = getUsersCollection();
-    const q = query(usersCollection, where("telegramId", "==", telegramId), limit(1));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return null;
-    }
-    return snapshot.docs[0].data();
-};
-
-// Link a telegram ID to a user account
-export const linkTelegramAccount = async (userId: string, telegramId: string): Promise<{success: boolean, message: string}> => {
-    // Check if another user already has this telegram ID
-    const existingUser = await findUserByTelegramId(telegramId);
-    if (existingUser && existingUser.uid !== userId) {
-        return { success: false, message: "This Telegram account is already linked to another user." };
-    }
-
-    const usersCollection = getUsersCollection();
-    const userRef = doc(usersCollection, userId);
-    
-    // Create user doc if it doesn't exist (e.g. for guest accounts)
-    const userDoc = await getDoc(userRef);
-    if (!userDoc.exists()) {
-        await setDoc(userRef, { uid: userId, telegramId });
-    } else {
-        await setDoc(userRef, { telegramId }, { merge: true });
-    }
-
-    return { success: true, message: "Account linked successfully!" };
-};
 
 
 // --- GOAL-RELATED FUNCTIONS ---

@@ -10,7 +10,6 @@ export type AppUser = {
   uid: string;
   email: string | null;
   displayName: string | null;
-  telegramId?: string; // The user's Telegram ID, linked for bot usage
 };
 
 export type Goal = {

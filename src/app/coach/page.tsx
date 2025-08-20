@@ -11,7 +11,7 @@ import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
 import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';
 import { getSchedule } from '@/ai/tools/schedule-tools';
 import { summarizeProgress, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
-import { getGoalsSnapshot, linkTelegramAccount } from '@/lib/goals-service';
+import { getGoalsSnapshot } from '@/lib/goals-service';
 import type { Goal } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -70,10 +70,7 @@ export default function CoachPage() {
     const [analysisResult, setAnalysisResult] = useState<SummarizeProgressOutput | null>(null);
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [goals, setGoals] = useState<Goal[]>([]);
-    const [connectCommand, setConnectCommand] = useState('');
-    const [isConnecting, setIsConnecting] = useState(false);
-    const [isConnected, setIsConnected] = useState(false);
-
+    
     const suggestions = [
         "Create a new goal to learn Next.js",
         "When can I work on my 'read more' goal?",
@@ -190,32 +187,6 @@ export default function CoachPage() {
         setChatHistory([initialMessage]);
     };
 
-    const handleConnectTelegram = async () => {
-        if (!user) return;
-        const match = connectCommand.match(/\/connect (\d+)/);
-        if (!match) {
-            toast({ variant: "destructive", title: "Invalid Command", description: "Please enter the command exactly as provided by the bot." });
-            return;
-        }
-        
-        const telegramId = match[1];
-        setIsConnecting(true);
-        try {
-            const result = await linkTelegramAccount(user.uid, telegramId);
-            if (result.success) {
-                toast({ title: "Success!", description: result.message });
-                setIsConnected(true);
-            } else {
-                toast({ variant: "destructive", title: "Linking Failed", description: result.message });
-            }
-        } catch (error) {
-             toast({ variant: "destructive", title: "Error", description: "An unexpected error occurred." });
-        } finally {
-            setIsConnecting(false);
-        }
-    };
-
-
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
@@ -323,36 +294,6 @@ export default function CoachPage() {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><LinkIcon /> Connect to Telegram</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {isConnected ? (
-                                <div className="flex items-center gap-2 text-green-600">
-                                    <CheckCircle className="h-5 w-5" />
-                                    <p className="font-medium">Account Linked!</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <p className="text-sm text-muted-foreground">
-                                        Get a command from the Telegram bot and paste it here to link your account.
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <Input 
-                                            placeholder="/connect 123456" 
-                                            value={connectCommand}
-                                            onChange={(e) => setConnectCommand(e.target.value)}
-                                            disabled={isConnecting}
-                                        />
-                                        <Button onClick={handleConnectTelegram} disabled={isConnecting}>
-                                            {isConnecting ? <Loader2 className="h-4 w-4 animate-spin"/> : "Link"}
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Clock /> Recent Insights</CardTitle>
