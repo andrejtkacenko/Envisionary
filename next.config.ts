@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -34,6 +35,12 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  // This is the new configuration to allow requests from the Cloud Workstation proxy
+  devIndicators: {
+    allowedRevalidateOrigins: [
+        "https://*.cloudworkstations.dev"
+    ]
+  }
 };
 
 export default nextConfig;
