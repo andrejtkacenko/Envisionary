@@ -41,7 +41,6 @@ bot.on(message('text'), async (ctx) => {
   const userHistory = chatHistories.get(user.uid) || [];
   
   try {
-    // Note: This implementation does not handle tool calls from Telegram.
     const response = await telegramChat({
       message: ctx.message.text,
       userId: user.uid,
