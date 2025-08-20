@@ -2,8 +2,8 @@
 import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import {NextRequest, NextResponse} from 'next/server';
-import { telegramChat } from '@/ai/flows/telegram-chat';
-import { findUserByTelegramId } from '@/lib/goals-service';
+import { telegramChat, TelegramChatInput, TelegramChatOutput } from '@/ai/flows/telegram-chat';
+import { findUserByTelegramId, linkTelegramAccount } from '@/lib/goals-service';
 
 // This is a map to store chat history for each user.
 // In a production app, you'd want to use a database for this.
@@ -67,33 +67,14 @@ bot.on(message('text'), async (ctx) => {
 
 
 // This is the main handler for the Vercel serverless function.
-export async function POST(req: NextRequest) {
-  console.log('[Webhook] POST request received.');
-  
-  // Immediately respond to Telegram to avoid timeouts and redirect errors
-  const response = NextResponse.json({ status: 'ok' });
+const handler = async (req: NextRequest) => {
+    try {
+        const response = await bot.handle(req as any);
+        return new NextResponse(response.body, { headers: response.headers, status: response.status });
+    } catch (error) {
+        console.error('Error in bot handler:', error);
+        return new NextResponse(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+    }
+};
 
-  // Process the update in the background
-  try {
-    const body = await req.json();
-    console.log('[Webhook] Request body parsed successfully:', body);
-    // We don't await this, letting it run in the background
-    bot.handleUpdate(body);
-  } catch (error) {
-    console.error('[Webhook] Error handling update:', error);
-  }
-  
-  return response;
-}
-
-export async function GET(req: NextRequest) {
-    console.log('[DIAGNOSTIC] GET request received. The endpoint is live.');
-    // You can also try setting the webhook here if you visit the URL
-    // try {
-    //   await bot.telegram.setWebhook('YOUR_PUBLIC_URL/api/telegram/webhook');
-    //   return NextResponse.json({ status: "ok", message: "Webhook set!" });
-    // } catch (error) {
-    //   return NextResponse.json({ status: "error", message: (error as Error).message });
-    // }
-    return NextResponse.json({ status: "ok", message: "Bot is running. Use POST for updates." });
-}
+export { handler as GET, handler as POST };
