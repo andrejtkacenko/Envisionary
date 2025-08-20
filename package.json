@@ -10,9 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "telegram:webhook:set": "curl \"https://api.telegram.org/bot8322171796:AAEla9Xm57cR9HwH7-Mzh8eCWbWMF2JBN1E/setWebhook?url=https://6000-firebase-studio-1755354569310.cluster-axf5tvtfjjfekvhwxwkkkzsk2y.cloudworkstations.dev/api/telegram/webhook\"",
-    "telegram:webhook:delete": "curl \"https://api.telegram.org/bot8322171796:AAEla9Xm57cR9HwH7-Mzh8eCWbWMF2JBN1E/deleteWebhook\""
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
