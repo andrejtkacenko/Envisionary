@@ -2,7 +2,7 @@
 import { Telegraf } from 'telegraf';
 import { message } from 'telegraf/filters';
 import {NextRequest, NextResponse} from 'next/server';
-import { telegramChat, TelegramChatInput, TelegramChatOutput } from '@/ai/flows/telegram-chat';
+import { telegramChat } from '@/ai/flows/telegram-chat';
 import { findUserByTelegramId, linkTelegramAccount } from '@/lib/goals-service';
 
 // This is a map to store chat history for each user.
@@ -67,14 +67,26 @@ bot.on(message('text'), async (ctx) => {
 
 
 // This is the main handler for the Vercel serverless function.
-const handler = async (req: NextRequest) => {
-    try {
-        const response = await bot.handle(req as any);
-        return new NextResponse(response.body, { headers: response.headers, status: response.status });
-    } catch (error) {
-        console.error('Error in bot handler:', error);
-        return new NextResponse(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
-    }
-};
+export async function POST(req: NextRequest) {
+  console.log('[Webhook] POST request received.');
+  try {
+    const body = await req.json();
+    console.log('[Webhook] Request body parsed successfully.');
+    
+    // Process the update in the background
+    bot.handleUpdate(body).catch(err => console.error('[Webhook] Error handling update:', err));
+    
+    // Immediately return a 200 OK response to Telegram
+    console.log('[Webhook] Sending 200 OK to Telegram.');
+    return NextResponse.json({ status: "ok" });
 
-export { handler as GET, handler as POST };
+  } catch (error) {
+    console.error('[Webhook] Error in POST handler:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+// Add a GET handler to ensure the route exists and is accessible
+export async function GET() {
+    return NextResponse.json({ message: "Telegram webhook is active. Use POST for messages." });
+}
