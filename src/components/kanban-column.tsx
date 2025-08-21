@@ -28,17 +28,17 @@ export function KanbanColumn({ column, onGoalUpdate, onGoalDelete }: KanbanColum
   });
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2 md:gap-4">
       <div className="flex items-center justify-between p-2 rounded-md bg-muted sticky top-0 z-10">
-        <h2 className="text-lg font-headline font-semibold">{column.title}</h2>
-        <span className="text-sm font-medium bg-background text-muted-foreground rounded-full px-3 py-1">
+        <h2 className="text-sm md:text-lg font-headline font-semibold">{column.title}</h2>
+        <span className="text-xs md:text-sm font-medium bg-background text-muted-foreground rounded-full px-2.5 py-0.5">
           {column.goals.length}
         </span>
       </div>
       <div
         ref={setNodeRef} 
         className={cn(
-            "flex flex-col gap-4 rounded-lg p-1 min-h-[100px] transition-colors duration-200",
+            "flex flex-col gap-2 md:gap-4 rounded-lg p-1 min-h-[100px] transition-colors duration-200",
             isOver ? "bg-primary/10" : ""
         )}
       >

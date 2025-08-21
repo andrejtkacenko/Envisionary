@@ -72,19 +72,19 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
             isOverlay && "shadow-lg scale-105"
         )}
     >
-        <CardHeader className="p-4 pb-2">
+        <CardHeader className="p-2 md:p-4 pb-2">
             <div className="flex items-start justify-between">
-                <Badge variant="secondary">{goal.category || 'Uncategorized'}</Badge>
+                <Badge variant="secondary" className="text-xs">{goal.category || 'Uncategorized'}</Badge>
                 <div className="flex items-center gap-2">
                      <span title={`Status: ${goal.status}`}>
                         {statusIcons[goal.status]}
                     </span>
                 </div>
             </div>
-            <CardTitle className="text-base font-medium pt-2">{goal.title}</CardTitle>
+            <CardTitle className="text-sm md:text-base font-medium pt-2">{goal.title}</CardTitle>
         </CardHeader>
-        <CardContent className="p-4 pt-0 flex-grow space-y-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <CardContent className="p-2 md:p-4 pt-0 flex-grow space-y-3">
+            <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
                 {goal.dueDate && (
                     <div className="flex items-center gap-1">
                     <CalendarIcon className="h-4 w-4" />
@@ -92,7 +92,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
                     </div>
                 )}
                 {goal.estimatedTime && (
-                    <Badge variant="outline" className="flex items-center gap-1">
+                    <Badge variant="outline" className="flex items-center gap-1 text-xs">
                         <Clock className="h-3 w-3" />
                         <span>{goal.estimatedTime}</span>
                     </Badge>
