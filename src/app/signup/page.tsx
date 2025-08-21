@@ -46,12 +46,10 @@ const signupSchema = z
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
-  const { signUp, signInWithGoogle, signInAsGuest, triggerTelegramAuth, signInWithTelegramCode } = useAuth();
+  const { signUp, signInWithGoogle, signInAsGuest } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [showTelegramLogin, setShowTelegramLogin] = useState(false);
-  const [telegramCode, setTelegramCode] = useState('');
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -105,31 +103,6 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   }
-  
-  const handleTelegramCodeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!telegramCode) return;
-    setIsLoading(true);
-    try {
-        const success = await signInWithTelegramCode(telegramCode);
-        if (success) {
-            router.push('/');
-        }
-    } catch (error: any) {
-         toast({
-            variant: "destructive",
-            title: "Telegram Sign-In Failed",
-            description: error.message,
-        });
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  const handleTelegramClick = () => {
-    setShowTelegramLogin(true);
-    triggerTelegramAuth();
-  }
 
 
   return (
@@ -145,27 +118,6 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {showTelegramLogin ? (
-            <form onSubmit={handleTelegramCodeSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="telegram-code">Telegram Code</Label>
-                <Input 
-                  id="telegram-code"
-                  type="text" 
-                  placeholder="123456" 
-                  value={telegramCode}
-                  onChange={(e) => setTelegramCode(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading || !telegramCode}>
-                {isLoading ? 'Verifying...' : 'Sign In with Code'}
-              </Button>
-              <Button variant="link" className="w-full" onClick={() => setShowTelegramLogin(false)}>
-                Cancel
-              </Button>
-            </form>
-          ) : (
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSignup)} className="space-y-4">
                 <FormField
@@ -212,7 +164,6 @@ export default function SignupPage() {
                 </Button>
               </form>
             </Form>
-          )}
           <div className="relative my-6">
             <Separator />
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center bg-card px-2">
@@ -222,9 +173,6 @@ export default function SignupPage() {
            <div className="space-y-2">
               <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
                 Sign up with Google
-              </Button>
-              <Button variant="outline" className="w-full" onClick={handleTelegramClick} disabled={isLoading}>
-                Sign in with Telegram
               </Button>
               <Button variant="secondary" className="w-full" onClick={handleGuestSignIn} disabled={isLoading}>
                 Continue as Guest
