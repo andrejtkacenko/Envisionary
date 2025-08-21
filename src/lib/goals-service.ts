@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
-import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification } from "@/types";
+import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, ScheduleTemplate, DailySchedule } from "@/types";
 
 // Firestore data converter for Users
 const userConverter = {
@@ -140,7 +140,6 @@ const notificationConverter = {
     } as Notification;
   },
 };
-
 
 const getUsersCollection = () => {
     return collection(db, "users").withConverter(userConverter);
@@ -353,6 +352,6 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
   await batch.commit();
 };
 
-export type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule };
+export type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, ScheduleTemplate };
 
     

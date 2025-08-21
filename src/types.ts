@@ -85,4 +85,12 @@ export type DailyGoalTask = {
     estimatedTime?: string;
 };
 
+// Represents a schedule template stored in Firestore
+export type ScheduleTemplate = {
+    id: string;
+    name: string;
+    type: 'day' | 'week';
+    data: DailySchedule[];
+    createdAt: Timestamp;
+};
     

@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Plus, Calendar as CalendarIcon, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo } from 'lucide-react';
+import { Loader2, Plus, Calendar as CalendarIcon, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo, Wand2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,7 @@ import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { nanoid } from 'nanoid';
+import { ScheduleGenerator } from '@/components/schedule-generator';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -187,6 +188,28 @@ export default function PlannerPage() {
             setIsLoading(false);
         }
     };
+    
+     const handleApplySchedule = (newScheduleData: DailySchedule[]) => {
+        if (!schedule) return;
+        
+        // Ensure all new items have unique IDs
+        const scheduleWithIds = newScheduleData.map(day => ({
+            ...day,
+            schedule: day.schedule.map(item => ({
+                ...item,
+                id: item.id || nanoid(),
+            })),
+        }));
+
+        setSchedule({
+            ...schedule,
+            scheduleData: scheduleWithIds,
+        });
+
+        // Switch to editing mode so user can review and save
+        setIsEditing(true);
+        toast({ title: "Schedule Applied", description: "Review the generated schedule and save your changes."});
+    };
 
     const updateItem = (itemIndex: number, time: string, task: string) => {
         if (!schedule) return;
@@ -249,9 +272,15 @@ export default function PlannerPage() {
                         <CalendarIcon /> AI Planner
                     </h1>
                     <p className="text-muted-foreground">
-                        Create schedule templates based on your goals, then customize and plan your week.
+                        Generate a smart schedule based on your goals and preferences.
                     </p>
                 </div>
+                <ScheduleGenerator allGoals={goals} onScheduleGenerated={handleApplySchedule}>
+                     <Button variant="outline">
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        Generate Schedule
+                    </Button>
+                </ScheduleGenerator>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -341,10 +370,10 @@ export default function PlannerPage() {
                                 <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
                                     <ListTodo className="h-12 w-12" />
                                     <p>No schedule for this day.</p>
-                                    <p className="text-xs">Create a schedule or apply a template.</p>
+                                    <p className="text-xs">Use the AI generator to create a schedule.</p>
                                 </div>
                             )}
-                            {schedule && currentDaySchedule && (
+                            {schedule && currentDaySchedule && currentDaySchedule.schedule.length > 0 && (
                                 <ScrollArea className="h-[calc(100vh-22rem)]">
                                      <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
                                         <DailyScheduleView 
