@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutDashboard, KanbanSquare, Zap, Calendar as CalendarIcon, Library, User, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Zap, Calendar as CalendarIcon, Library, User, Settings, LogOut, HelpCircle, Flag } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import {
@@ -102,8 +102,8 @@ export function AppSidebar() {
                 <TooltipContent side="right">Profile</TooltipContent>
             </Tooltip>
             <PopoverContent className="w-64" side="right" align="center">
-                <div className="flex flex-col space-y-4">
-                     <div className="flex items-center gap-3">
+                <div className="flex flex-col space-y-2">
+                     <div className="flex items-center gap-3 p-2">
                         <Avatar className="h-9 w-9">
                            <AvatarImage src={user?.photoURL ?? ""} data-ai-hint="user avatar" />
                            <AvatarFallback>{user?.email?.[0]?.toUpperCase() ?? <User />}</AvatarFallback>
@@ -114,14 +114,27 @@ export function AppSidebar() {
                         </div>
                     </div>
                     <Separator />
-                    <Button variant="ghost" className="w-full justify-start">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
-                    </Button>
-                     <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                    </Button>
+                    <div className="p-1 space-y-1">
+                        <Button variant="ghost" className="w-full justify-start">
+                            <Settings className="mr-2 h-4 w-4" />
+                            Settings
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start">
+                            <HelpCircle className="mr-2 h-4 w-4" />
+                            FAQ
+                        </Button>
+                        <Button variant="ghost" className="w-full justify-start">
+                            <Flag className="mr-2 h-4 w-4" />
+                            Report a problem
+                        </Button>
+                    </div>
+                    <Separator />
+                     <div className="p-1">
+                        <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Logout
+                        </Button>
+                     </div>
                 </div>
             </PopoverContent>
            </Popover>
