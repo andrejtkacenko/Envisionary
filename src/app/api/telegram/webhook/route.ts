@@ -1,27 +1,32 @@
 
-import { NextResponse } from 'next/server';
 import { bot } from '@/lib/telegram-bot';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
+  // Immediately acknowledge Telegram to prevent timeouts and retries
+  // This is a common strategy when webhook processing might take time or face network issues.
+  const response = new Response(null, { status: 200 });
+
   if (!bot) {
-    return new Response('Telegram Bot not configured.', { status: 500 });
+    console.error('Telegram Bot not configured.');
+    return response; // Still return 200 OK
   }
+  
   try {
     const payload = await req.json();
-    // We pass the update to the Telegraf instance
-    await bot.handleUpdate(payload);
-    // Acknowledge the update to Telegram
-    return NextResponse.json({ status: 'ok' });
+    // Don't await this. Let it run in the background after we've responded.
+    bot.handleUpdate(payload).catch(err => {
+        console.error('Error in bot.handleUpdate:', err);
+    });
   } catch (error) {
-    console.error('Error handling Telegram update:', error);
-    // Still send a 200 to Telegram to prevent retries
-    return new Response('Error processing update', { status: 200 });
+    console.error('Error parsing or handling Telegram update:', error);
   }
+  
+  return response;
 }
 
 // Add a GET handler for simple "is it alive?" checks
 export async function GET() {
-  return NextResponse.json({ message: "Hello! Zenith Flow Telegram webhook is active." });
+  return new Response("Hello! Zenith Flow Telegram webhook is active.", {status: 200});
 }
