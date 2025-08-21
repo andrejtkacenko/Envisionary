@@ -184,6 +184,7 @@ export default function Home() {
     if (goal) {
       setActiveGoal(goal);
     }
+    document.body.style.overflow = 'hidden';
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -242,6 +243,7 @@ export default function Home() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveGoal(null);
+    document.body.style.overflow = '';
     const { active, over } = event;
     if (!over || !user) return;
 
