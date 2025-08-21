@@ -1,5 +1,7 @@
+
 {
   "framework": "nextjs",
+  "trailingSlash": false,
   "functions": {
     "src/app/api/**/*.ts": {
       "memory": 1024,
