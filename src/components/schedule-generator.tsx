@@ -18,6 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { generateSchedule } from '@/ai/flows/generate-schedule';
 import type { DailySchedule, Goal } from '@/types';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 interface ScheduleGeneratorProps {
     children: React.ReactNode;
@@ -26,10 +27,10 @@ interface ScheduleGeneratorProps {
 }
 
 const generatorSchema = z.object({
-  workHours: z.string().min(3, "Please specify your work hours."),
-  sleepHours: z.string().min(3, "Please specify your sleep hours."),
-  training: z.string().min(3, "Describe your training habits."),
-  meditation: z.string().min(3, "Describe your meditation habits."),
+  workHours: z.string().min(1, "Please select your work hours."),
+  sleepHours: z.string().min(1, "Please select your sleep hours."),
+  training: z.string().min(1, "Please select your training habits."),
+  meditation: z.string().min(1, "Please select your meditation habits."),
   other: z.string().optional(),
 });
 type GeneratorFormValues = z.infer<typeof generatorSchema>;
@@ -46,8 +47,8 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
         defaultValues: { 
             workHours: "9 AM to 5 PM, Mon-Fri",
             sleepHours: "11 PM to 7 AM",
-            training: "3 times a week (1 hour sessions)",
-            meditation: "10 minutes every morning",
+            training: "3 times a week",
+            meditation: "10 minutes daily",
             other: ""
         },
     });
@@ -112,65 +113,127 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleGenerate)}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 py-4">
                             {/* Left column for preferences */}
                             <div className="space-y-4">
                                 <h4 className="text-sm font-semibold text-muted-foreground">Your Lifestyle Preferences</h4>
-                                <FormField
-                                    control={form.control}
-                                    name="workHours"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Work/Study Hours</FormLabel>
-                                            <FormControl><Input placeholder="e.g., 9 AM to 5 PM, Mon-Fri" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="sleepHours"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Sleep Schedule</FormLabel>
-                                            <FormControl><Input placeholder="e.g., 11 PM to 7 AM" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="training"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Training / Exercise</FormLabel>
-                                            <FormControl><Input placeholder="e.g., 3 times a week in the morning" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="meditation"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Meditation / Mindfulness</FormLabel>
-                                            <FormControl><Input placeholder="e.g., 10 minutes daily before sleep" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="other"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Other Constraints or Notes</FormLabel>
-                                            <FormControl><Textarea placeholder="e.g., I have a long commute, Lunch breaks are flexible" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                               <div className="grid grid-cols-1 gap-6">
+                                    <FormField
+                                        control={form.control}
+                                        name="workHours"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-3">
+                                                <FormLabel>Work/Study Hours</FormLabel>
+                                                <FormControl>
+                                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="9 AM to 5 PM, Mon-Fri" /></FormControl>
+                                                            <FormLabel className="font-normal">Full-time (9 AM - 5 PM)</FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="Flexible, about 8 hours a day" /></FormControl>
+                                                            <FormLabel className="font-normal">Flexible Hours</FormLabel>
+                                                        </FormItem>
+                                                         <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="Part-time, 4 hours a day" /></FormControl>
+                                                            <FormLabel className="font-normal">Part-time (4 hours/day)</FormLabel>
+                                                        </FormItem>
+                                                    </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="sleepHours"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-3">
+                                                <FormLabel>Sleep Schedule</FormLabel>
+                                                <FormControl>
+                                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="10 PM to 6 AM" /></FormControl>
+                                                            <FormLabel className="font-normal">10 PM - 6 AM</FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="11 PM to 7 AM" /></FormControl>
+                                                            <FormLabel className="font-normal">11 PM - 7 AM</FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="12 AM to 8 AM" /></FormControl>
+                                                            <FormLabel className="font-normal">12 AM - 8 AM</FormLabel>
+                                                        </FormItem>
+                                                    </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                     <FormField
+                                        control={form.control}
+                                        name="training"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-3">
+                                                <FormLabel>Training / Exercise</FormLabel>
+                                                <FormControl>
+                                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
+                                                         <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="3 times a week" /></FormControl>
+                                                            <FormLabel className="font-normal">3 times a week</FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="5 times a week" /></FormControl>
+                                                            <FormLabel className="font-normal">5 times a week</FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="Daily light exercise" /></FormControl>
+                                                            <FormLabel className="font-normal">Daily light exercise</FormLabel>
+                                                        </FormItem>
+                                                    </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                     <FormField
+                                        control={form.control}
+                                        name="meditation"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-3">
+                                                <FormLabel>Meditation / Mindfulness</FormLabel>
+                                                <FormControl>
+                                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="None" /></FormControl>
+                                                            <FormLabel className="font-normal">None</FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="10 minutes daily" /></FormControl>
+                                                            <FormLabel className="font-normal">10 minutes daily</FormLabel>
+                                                        </FormItem>
+                                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                                            <FormControl><RadioGroupItem value="20 minutes daily" /></FormControl>
+                                                            <FormLabel className="font-normal">20 minutes daily</FormLabel>
+                                                        </FormItem>
+                                                    </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                     <FormField
+                                        control={form.control}
+                                        name="other"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Other Constraints or Notes</FormLabel>
+                                                <FormControl><Textarea placeholder="e.g., I have a long commute, Lunch breaks are flexible" {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                               </div>
                             </div>
                             
                             {/* Right column for goal selection */}
@@ -213,3 +276,5 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
         </Dialog>
     );
 }
+
+    
