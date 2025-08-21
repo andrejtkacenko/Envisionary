@@ -78,14 +78,6 @@ export type GoalTemplate = {
     createdAt: Timestamp;
 };
 
-// Types for Schedule Templates
-export type ScheduleTemplate = {
-    id: string;
-    name: string;
-    type: 'day' | 'week';
-    data: DailySchedule[]; // For week templates, this will have 7 items. For day, just 1.
-};
-
 // Represents a daily goal with tasks that have estimated times
 export type DailyGoalTask = {
     id: string;
@@ -93,3 +85,4 @@ export type DailyGoalTask = {
     estimatedTime?: string;
 };
 
+    

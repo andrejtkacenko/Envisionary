@@ -13,7 +13,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { nanoid } from 'nanoid';
-import type { DailyGoal, DailySchedule } from '@/types';
+import type { DailySchedule } from '@/types';
 
 
 export const GenerateScheduleInputSchema = z.object({
@@ -91,3 +91,5 @@ const generateScheduleFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    

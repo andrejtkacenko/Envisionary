@@ -5,22 +5,20 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Sparkles, Calendar as CalendarIcon, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Calendar as CalendarIcon, Edit, Save, X, ChevronLeft, ChevronRight, ListTodo } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { saveSchedule, getSchedule, getGoalsSnapshot, type WeeklySchedule, type ScheduledItem, type Goal, type DailyGoalTask, type DailySchedule } from '@/lib/goals-service';
+import { saveSchedule, getSchedule, getGoalsSnapshot, type WeeklySchedule, type ScheduledItem, type Goal, type DailySchedule } from '@/lib/goals-service';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
-import { ScheduleTemplates } from '@/components/schedule-templates';
 import { nanoid } from 'nanoid';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -158,31 +156,6 @@ export default function PlannerPage() {
       return dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     }, [selectedDate]);
     
-    const handleApplyTemplate = async (templateSchedule: DailySchedule[]) => {
-        if (!user) return;
-        setIsLoading(true);
-        try {
-            const newScheduleData = templateSchedule.map(day => ({
-                ...day,
-                schedule: day.schedule.map(item => ({ ...item, id: nanoid() })) // ensure fresh ids
-            }));
-
-            const newSchedule = {
-                id: 'current_week',
-                scheduleData: newScheduleData,
-            };
-            await saveSchedule(user.uid, newSchedule);
-            setSchedule(newSchedule);
-            toast({ title: "Template Applied", description: "Your weekly schedule has been updated." });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Failed to apply template" });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id && schedule) {
@@ -190,12 +163,10 @@ export default function PlannerPage() {
             const oldIndex = daySchedule.findIndex(item => item.id === active.id);
             const newIndex = daySchedule.findIndex(item => item.id === over.id);
             
-            const newScheduleItems = arrayMove(daySchedule, oldIndex, newIndex);
-            
             const newFullSchedule = {
                 ...schedule,
                 scheduleData: schedule.scheduleData.map((day, index) => 
-                    index === currentDayIndex ? { ...day, schedule: newScheduleItems } : day
+                    index === currentDayIndex ? { ...day, schedule: arrayMove(daySchedule, oldIndex, newIndex) } : day
                 )
             };
             setSchedule(newFullSchedule);
@@ -270,8 +241,6 @@ export default function PlannerPage() {
         return schedule?.scheduleData[index]?.schedule.length > 0;
     };
     
-
-
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
@@ -286,7 +255,7 @@ export default function PlannerPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column: Calendar + Templates */}
+                {/* Left Column: Calendar */}
                 <div className="lg:col-span-1 space-y-8">
                     <Card>
                          <CardHeader>
@@ -328,7 +297,6 @@ export default function PlannerPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    <ScheduleTemplates onApplyTemplate={handleApplyTemplate} allGoals={goals} />
                 </div>
 
                  {/* Right Column: Schedule View */}
@@ -397,3 +365,4 @@ export default function PlannerPage() {
     );
 }
 
+    
