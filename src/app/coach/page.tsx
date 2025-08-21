@@ -63,7 +63,8 @@ export default function CoachPage() {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    const [isClient, setIsClient] = useState(false);
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([initialMessage]);
     const [userInput, setUserInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
@@ -76,32 +77,38 @@ export default function CoachPage() {
         "When can I work on my 'read more' goal?",
         "What are my current goals?",
     ];
+    
+    useEffect(() => {
+      setIsClient(true);
+    }, [])
 
     // Load chat history from localStorage on mount
     useEffect(() => {
-        try {
-            const savedHistory = localStorage.getItem('coachChatHistory');
-            if (savedHistory) {
-                setChatHistory(JSON.parse(savedHistory));
-            } else {
+        if (isClient) {
+            try {
+                const savedHistory = localStorage.getItem('coachChatHistory');
+                if (savedHistory) {
+                    setChatHistory(JSON.parse(savedHistory));
+                } else {
+                    setChatHistory([initialMessage]);
+                }
+            } catch (error) {
+                console.error("Failed to load chat history from localStorage", error);
                 setChatHistory([initialMessage]);
             }
-        } catch (error) {
-            console.error("Failed to load chat history from localStorage", error);
-            setChatHistory([initialMessage]);
         }
-    }, []);
+    }, [isClient]);
 
     // Save chat history to localStorage whenever it changes
     useEffect(() => {
-        if (chatHistory.length > 0) {
+        if (isClient && chatHistory.length > 0) {
             try {
                 localStorage.setItem('coachChatHistory', JSON.stringify(chatHistory));
             } catch (error) {
                 console.error("Failed to save chat history to localStorage", error);
             }
         }
-    }, [chatHistory]);
+    }, [chatHistory, isClient]);
 
     const fetchGoals = useCallback(async () => {
         if (user) {
@@ -184,8 +191,21 @@ export default function CoachPage() {
     };
 
     const handleClearChat = () => {
+        if (isClient) {
+            localStorage.removeItem('coachChatHistory');
+        }
         setChatHistory([initialMessage]);
     };
+
+    if (!isClient) {
+      return (
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </div>
+      );
+    }
 
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
