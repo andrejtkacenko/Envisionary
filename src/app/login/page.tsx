@@ -38,7 +38,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const { signIn, signInWithGoogle, signInAsGuest, signInWithTelegram } = useAuth();
+  const { signIn, signInWithGoogle, signInAsGuest, triggerTelegramAuth, signInWithTelegramCode } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -103,15 +103,10 @@ export default function LoginPage() {
     if (!telegramCode) return;
     setIsLoading(true);
     try {
-        // This flow is simplified for demonstration.
-        // In a real app, you'd get a custom token from your backend
-        // after it verifies the code and Telegram user ID.
-        await signInAsGuest(); 
-        toast({
-            title: "Telegram Login Successful (Demo)",
-            description: `Successfully authenticated via Telegram.`,
-        });
-        router.push('/');
+        const success = await signInWithTelegramCode(telegramCode);
+        if (success) {
+            router.push('/');
+        }
     } catch (error: any) {
          toast({
             variant: "destructive",
@@ -123,9 +118,9 @@ export default function LoginPage() {
     }
   };
 
-  const handleTelegramClick = async () => {
+  const handleTelegramClick = () => {
     setShowTelegramLogin(true);
-    await signInWithTelegram();
+    triggerTelegramAuth();
   }
 
 

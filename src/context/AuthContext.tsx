@@ -1,7 +1,6 @@
 
 "use client";
 
-// src/context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { auth } from "@/lib/firebase";
 import {
@@ -16,7 +15,7 @@ import {
   sendPasswordResetEmail,
   signInWithCustomToken
 } from "firebase/auth";
-import { processTelegramUpdates, verifyTelegramCode } from "@/lib/telegram-service";
+import { verifyTelegramCode } from "@/lib/telegram-service";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -27,7 +26,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
-  signInWithTelegram: () => Promise<void>;
+  triggerTelegramAuth: () => void;
+  signInWithTelegramCode: (code: string) => Promise<boolean>;
   resetPassword: (email: string) => Promise<void>;
 }
 
@@ -67,14 +67,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await signInAnonymously(auth);
   };
   
-  const signInWithTelegram = async () => {
+  const triggerTelegramAuth = () => {
     toast({
       title: "Check your Telegram!",
       description: "Send the /start command to your bot to receive a login code.",
     });
-    
-    // Trigger the bot to process any pending messages immediately
-    await processTelegramUpdates();
+  }
+
+  const signInWithTelegramCode = async (code: string): Promise<boolean> => {
+    try {
+      const result = await verifyTelegramCode(code);
+      if (result) {
+        // This is a simplified flow. In a real app, you would have a backend
+        // that creates a custom Firebase token for the Telegram user.
+        // For now, we'll sign them in as a guest to demonstrate the code verification.
+        await signInAnonymously(auth);
+        toast({
+            title: "Telegram Login Successful (Demo)",
+            description: `Code verified for user ${result.userId}. You are logged in as a guest.`,
+        });
+        return true;
+      } else {
+        toast({ variant: 'destructive', title: 'Invalid or expired code.'});
+        return false;
+      }
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Telegram Sign-In Failed'});
+      return false;
+    }
   }
 
   const resetPassword = async (email: string) => {
@@ -91,7 +112,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         signInWithGoogle,
         signInAsGuest,
-        signInWithTelegram,
+        triggerTelegramAuth,
+        signInWithTelegramCode,
         resetPassword,
       }}
     >
