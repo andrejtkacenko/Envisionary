@@ -4,7 +4,7 @@
 import { Telegraf } from 'telegraf';
 import { customAlphabet } from 'nanoid';
 import { db } from '@/lib/firebase';
-import { collection, doc, setDoc, getDoc, deleteDoc }- from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 
 if (!process.env.TELEGRAM_BOT_TOKEN) {
   throw new Error('TELEGRAM_BOT_TOKEN is not set');
