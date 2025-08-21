@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -13,7 +14,7 @@ import {z} from 'genkit';
 import { nanoid } from 'nanoid';
 import type { DailySchedule } from '@/types';
 
-export const GenerateScheduleInputSchema = z.object({
+const GenerateScheduleInputSchema = z.object({
     goals: z.array(z.object({
         id: z.string(),
         title: z.string(),
@@ -29,7 +30,7 @@ export const GenerateScheduleInputSchema = z.object({
 });
 export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
 
-export const GenerateScheduleOutputSchema = z.object({
+const GenerateScheduleOutputSchema = z.object({
   weeklySchedule: z.array(z.custom<DailySchedule>()),
 });
 export type GenerateScheduleOutput = z.infer<typeof GenerateScheduleOutputSchema>;
