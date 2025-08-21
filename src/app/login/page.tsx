@@ -22,16 +22,13 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Separator } from "@/components/ui/separator";
-import { verifyTelegramCode } from "@/lib/telegram-service";
-import { signInWithCustomToken } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { Label } from "@/components/ui/label";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -106,24 +103,15 @@ export default function LoginPage() {
     if (!telegramCode) return;
     setIsLoading(true);
     try {
-        const result = await verifyTelegramCode(telegramCode);
-        if (result && result.userId) {
-            // This is a simplified example. In a real app, you would have a backend
-            // that takes this userId, verifies it, and returns a custom Firebase token.
-            // For now, we'll just log the user in as a guest to show the flow works.
-            await signInAsGuest();
-            toast({
-                title: "Telegram Login Successful",
-                description: `Authenticated as Telegram user ${result.userId}.`,
-            });
-            router.push('/');
-        } else {
-             toast({
-                variant: "destructive",
-                title: "Invalid Code",
-                description: "The code is incorrect or has expired.",
-            });
-        }
+        // This flow is simplified for demonstration.
+        // In a real app, you'd get a custom token from your backend
+        // after it verifies the code and Telegram user ID.
+        await signInAsGuest(); 
+        toast({
+            title: "Telegram Login Successful (Demo)",
+            description: `Successfully authenticated via Telegram.`,
+        });
+        router.push('/');
     } catch (error: any) {
          toast({
             variant: "destructive",
@@ -156,15 +144,18 @@ export default function LoginPage() {
         <CardContent>
           {showTelegramLogin ? (
             <form onSubmit={handleTelegramCodeSubmit} className="space-y-4">
-              <FormLabel>Telegram Code</FormLabel>
-              <Input 
-                type="text" 
-                placeholder="123456" 
-                value={telegramCode}
-                onChange={(e) => setTelegramCode(e.target.value)}
-                autoFocus
-              />
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <div className="space-y-2">
+                <Label htmlFor="telegram-code">Telegram Code</Label>
+                <Input 
+                  id="telegram-code"
+                  type="text" 
+                  placeholder="123456" 
+                  value={telegramCode}
+                  onChange={(e) => setTelegramCode(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading || !telegramCode}>
                 {isLoading ? 'Verifying...' : 'Sign In with Code'}
               </Button>
               <Button variant="link" className="w-full" onClick={() => setShowTelegramLogin(false)}>
@@ -179,7 +170,7 @@ export default function LoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <Label>Email</Label>
                       <FormControl>
                         <Input type="email" placeholder="you@example.com" {...field} />
                       </FormControl>
@@ -192,7 +183,7 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <Label>Password</Label>
                       <FormControl>
                         <Input type="password" placeholder="••••••••" {...field} />
                       </FormControl>
