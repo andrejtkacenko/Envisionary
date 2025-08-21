@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: '/:path((?!api/).*)', // all pages except api
+        source: '/:path*',
         has: [
           {
             type: 'header',
@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
             value: 'http',
           },
         ],
-        destination: 'https://:host/:path',
+        destination: 'https://:host/:path*',
         permanent: true,
       },
     ]
