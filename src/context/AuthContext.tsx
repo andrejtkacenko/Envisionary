@@ -1,3 +1,4 @@
+
 "use client";
 
 // src/context/AuthContext.tsx
@@ -13,7 +14,10 @@ import {
   signInWithPopup,
   signInAnonymously,
   sendPasswordResetEmail,
+  signInWithCustomToken
 } from "firebase/auth";
+import { processTelegramUpdates, verifyTelegramCode } from "@/lib/telegram-service";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
@@ -23,6 +27,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
+  signInWithTelegram: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
 
@@ -31,6 +36,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -60,6 +66,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInAsGuest = async () => {
     await signInAnonymously(auth);
   };
+  
+  const signInWithTelegram = async () => {
+    toast({
+      title: "Check your Telegram!",
+      description: "Send the /start command to your bot to receive a login code.",
+    });
+    
+    // Trigger the bot to process any pending messages immediately
+    await processTelegramUpdates();
+  }
 
   const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
@@ -75,6 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         signInWithGoogle,
         signInAsGuest,
+        signInWithTelegram,
         resetPassword,
       }}
     >
