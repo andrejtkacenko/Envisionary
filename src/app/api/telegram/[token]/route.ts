@@ -3,6 +3,7 @@ import { bot } from '@/lib/telegram-bot';
 import { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // This is the new dynamic route handler
 export async function POST(
