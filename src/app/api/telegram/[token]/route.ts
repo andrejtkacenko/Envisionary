@@ -1,16 +1,26 @@
 
 import { bot } from '@/lib/telegram-bot';
+import { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+// This is the new dynamic route handler
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { token: string } }
+) {
   // Immediately acknowledge Telegram to prevent timeouts and retries
-  // This is a common strategy when webhook processing might take time or face network issues.
   const response = new Response(null, { status: 200 });
 
+  // Security check: Ensure the request is from our bot
+  if (params.token !== process.env.TELEGRAM_BOT_TOKEN) {
+    console.error('Invalid bot token received.');
+    return response; // Still return 200 to not give away info
+  }
+  
   if (!bot) {
     console.error('Telegram Bot not configured.');
-    return response; // Still return 200 OK
+    return response;
   }
   
   try {
@@ -24,9 +34,4 @@ export async function POST(req: Request) {
   }
   
   return response;
-}
-
-// Add a GET handler for simple "is it alive?" checks
-export async function GET() {
-  return new Response("Hello! Zenith Flow Telegram webhook is active.", {status: 200});
 }
