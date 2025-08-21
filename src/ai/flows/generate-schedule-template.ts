@@ -30,15 +30,15 @@ const GenerateScheduleTemplateInputSchema = z.object({
 export type GenerateScheduleTemplateInput = z.infer<typeof GenerateScheduleTemplateInputSchema>;
 
 const ScheduledItemSchema = z.object({
-    id: z.string(),
-    time: z.string(),
-    task: z.string(),
-    priority: z.enum(["low", "medium", "high"]).optional(),
+    id: z.string().describe('A unique ID for the scheduled item.'),
+    time: z.string().describe('A specific time or time-range for the task (e.g., "09:00 AM - 10:00 AM" or "All Day").'),
+    task: z.string().describe('A concise description of the task or event.'),
+    priority: z.enum(["low", "medium", "high"]).optional().describe("The priority of the task, derived from the goal's priority if applicable."),
 });
 
 const DailyScheduleSchema = z.object({
-  day: z.string(),
-  schedule: z.array(ScheduledItemSchema),
+  day: z.string().describe("The day of the week (e.g., 'Monday') or a descriptive title for a single day template (e.g., 'Productive Day')."),
+  schedule: z.array(ScheduledItemSchema).describe('A list of scheduled items for that day.'),
 });
 
 const GenerateScheduleTemplateOutputSchema = z.object({
@@ -69,10 +69,10 @@ const prompt = ai.definePrompt({
 
 **Instructions:**
 1. Based on the **Template Type**, create a schedule for either a single day or a full 7-day week (Monday to Sunday).
-2.  If the user provided goals, intelligently distribute them throughout the schedule. Pay attention to any provided time estimates to allocate the correct amount of time.
+2.  If the user provided goals, intelligently distribute them throughout the schedule. Pay attention to any provided time estimates to allocate the correct amount of time. Create specific tasks related to these goals. For instance, if a goal is "Learn Spanish", a task could be "Practice Spanish vocabulary for 30 minutes".
 3. For each day, provide a list of scheduled items with a unique ID, a specific time range (e.g., "08:00 AM - 09:00 AM"), a task description, and a priority level ('low', 'medium', or 'high').
 4. The generated schedule should be realistic and include breaks (e.g., Lunch Break).
-5. The output must be a valid JSON object matching the requested schema.
+5. The output must be a valid JSON object matching the requested schema. Ensure every scheduled item has a unique 'id' field.
 `,
 });
 

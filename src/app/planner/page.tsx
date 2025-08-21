@@ -21,6 +21,7 @@ import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { ScheduleTemplates } from '@/components/schedule-templates';
+import { nanoid } from 'nanoid';
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -43,8 +44,8 @@ const SortableItem = ({ item, isEditing, onUpdate, onRemove }: { item: Scheduled
         <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md touch-none">
             {isEditing ? (
                 <>
-                    <Textarea defaultValue={item.time} onBlur={(e) => handleBlur(e, 'time')} className="h-8 text-xs w-28 resize-none" rows={1} />
-                    <Textarea defaultValue={item.task} onBlur={(e) => handleBlur(e, 'task')} className="h-8 text-xs flex-grow resize-none" rows={1} />
+                    <Input defaultValue={item.time} onBlur={(e) => handleBlur(e, 'time')} className="h-8 text-xs w-28" />
+                    <Input defaultValue={item.task} onBlur={(e) => handleBlur(e, 'task')} className="h-8 text-xs flex-grow" />
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); onRemove();}}><X className="h-4 w-4" /></Button>
                 </>
             ) : (
@@ -64,12 +65,14 @@ const DailyScheduleView = React.memo(function DailyScheduleView({
     items, 
     isEditing, 
     onUpdateItem, 
-    onRemoveItem 
+    onRemoveItem,
+    onAddItem,
 }: { 
     items: ScheduledItem[], 
     isEditing: boolean, 
     onUpdateItem: (itemIndex: number, time: string, task: string) => void,
     onRemoveItem: (itemIndex: number) => void,
+    onAddItem: () => void;
 }) {
     const itemIds = useMemo(() => items.map(i => i.id), [items]);
 
@@ -85,6 +88,11 @@ const DailyScheduleView = React.memo(function DailyScheduleView({
                         onRemove={() => onRemoveItem(itemIndex)}
                     />
                 ))}
+                {isEditing && (
+                    <Button variant="outline" className="w-full" onClick={onAddItem}>
+                        <Plus className="h-4 w-4 mr-2" /> Add Task
+                    </Button>
+                )}
             </div>
         </SortableContext>
     );
@@ -108,8 +116,19 @@ export default function PlannerPage() {
     const fetchScheduleData = useCallback((uid: string) => {
         setIsDataLoading(true);
         getSchedule(uid).then((savedSchedule) => {
-            if (savedSchedule) {
-                setSchedule(savedSchedule);
+            if (savedSchedule && savedSchedule.scheduleData.length > 0) {
+                 // Ensure all items have a unique ID
+                const scheduleWithIds = {
+                    ...savedSchedule,
+                    scheduleData: savedSchedule.scheduleData.map(day => ({
+                        ...day,
+                        schedule: day.schedule.map(item => ({
+                            ...item,
+                            id: item.id || nanoid(),
+                        })),
+                    })),
+                };
+                setSchedule(scheduleWithIds);
             } else {
                 // If no schedule exists, create a blank one
                 setSchedule({
@@ -135,16 +154,22 @@ export default function PlannerPage() {
 
     const currentDayIndex = useMemo(() => {
       // getDay() is 0 for Sunday, 6 for Saturday. We want 0 for Monday, 6 for Sunday.
-      return (selectedDate.getDay() + 6) % 7;
+      const dayOfWeek = selectedDate.getDay();
+      return dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     }, [selectedDate]);
     
     const handleApplyTemplate = async (templateSchedule: DailySchedule[]) => {
         if (!user) return;
         setIsLoading(true);
         try {
+            const newScheduleData = templateSchedule.map(day => ({
+                ...day,
+                schedule: day.schedule.map(item => ({ ...item, id: nanoid() })) // ensure fresh ids
+            }));
+
             const newSchedule = {
                 id: 'current_week',
-                scheduleData: templateSchedule,
+                scheduleData: newScheduleData,
             };
             await saveSchedule(user.uid, newSchedule);
             setSchedule(newSchedule);
@@ -215,6 +240,18 @@ export default function PlannerPage() {
             return newSchedule;
         });
     };
+
+    const addItem = () => {
+        if (!schedule) return;
+        setSchedule(prev => {
+            if (!prev) return null;
+            const newSchedule = { ...prev };
+            const updatedDaySchedule = [...newSchedule.scheduleData[currentDayIndex].schedule];
+            updatedDaySchedule.push({ id: nanoid(), time: '12:00 PM', task: 'New Task', priority: 'medium' });
+            newSchedule.scheduleData[currentDayIndex] = {...newSchedule.scheduleData[currentDayIndex], schedule: updatedDaySchedule};
+            return newSchedule;
+        });
+    }
     
     const currentDaySchedule = schedule?.scheduleData[currentDayIndex];
 
@@ -222,13 +259,14 @@ export default function PlannerPage() {
     const firstDayOfMonth = startOfMonth(currentMonth);
     const lastDayOfMonth = endOfMonth(currentMonth);
     const daysInMonth = eachDayOfInterval({
-        start: startOfWeek(firstDayOfMonth),
-        end: endOfWeek(lastDayOfMonth),
+        start: startOfWeek(firstDayOfMonth, { weekStartsOn: 1 }), // Monday
+        end: endOfWeek(lastDayOfMonth, { weekStartsOn: 1 }), // Monday
     });
     const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
     const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
     const hasScheduleForDay = (day: Date) => {
-        const index = (day.getDay() + 6) % 7;
+        const dayOfWeek = day.getDay();
+        const index = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
         return schedule?.scheduleData[index]?.schedule.length > 0;
     };
     
@@ -242,7 +280,7 @@ export default function PlannerPage() {
                         <CalendarIcon /> AI Planner
                     </h1>
                     <p className="text-muted-foreground">
-                        Create schedule templates, apply them, and export to your calendar.
+                        Create schedule templates based on your goals, then customize and plan your week.
                     </p>
                 </div>
             </div>
@@ -266,7 +304,7 @@ export default function PlannerPage() {
                         </CardHeader>
                         <CardContent>
                              <div className="grid grid-cols-7 text-center font-semibold text-xs sm:text-sm text-muted-foreground">
-                                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, index) => (
                                     <div key={`${day}-${index}`} className="py-2">{day}</div>
                                 ))}
                             </div>
@@ -280,11 +318,11 @@ export default function PlannerPage() {
                                             format(day, 'M') !== format(currentMonth, 'M') && "text-muted-foreground/50",
                                             isToday(day) && "bg-primary/10 text-primary",
                                             isSameDay(day, selectedDate) && "bg-primary text-primary-foreground",
-                                            hasScheduleForDay(day) && !isSameDay(day, selectedDate) && "bg-accent/20"
+                                            hasScheduleForDay(day) && !isSameDay(day, selectedDate) && "bg-accent"
                                         )}
                                     >
                                         <span>{format(day, 'd')}</span>
-                                        {hasScheduleForDay(day) && <div className="absolute bottom-1 h-1 w-1 rounded-full bg-accent"></div>}
+                                        {hasScheduleForDay(day) && <div className="absolute bottom-1.5 h-1.5 w-1.5 rounded-full bg-accent-foreground/50"></div>}
                                     </button>
                                 ))}
                             </div>
@@ -306,7 +344,7 @@ export default function PlannerPage() {
                                     <div className="flex gap-2 w-full sm:w-auto">
                                         {isEditing ? (
                                             <>
-                                                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                                                <Button variant="outline" onClick={() => {setIsEditing(false); fetchScheduleData(user!.uid); }}>
                                                     <X className="mr-2 h-4 w-4" /> Cancel
                                                 </Button>
                                                 <Button onClick={handleSaveSchedule} disabled={isLoading}>
@@ -338,7 +376,7 @@ export default function PlannerPage() {
                                     <p className="text-xs">Create a schedule or apply a template.</p>
                                 </div>
                             )}
-                            {schedule && currentDaySchedule && currentDaySchedule.schedule.length > 0 && (
+                            {schedule && currentDaySchedule && (
                                 <ScrollArea className="h-[calc(100vh-22rem)]">
                                      <DndContext sensors={sensors} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
                                         <DailyScheduleView 
@@ -346,6 +384,7 @@ export default function PlannerPage() {
                                             isEditing={isEditing}
                                             onUpdateItem={updateItem}
                                             onRemoveItem={removeItem}
+                                            onAddItem={addItem}
                                         />
                                     </DndContext>
                                 </ScrollArea>

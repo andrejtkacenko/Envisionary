@@ -72,8 +72,8 @@ export function ScheduleTemplates({ onApplyTemplate, allGoals }: ScheduleTemplat
     }, [user, toast]);
 
     useEffect(() => {
-        fetchTemplates();
-    }, [fetchTemplates]);
+        if(user) fetchTemplates();
+    }, [fetchTemplates, user]);
 
     const handleCreateTemplate = async (values: CreateTemplateFormValues) => {
         if (!user) return;
@@ -145,7 +145,13 @@ export function ScheduleTemplates({ onApplyTemplate, allGoals }: ScheduleTemplat
                     <CardTitle>Schedule Templates</CardTitle>
                     <CardDescription>Create and apply schedule templates.</CardDescription>
                 </div>
-                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                 <Dialog open={isCreateDialogOpen} onOpenChange={(isOpen) => {
+                     setIsCreateDialogOpen(isOpen);
+                     if (!isOpen) {
+                         form.reset();
+                         setSelectedGoals([]);
+                     }
+                 }}>
                     <DialogTrigger asChild>
                         <Button size="sm">
                             <Plus className="mr-2 h-4 w-4" /> New
@@ -204,13 +210,14 @@ export function ScheduleTemplates({ onApplyTemplate, allGoals }: ScheduleTemplat
                                     </div>
                                     <div>
                                          <FormLabel>Attach Goals (Optional)</FormLabel>
-                                         <ScrollArea className="h-72 mt-2 border rounded-md p-2">
-                                            <div className="space-y-2">
+                                         <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
+                                         <ScrollArea className="h-64 mt-2 border rounded-md">
+                                            <div className="p-2 space-y-1">
                                                 {allGoals.length === 0 && (
                                                     <div className="text-center text-muted-foreground p-4 text-sm">No goals to attach.</div>
                                                 )}
                                                 {allGoals.map(goal => (
-                                                    <div key={goal.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted/50">
+                                                    <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
                                                         <Checkbox 
                                                             id={`goal-${goal.id}`} 
                                                             checked={selectedGoals.includes(goal.id)}
@@ -242,7 +249,7 @@ export function ScheduleTemplates({ onApplyTemplate, allGoals }: ScheduleTemplat
                         <Loader2 className="h-8 w-8 animate-spin" />
                     </div>
                 ) : (
-                    <ScrollArea className="h-auto min-h-[450px]">
+                    <ScrollArea className="h-auto min-h-[450px] max-h-[500px]">
                         <div className="pr-4 space-y-3">
                              {templates.length === 0 && (
                                 <div className="text-center text-muted-foreground py-20">
@@ -255,7 +262,7 @@ export function ScheduleTemplates({ onApplyTemplate, allGoals }: ScheduleTemplat
                                     <CardContent className="p-3 flex items-center justify-between">
                                         <div className="flex-grow">
                                             <p className="font-semibold">{template.name}</p>
-                                            <Badge variant="outline" className="mt-1">
+                                            <Badge variant="outline" className="mt-1 capitalize">
                                                 {template.type === 'week' ? <Calendar className="mr-1.5 h-3 w-3" /> : <FileText className="mr-1.5 h-3 w-3" />}
                                                 {template.type}
                                             </Badge>
