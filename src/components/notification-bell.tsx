@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Bell, CheckCheck, CircleAlert, Info, BellRing } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -21,6 +21,32 @@ const notificationIcons: Record<NotificationType, React.ReactNode> = {
   reminder: <BellRing className="h-5 w-5 text-primary" />,
   info: <Info className="h-5 w-5 text-blue-500" />,
 };
+
+const NotificationItem = ({ notification, onClick }: { notification: Notification, onClick: (notification: Notification) => void }) => (
+    <div
+        key={notification.id}
+        className={cn(
+            'flex items-start gap-4 p-4 transition-colors hover:bg-muted/50',
+            notification.link && 'cursor-pointer'
+        )}
+        onClick={() => onClick(notification)}
+    >
+        {!notification.isRead && (
+            <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+        )}
+        <div className={cn("flex-shrink-0", notification.isRead && 'ml-4')}>
+            {notificationIcons[notification.type]}
+        </div>
+        <div className="flex-grow">
+            <p className="font-semibold text-sm">{notification.title}</p>
+            <p className="text-sm text-muted-foreground">{notification.description}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+                {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
+            </p>
+        </div>
+    </div>
+);
+
 
 export function NotificationBell() {
   const { user } = useAuth();
@@ -48,6 +74,12 @@ export function NotificationBell() {
       return () => unsubscribe();
     }
   }, [user, toast]);
+
+  const { importantNotifications, otherNotifications } = useMemo(() => {
+    const important = notifications.filter(n => n.type === 'important');
+    const other = notifications.filter(n => n.type !== 'important');
+    return { importantNotifications: important, otherNotifications: other };
+  }, [notifications]);
 
   const handleMarkAllAsRead = async () => {
     if (!user || unreadCount === 0) return;
@@ -104,30 +136,24 @@ export function NotificationBell() {
                 </div>
             ) : (
                 <div className="divide-y">
-                    {notifications.map((notif) => (
-                        <div
-                            key={notif.id}
-                            className={cn(
-                                'flex items-start gap-4 p-4 transition-colors hover:bg-muted/50',
-                                notif.link && 'cursor-pointer'
-                            )}
-                             onClick={() => handleNotificationClick(notif)}
-                        >
-                            {!notif.isRead && (
-                                <div className="h-2 w-2 rounded-full bg-primary mt-2" />
-                            )}
-                            <div className={cn("flex-shrink-0", notif.isRead && 'ml-4')}>
-                                {notificationIcons[notif.type]}
-                            </div>
-                            <div className="flex-grow">
-                                <p className="font-semibold text-sm">{notif.title}</p>
-                                <p className="text-sm text-muted-foreground">{notif.description}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {formatDistanceToNow(notif.createdAt.toDate(), { addSuffix: true })}
-                                </p>
-                            </div>
+                    {importantNotifications.length > 0 && (
+                         <div>
+                            <h4 className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Important</h4>
+                             {importantNotifications.map((notif) => (
+                                <NotificationItem key={notif.id} notification={notif} onClick={handleNotificationClick} />
+                            ))}
+                         </div>
+                    )}
+                    {otherNotifications.length > 0 && (
+                        <div>
+                             {importantNotifications.length > 0 && (
+                                 <h4 className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">Other</h4>
+                             )}
+                            {otherNotifications.map((notif) => (
+                                <NotificationItem key={notif.id} notification={notif} onClick={handleNotificationClick} />
+                            ))}
                         </div>
-                    ))}
+                    )}
                 </div>
             )}
         </ScrollArea>
