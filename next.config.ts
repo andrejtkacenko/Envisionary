@@ -25,7 +25,10 @@ const nextConfig: NextConfig = {
     allowedRevalidateOrigins: [
         "https://*.cloudworkstations.dev"
     ]
-  }
+  },
+  experimental: {
+    serverComponentsExternalPackages: ['grammy'],
+  },
 };
 
 export default nextConfig;
