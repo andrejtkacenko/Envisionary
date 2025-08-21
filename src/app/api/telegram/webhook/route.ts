@@ -5,6 +5,9 @@ import { db } from '@/lib/firebase';
 import { nanoid } from 'nanoid';
 import { NextRequest, NextResponse } from 'next/server';
 
+// This forces the handler to run in the Node.js runtime, which can solve proxying and redirect issues.
+export const runtime = 'nodejs';
+
 if (!process.env.TELEGRAM_BOT_TOKEN) {
   throw new Error('TELEGRAM_BOT_TOKEN is not set');
 }
@@ -38,10 +41,11 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         await bot.handleUpdate(body);
-        // Using `new Response` for a more direct, empty 200 OK response
+        // Using `new Response` for a more direct, empty 200 OK response that Telegram expects.
         return new Response(null, { status: 200 }); 
     } catch (error) {
         console.error('Error handling Telegram update:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        // Also return a 200 OK on error to prevent Telegram from resending the update.
+        return new Response(null, { status: 200 }); 
     }
 }
