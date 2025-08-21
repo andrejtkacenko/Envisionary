@@ -42,6 +42,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "./notification-bell";
 
 interface AppHeaderProps {
   allGoals: Goal[];
@@ -102,6 +103,7 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
       <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <div className="ml-auto flex items-center gap-2">
             <ProgressReportDialog allGoals={allGoals} />
+            <NotificationBell />
             <Button asChild size="sm">
               <Link href="/create-goal">
                 <Plus className="mr-2 h-4 w-4" /> New Goal

@@ -25,6 +25,20 @@ export type Goal = {
   createdAt: any; // Allow Date or Timestamp
 };
 
+export type NotificationType = "important" | "reminder" | "info";
+
+export type Notification = {
+    id: string;
+    userId: string;
+    title: string;
+    description: string;
+    type: NotificationType;
+    isRead: boolean;
+    createdAt: Timestamp;
+    link?: string; // Optional link to navigate to
+};
+
+
 export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
   { id: "todo", title: "To Do" },
   { id: "inprogress", title: "In Progress" },

@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
-import type { Goal, WeeklySchedule, GoalTemplate, ScheduleTemplate, GoalStatus, AppUser } from "@/types";
+import type { Goal, WeeklySchedule, GoalTemplate, ScheduleTemplate, GoalStatus, AppUser, Notification } from "@/types";
 
 // Firestore data converter for Users
 const userConverter = {
@@ -140,6 +140,25 @@ const scheduleTemplateConverter = {
     }
 };
 
+// Firestore data converter for Notifications
+const notificationConverter = {
+  toFirestore: (notification: Omit<Notification, 'id'>) => {
+    return {
+      ...notification,
+      createdAt: notification.createdAt || Timestamp.now(),
+      isRead: notification.isRead || false,
+    };
+  },
+  fromFirestore: (snapshot: any, options: any): Notification => {
+    const data = snapshot.data(options);
+    return {
+      ...data,
+      id: snapshot.id,
+    } as Notification;
+  },
+};
+
+
 const getUsersCollection = () => {
     return collection(db, "users").withConverter(userConverter);
 }
@@ -159,6 +178,11 @@ const getSchedulesCollection = (userId: string) => {
 const getScheduleTemplatesCollection = (userId: string) => {
     return collection(db, "users", userId, "schedule_templates").withConverter(scheduleTemplateConverter);
 }
+
+const getNotificationsCollection = (userId: string) => {
+    return collection(db, "users", userId, "notifications").withConverter(notificationConverter);
+};
+
 
 // --- USER-RELATED FUNCTIONS ---
 
@@ -321,4 +345,58 @@ export const deleteScheduleTemplate = async (userId: string, templateId: string)
     const templatesCollection = getScheduleTemplatesCollection(userId);
     const docRef = doc(templatesCollection, templateId);
     await deleteDoc(docRef);
+};
+
+
+// --- NOTIFICATION FUNCTIONS ---
+
+// Get notifications for a user with real-time updates
+export const getNotifications = (
+  userId: string,
+  callback: (notifications: Notification[]) => void,
+  onError: (error: Error) => void
+): Unsubscribe => {
+  const notificationsCollection = getNotificationsCollection(userId);
+  const q = query(notificationsCollection, orderBy('createdAt', 'desc'), limit(20));
+
+  const unsubscribe = onSnapshot(
+    q,
+    (querySnapshot) => {
+      const notifications = querySnapshot.docs.map((doc) => doc.data());
+      callback(notifications);
+    },
+    (error) => {
+      console.error('Error listening to notifications collection: ', error);
+      onError(error);
+    }
+  );
+
+  return unsubscribe;
+};
+
+// Add a new notification
+export const addNotification = async (userId: string, notificationData: Omit<Notification, 'id' | 'isRead' | 'createdAt'>): Promise<void> => {
+  const notificationsCollection = getNotificationsCollection(userId);
+  await addDoc(notificationsCollection, {
+    ...notificationData,
+    userId,
+    isRead: false,
+    createdAt: Timestamp.now(),
+  });
+};
+
+// Mark all notifications as read
+export const markAllNotificationsAsRead = async (userId: string): Promise<void> => {
+  const notificationsCollection = getNotificationsCollection(userId);
+  const q = query(notificationsCollection, where('isRead', '==', false));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) return;
+
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { isRead: true });
+  });
+
+  await batch.commit();
 };

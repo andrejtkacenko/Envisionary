@@ -8,7 +8,7 @@ import { AppHeader } from '@/components/app-header';
 import { KanbanBoard } from '@/components/kanban-board';
 import { KANBAN_COLUMNS } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { getGoals, addGoal, addGoals, updateGoal, deleteGoal } from '@/lib/goals-service';
+import { getGoals, addGoal, addGoals, updateGoal, deleteGoal, addNotification } from '@/lib/goals-service';
 import { Loader2, Target, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -118,6 +118,14 @@ export default function Home() {
 
     try {
       await updateGoal(user.uid, updatedGoal);
+       if (updatedGoal.status === 'done') {
+        await addNotification(user.uid, {
+          userId: user.uid,
+          title: 'Goal Completed!',
+          description: `You've completed the goal: "${updatedGoal.title}"`,
+          type: 'info',
+        });
+      }
     } catch (e) {
       console.error("Error updating goal:", e);
       // Revert state on failure
@@ -249,7 +257,7 @@ export default function Home() {
         const newIndex = goals.findIndex(g => g.id === activeGoalId)
 
         if (originalGoal.status !== updatedGoal.status || originalIndex !== newIndex) {
-            updateGoal(user.uid, updatedGoal).catch(e => {
+            handleGoalUpdate(updatedGoal).catch(e => {
                 console.error("Failed to save goal update:", e);
                 toast({
                     variant: "destructive",
