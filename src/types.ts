@@ -4,6 +4,8 @@ import type { Timestamp } from "firebase/firestore";
 export type GoalStatus = "todo" | "inprogress" | "done" | "ongoing";
 
 export type GoalPriority = "low" | "medium" | "high";
+export type TaskPriority = "p1" | "p2" | "p3" | "p4";
+
 
 // This represents a user in our system.
 export type AppUser = {
@@ -24,6 +26,18 @@ export type Goal = {
   estimatedTime?: string;
   createdAt: any; // Allow Date or Timestamp
 };
+
+export type Task = {
+    id: string;
+    title: string;
+    description?: string;
+    priority: TaskPriority;
+    project?: string;
+    dueDate?: Date;
+    isCompleted: boolean;
+    createdAt: any;
+};
+
 
 export type NotificationType = "important" | "reminder" | "info";
 
@@ -48,7 +62,7 @@ export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
 
 // Types for the new Weekly Planner feature
 export type ScheduledItem = {
-  id: string;
+  id:string;
   time: string; // e.g., "09:00 AM - 10:00 AM"
   task: string;
   priority: GoalPriority;
@@ -77,4 +91,5 @@ export type GoalTemplate = {
     likes: number;
     createdAt: Timestamp;
 };
+
     

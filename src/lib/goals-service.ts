@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
-import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, ScheduleTemplate, DailySchedule } from "@/types";
+import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task } from "@/types";
 
 // Firestore data converter for Users
 const userConverter = {
@@ -86,6 +86,27 @@ const goalConverter = {
     }
 };
 
+// Firestore data converter for Tasks
+const taskConverter = {
+    toFirestore: (task: Omit<Task, 'id'>) => {
+        const data: any = { ...task };
+        if (task.dueDate) {
+            data.dueDate = Timestamp.fromDate(task.dueDate);
+        }
+        return data;
+    },
+    fromFirestore: (snapshot: any, options: any): Task => {
+        const data = snapshot.data(options);
+        const task: Task = {
+            id: snapshot.id,
+            ...data,
+            dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : undefined,
+        };
+        return task;
+    },
+};
+
+
 // Firestore data converter for Goal Templates
 const goalTemplateConverter = {
     toFirestore: (template: Omit<GoalTemplate, 'id'>) => {
@@ -148,6 +169,10 @@ const getUsersCollection = () => {
 const getGoalsCollection = (userId: string) => {
     return collection(db, "users", userId, "goals").withConverter(goalConverter);
 }
+
+const getTasksCollection = (userId: string) => {
+    return collection(db, 'users', userId, 'tasks').withConverter(taskConverter);
+};
 
 const getGoalTemplatesCollection = () => {
     return collection(db, "goal_templates").withConverter(goalTemplateConverter);
@@ -253,6 +278,61 @@ export const deleteGoal = async (userId: string, goalId: string): Promise<void> 
 };
 
 
+// --- TASK-RELATED FUNCTIONS ---
+
+// Get all tasks for a user with real-time updates
+export const getTasks = (
+    userId: string,
+    callback: (tasks: Task[]) => void,
+    onError: (error: Error) => void
+): Unsubscribe => {
+    const tasksCollection = getTasksCollection(userId);
+    const q = query(tasksCollection, orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(
+        q,
+        (querySnapshot) => {
+            const tasks = querySnapshot.docs.map((doc) => doc.data());
+            callback(tasks);
+        },
+        (error) => {
+            console.error('Error listening to tasks collection: ', error);
+            onError(error);
+        }
+    );
+
+    return unsubscribe;
+};
+
+// Add a single task
+export const addTask = async (userId: string, taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task> => {
+    const tasksCollection = getTasksCollection(userId);
+    const newDocRef = doc(tasksCollection);
+    const newTask: Task = {
+        ...taskData,
+        id: newDocRef.id,
+        createdAt: Timestamp.now(),
+    };
+    await setDoc(newDocRef, newTask);
+    return newTask;
+};
+
+// Update a task
+export const updateTask = async (userId: string, task: Task): Promise<void> => {
+    const tasksCollection = getTasksCollection(userId);
+    const docRef = doc(tasksCollection, task.id);
+    await setDoc(docRef, task, { merge: true });
+};
+
+// Delete a task
+export const deleteTask = async (userId: string, taskId: string): Promise<void> => {
+    const tasksCollection = getTasksCollection(userId);
+    const docRef = doc(tasksCollection, taskId);
+    await deleteDoc(docRef);
+};
+
+
+
 // --- SCHEDULE-RELATED FUNCTIONS ---
 
 // Save a weekly schedule
@@ -352,6 +432,6 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
   await batch.commit();
 };
 
-export type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, ScheduleTemplate };
+export type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task };
 
     

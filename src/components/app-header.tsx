@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   KanbanSquare,
   Library,
+  ListTodo,
 } from "lucide-react";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -60,9 +61,9 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/", label: "Kanban Board", icon: KanbanSquare },
+    { href: "/", label: "Goals Board", icon: KanbanSquare },
+    { href: "/tasks", label: "Tasks", icon: ListTodo },
     { href: "/coach", label: "AI Coach", icon: Zap },
-    { href: "/planner", label: "Planner", icon: Calendar },
     { href: "/library", label: "Library", icon: Library },
   ];
 
@@ -76,8 +77,8 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="sm:max-w-xs">
-               <SheetHeader className="sr-only">
-                  <SheetTitle>Menu</SheetTitle>
+               <SheetHeader>
+                  <SheetTitle className="sr-only">Menu</SheetTitle>
                 </SheetHeader>
               <nav className="grid gap-6 text-lg font-medium">
                 <Link
