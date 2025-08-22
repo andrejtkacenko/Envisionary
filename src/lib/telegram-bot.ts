@@ -111,4 +111,13 @@ bot.on('message', async (ctx) => {
 });
 
 
+// Global error handler
+bot.catch((err, ctx) => {
+  console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
+  // Specifically log if the bot is blocked
+  if ((err as any).code === 403 && (err as any).description === 'Forbidden: bot was blocked by the user') {
+    console.log(`Bot was blocked by user: ${ctx.from?.id}. No further messages will be sent to this user.`);
+  }
+});
+
 export { bot };
