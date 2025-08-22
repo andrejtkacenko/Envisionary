@@ -14,12 +14,13 @@ const webAppUrl = process.env.NEXT_PUBLIC_APP_URL;
 
 
 const getWebAppKeyboard = () => {
+    // This URL will open the main page, which will then handle the Telegram auth flow.
     return Markup.inlineKeyboard([
-      Markup.button.webApp('Open App', `${webAppUrl}/telegram`),
+      Markup.button.webApp('Open App', `${webAppUrl}/?from=telegram`),
     ]);
 }
 
-// Middleware to get or create user
+// Middleware to ensure user has an account.
 bot.use(async (ctx, next) => {
     const from = ctx.from;
     if (!from) return; // Should not happen for messages/commands
@@ -27,7 +28,6 @@ bot.use(async (ctx, next) => {
     try {
         let user = await findUserByTelegramId(from.id);
         if (!user) {
-            // If user doesn't exist, prompt them to open the web app to create an account.
             ctx.reply(
                 'Welcome! To get started, please open our web app to create and link your account.', 
                 getWebAppKeyboard()

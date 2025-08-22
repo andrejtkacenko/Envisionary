@@ -9,7 +9,7 @@ import { KanbanBoard } from '@/components/kanban-board';
 import { KANBAN_COLUMNS } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { getGoals, addGoal, addGoals, updateGoal, deleteGoal, addNotification } from '@/lib/goals-service';
-import { Loader2, Target, Plus } from 'lucide-react';
+import { Loader2, Target, Plus, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -29,23 +29,93 @@ import {
 import { SortableContext, arrayMove } from '@dnd-kit/sortable';
 import { KanbanCard } from '@/components/kanban-card';
 
+// Add Telegram script to the window interface
+declare global {
+    interface Window {
+        Telegram: any;
+    }
+}
+
 export default function Home() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
-  const { user, loading: authLoading } = useAuth();
+  const [isTelegramAuth, setIsTelegramAuth] = useState(false);
+  const [telegramStatus, setTelegramStatus] = useState("Loading...");
+  const { user, loading: authLoading, signInWithToken } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
+  const isTelegramFlow = searchParams.get('from') === 'telegram';
+
+  // --- TELEGRAM MINI APP AUTH FLOW ---
+  useEffect(() => {
+    if (!isTelegramFlow) return;
+
+    setIsTelegramAuth(true); // Show the Telegram loading UI
+    const tg = window.Telegram?.WebApp;
+
+    if (tg) {
+      tg.ready();
+      tg.MainButton.setText("Login to Zenith Flow");
+      tg.MainButton.show();
+      setTelegramStatus("Please press the button below to log in.");
+
+      const mainButtonClickHandler = async () => {
+        setTelegramStatus("Authenticating...");
+        tg.MainButton.showProgress();
+
+        const initData = tg.initData;
+
+        try {
+          const response = await fetch('/api/auth/telegram', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: initData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Authentication failed');
+          }
+
+          const { token } = await response.json();
+          await signInWithToken(token);
+
+          // Auth state will update via AuthContext, and we will be redirected.
+          // We can hide the button and loading state now.
+          tg.MainButton.hide();
+          router.replace('/'); // Clean the URL
+          
+        } catch (err: any) {
+          console.error(err);
+          setTelegramStatus(`Error: ${err.message}. Please try again.`);
+          tg.MainButton.hideProgress();
+        }
+      };
+
+      tg.onEvent('mainButtonClicked', mainButtonClickHandler);
+
+      return () => {
+        // Cleanup listener when component unmounts
+        tg.offEvent('mainButtonClicked', mainButtonClickHandler);
+        tg.MainButton.hide();
+      };
+    } else {
+        setTelegramStatus("Telegram environment not detected. Please open via the bot.");
+    }
+  }, [isTelegramFlow, signInWithToken, router]);
+
+
   const fetchGoals = useCallback(async () => {
-    // This function can be used for one-time fetches if needed elsewhere
     if (!user) return;
     setIsLoading(true);
     try {
-      // Switched to getGoalsSnapshot to avoid real-time issues in this context if any
-      const userGoals = await getGoals(user.uid, () => {}, () => {});
+      await getGoals(user.uid, () => {}, () => {});
     } catch (error) {
       console.error("Error fetching goals:", error);
     } finally {
@@ -54,15 +124,15 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    // Regular auth flow
+    if (!isTelegramFlow && !authLoading && !user) {
       router.push('/login');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, isTelegramFlow]);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isTelegramFlow) {
       setIsLoading(true);
-      // Set up the real-time listener
       const unsubscribe = getGoals(user.uid, (userGoals) => {
         setGoals(userGoals.filter(g => g.status !== 'ongoing'));
         setIsLoading(false);
@@ -72,17 +142,15 @@ export default function Home() {
         setIsLoading(false);
       });
 
-      // Cleanup subscription on component unmount
       return () => unsubscribe();
     }
-  }, [user, toast]);
+  }, [user, toast, isTelegramFlow]);
 
 
   const handleAddNewGoal = useCallback(async (newGoalData: Omit<Goal, 'id' | 'subGoals'>) => {
     if (!user) return;
     try {
         const newGoal = await addGoal(user.uid, newGoalData);
-        // setGoals(prev => [...prev, newGoal]); // No longer needed with real-time listener
         return newGoal;
     } catch(e) {
         console.error("Error adding goal:", e);
@@ -93,24 +161,15 @@ export default function Home() {
       if (!user) return;
       try {
         const newGoals = await addGoals(user.uid, newGoalsData);
-        // setGoals(prev => [...prev, ...newGoals]); // No longer needed with real-time listener
         return newGoals;
       } catch (e) {
         console.error("Error adding goals:", e);
       }
   }, [user]);
 
-  useEffect(() => {
-    const hasNewGoals = searchParams.get('newGoal') || searchParams.get('newGoals');
-    if (hasNewGoals) {
-      router.replace('/', { scroll: false });
-    }
-  }, [searchParams, router]);
-
   const handleGoalUpdate = async (updatedGoal: Goal) => {
     if (!user) return;
     
-    // Optimistic UI update
     const originalGoals = goals;
     setGoals((prevGoals) => {
         return prevGoals.map(g => g.id === updatedGoal.id ? updatedGoal : g);
@@ -128,20 +187,18 @@ export default function Home() {
       }
     } catch (e) {
       console.error("Error updating goal:", e);
-      // Revert state on failure
       toast({
           variant: "destructive",
           title: "Update Failed",
           description: "Could not save your changes. Please try again.",
       });
-      setGoals(originalGoals); // Revert
+      setGoals(originalGoals);
     }
   };
   
   const handleGoalDelete = async (goalId: string) => {
     if (!user) return;
 
-    // Optimistic UI update
     const originalGoals = goals;
     setGoals((prev) => prev.filter((goal) => goal.id !== goalId));
 
@@ -154,7 +211,7 @@ export default function Home() {
           title: "Delete Failed",
           description: "Could not delete the goal. Please try again.",
       });
-      setGoals(originalGoals); // Revert
+      setGoals(originalGoals);
     }
   }
 
@@ -197,7 +254,6 @@ export default function Home() {
     const isActiveAGoal = active.data.current?.type === 'Goal';
     const isOverAColumn = over.data.current?.type === 'Column';
 
-    // Handle dropping a Goal over a Column
     if (isActiveAGoal && isOverAColumn) {
         const activeGoalStatus = active.data.current?.goal.status;
         const overColumnId = overId as GoalStatus;
@@ -215,7 +271,6 @@ export default function Home() {
     
     const isOverAGoal = over.data.current?.type === 'Goal';
 
-    // Handle dropping a Goal over another Goal (sorting)
     if (isActiveAGoal && isOverAGoal) {
         const activeGoalStatus = active.data.current?.goal.status;
         const overGoalStatus = over.data.current?.goal.status;
@@ -227,7 +282,6 @@ export default function Home() {
                  setGoals(currentGoals => arrayMove(currentGoals, oldIndex, newIndex));
             }
         } else {
-             // Handle moving to a different column by dropping on a card
              setGoals(currentGoals => {
                 const activeIndex = currentGoals.findIndex(g => g.id === activeId);
                 let newIndex = currentGoals.findIndex(g => g.id === overId);
@@ -250,11 +304,9 @@ export default function Home() {
     const activeGoalId = active.id as string;
     const updatedGoal = goals.find(g => g.id === activeGoalId);
     
-    // Find the original state of the goal before drag started
     const originalGoal = goalsMap[activeGoalId];
 
     if (updatedGoal && originalGoal) {
-        // Only trigger update if status or position actually changed
         const originalIndex = Object.values(goalsMap).findIndex(g => g.id === activeGoalId)
         const newIndex = goals.findIndex(g => g.id === activeGoalId)
 
@@ -266,14 +318,25 @@ export default function Home() {
                     title: "Save Failed",
                     description: "Your changes could not be saved. Reverting.",
                 });
-                setGoals(Object.values(goalsMap)); // Revert on failure
+                setGoals(Object.values(goalsMap));
             });
         }
     }
   };
 
+  if (isTelegramAuth && !user) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
+            <div className="flex flex-col items-center gap-4 text-center">
+                <Bot className="h-12 w-12" />
+                <h1 className="text-xl font-semibold">Welcome to Zenith Flow</h1>
+                <p className="text-muted-foreground">{telegramStatus}</p>
+            </div>
+        </div>
+    );
+  }
 
-  if (authLoading || !user) {
+  if (authLoading || (!user && !isTelegramFlow)) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { AuthProvider } from '@/context/AuthContext';
 import { AppSidebar } from "@/components/app-sidebar";
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import Script from "next/script";
 
 const fontInter = Inter({ 
   subsets: ["latin"],
@@ -46,6 +47,10 @@ export default function RootLayout({
         </AuthProvider>
         <Toaster />
         <SpeedInsights />
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
       </body>
     </html>
   );
