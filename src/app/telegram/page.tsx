@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { TelegramScript } from '@/components/telegram-script';
 
 export default function TelegramAuthPage() {
     const { signInWithToken } = useAuth();
@@ -56,20 +57,23 @@ export default function TelegramAuthPage() {
     }, [signInWithToken, router]);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
-            {error ? (
-                <div className="text-center text-destructive">
-                    <h1 className="text-2xl font-bold mb-4">Authentication Error</h1>
-                    <p>{error}</p>
-                </div>
-            ) : (
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-12 w-12 animate-spin" />
-                    <h1 className="text-xl font-semibold">{statusMessage}</h1>
-                    <p className="text-muted-foreground">Please wait while we securely log you in.</p>
-                </div>
-            )}
-        </div>
+        <>
+            <TelegramScript />
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
+                {error ? (
+                    <div className="text-center text-destructive">
+                        <h1 className="text-2xl font-bold mb-4">Authentication Error</h1>
+                        <p>{error}</p>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="h-12 w-12 animate-spin" />
+                        <h1 className="text-xl font-semibold">{statusMessage}</h1>
+                        <p className="text-muted-foreground">Please wait while we securely log you in.</p>
+                    </div>
+                )}
+            </div>
+        </>
     );
 }
 
