@@ -12,6 +12,7 @@ export type AppUser = {
   uid: string;
   email: string | null;
   displayName: string | null;
+  telegramId?: number;
 };
 
 export type Goal = {
@@ -91,5 +92,3 @@ export type GoalTemplate = {
     likes: number;
     createdAt: Timestamp;
 };
-
-    

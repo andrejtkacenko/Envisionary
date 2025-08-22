@@ -26,6 +26,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInAsGuest: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  signInWithToken: (token: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -67,6 +68,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
   };
+  
+  const signInWithToken = async (token: string) => {
+    await signInWithCustomToken(auth, token);
+  };
 
   return (
     <AuthContext.Provider
@@ -79,6 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signInWithGoogle,
         signInAsGuest,
         resetPassword,
+        signInWithToken,
       }}
     >
       {!loading && children}

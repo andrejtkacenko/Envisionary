@@ -3,7 +3,7 @@
 import { db, auth } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task } from "@/types";
-import { signInAnonymously } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInAnonymously } from "firebase/auth";
 
 // Firestore data converter for Users
 const userConverter = {
@@ -199,32 +199,43 @@ const getNotificationsCollection = (userId: string) => {
 
 // --- USER-RELATED FUNCTIONS ---
 
-// Get or create a user mapping for a Telegram user
-export const getOrCreateUserForTelegram = async (telegramId: string, firstName: string, username?: string): Promise<AppUser> => {
+export const findUserByTelegramId = async (telegramId: number): Promise<AppUser | null> => {
     const usersCollection = getUsersCollection();
     const q = query(usersCollection, where("telegramId", "==", telegramId), limit(1));
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
-        // User already exists
         return snapshot.docs[0].data();
-    } else {
-        // User does not exist, create a new anonymous user in Firebase Auth
-        const userCredential = await signInAnonymously(auth);
-        const firebaseUser = userCredential.user;
-
-        // Create a profile for them in Firestore
-        const newUser: AppUser & { telegramId: string } = {
-            uid: firebaseUser.uid,
-            email: null,
-            displayName: username || firstName,
-            telegramId: telegramId,
-        };
-
-        await setDoc(doc(usersCollection, firebaseUser.uid), newUser);
-        return newUser;
     }
-};
+    return null;
+}
+
+export const createUserFromTelegram = async (telegramUser: {id: number, first_name: string, last_name?: string, username?: string}): Promise<AppUser> => {
+    const usersCollection = getUsersCollection();
+    
+    // Using email as a unique identifier for Firebase Auth
+    const email = `${telegramUser.username || telegramUser.id}@telegram.user`;
+    const password = Math.random().toString(36).slice(-8); // Generate a random password
+
+    // Create a Firebase Auth user
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
+
+    const newUser: AppUser & { telegramId: number } = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: telegramUser.first_name + (telegramUser.last_name ? ` ${telegramUser.last_name}`: ''),
+        telegramId: telegramUser.id
+    };
+
+    await setDoc(doc(usersCollection, firebaseUser.uid), newUser);
+    return newUser;
+}
+
+export const linkTelegramToUser = async (userId: string, telegramId: number) => {
+    const userRef = doc(getUsersCollection(), userId);
+    await setDoc(userRef, { telegramId: telegramId }, { merge: true });
+}
 
 
 // --- GOAL-RELATED FUNCTIONS ---

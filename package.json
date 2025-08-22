@@ -51,6 +51,7 @@
     "embla-carousel-react": "^8.6.0",
     "feather-icons": "^4.29.2",
     "firebase": "^11.9.1",
+    "firebase-admin": "^12.2.0",
     "framer-motion": "^11.2.10",
     "genkit": "^1.14.1",
     "lodash.isequal": "^4.5.0",
