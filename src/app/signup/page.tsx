@@ -46,10 +46,11 @@ const signupSchema = z
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
-  const { signUp, signInWithGoogle, signInAsGuest } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -73,7 +74,7 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
       router.push("/");
@@ -84,26 +85,9 @@ export default function SignupPage() {
         description: error.message,
       });
     } finally {
-      setIsLoading(false);
+      setIsGoogleLoading(false);
     }
   }
-
-  const handleGuestSignIn = async () => {
-    setIsLoading(true);
-    try {
-      await signInAsGuest();
-      router.push("/");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Guest Sign-In Failed",
-        description: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -159,7 +143,7 @@ export default function SignupPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
                   {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>
               </form>
@@ -171,11 +155,8 @@ export default function SignupPage() {
             </div>
           </div>
            <div className="space-y-2">
-              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
-                Sign up with Google
-              </Button>
-              <Button variant="secondary" className="w-full" onClick={handleGuestSignIn} disabled={isLoading}>
-                Continue as Guest
+              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                 {isGoogleLoading ? 'Redirecting...' : 'Sign up with Google'}
               </Button>
            </div>
         </CardContent>

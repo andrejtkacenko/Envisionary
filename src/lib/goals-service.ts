@@ -3,7 +3,8 @@
 import { db, auth } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate } from "@/types";
-import { createUserWithEmailAndPassword, signInAnonymously } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { randomBytes } from "crypto";
 
 // Firestore data converter for Users
 const userConverter = {
@@ -234,28 +235,37 @@ export const findUserByTelegramId = async (telegramId: number): Promise<AppUser 
 }
 
 export const createUserFromTelegram = async (telegramUser: {id: number, first_name: string, last_name?: string, username?: string}): Promise<AppUser> => {
-    // This function creates a user document in Firestore, NOT a Firebase Auth user.
-    // The Firebase Auth user must be created separately.
     const usersCollection = getUsersCollection();
     
-    // Using email as a unique identifier for Firebase Auth
-    const email = `${telegramUser.username || telegramUser.id}@telegram.user`;
+    // Using email as a unique identifier for Firebase Auth.
+    // If a username is not available, a unique email is generated.
+    const email = `${telegramUser.username || `tg_${telegramUser.id}`}@telegram.user`;
     
-    // This is a placeholder, in a real app you'd need a secure way to handle this
-    // For now, we assume an auth user is created elsewhere and we just store the profile
-    const userCredential = await signInAnonymously(auth);
-    const firebaseUser = userCredential.user;
+    // Generate a secure random password for the new user.
+    // This password won't be used directly by the user but is required for account creation.
+    const password = randomBytes(16).toString('hex');
 
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
 
-    const newUser: AppUser & { telegramId: number } = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: telegramUser.first_name + (telegramUser.last_name ? ` ${telegramUser.last_name}`: ''),
-        telegramId: telegramUser.id
-    };
+        const newUser: AppUser & { telegramId: number } = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: telegramUser.first_name + (telegramUser.last_name ? ` ${telegramUser.last_name}`: ''),
+            telegramId: telegramUser.id
+        };
 
-    await setDoc(doc(usersCollection, firebaseUser.uid), newUser);
-    return newUser;
+        await setDoc(doc(usersCollection, firebaseUser.uid), newUser);
+        return newUser;
+    } catch (error: any) {
+        // Handle cases where the email might already exist (e.g., from a previous manual creation)
+        if (error.code === 'auth/email-already-in-use') {
+            console.warn(`Email ${email} already in use. A user profile may already exist.`);
+            // In a real-world scenario, you might want to find and return the existing user here.
+        }
+        throw error; // Re-throw the error to be handled by the caller.
+    }
 }
 
 export const linkTelegramToUser = async (userId: string, telegramId: number) => {

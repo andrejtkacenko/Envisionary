@@ -11,7 +11,6 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
-  signInAnonymously,
   sendPasswordResetEmail,
   signInWithCustomToken
 } from "firebase/auth";
@@ -24,7 +23,6 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signInAsGuest: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   signInWithToken: (token: string) => Promise<void>;
 }
@@ -60,10 +58,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
   };
-
-  const signInAsGuest = async () => {
-    await signInAnonymously(auth);
-  };
   
   const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
@@ -82,7 +76,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signUp,
         logout,
         signInWithGoogle,
-        signInAsGuest,
         resetPassword,
         signInWithToken,
       }}
