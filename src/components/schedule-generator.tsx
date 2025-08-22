@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -18,7 +17,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { generateSchedule } from '@/ai/flows/generate-schedule';
 import type { DailySchedule, Goal } from '@/types';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { cn } from '@/lib/utils';
 
 interface ScheduleGeneratorProps {
@@ -184,7 +182,7 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
                                              <div className="flex flex-wrap gap-2 pt-1">
                                                 <SuggestionButton onClick={() => form.setValue('meditation', 'None')}>None</SuggestionButton>
                                                 <SuggestionButton onClick={() => form.setValue('meditation', '10 minutes daily')}>10 mins daily</SuggestionButton>
-                                                <SuggestionButton onClick={() => form.setValue('meditation', '20 minutes daily, twice a day')}>20 mins daily</d:SuggestionButton>
+                                                <SuggestionButton onClick={() => form.setValue('meditation', '20 minutes daily, twice a day')}>20 mins daily</SuggestionButton>
                                             </div>
                                             <FormMessage />
                                         </FormItem>
@@ -243,5 +241,3 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
         </Dialog>
     );
 }
-
-    
