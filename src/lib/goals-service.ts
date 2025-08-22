@@ -2,7 +2,7 @@
 
 import { db, auth } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
-import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task } from "@/types";
+import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate } from "@/types";
 import { createUserWithEmailAndPassword, signInAnonymously } from "firebase/auth";
 
 // Firestore data converter for Users
@@ -154,6 +154,25 @@ const scheduleConverter = {
     }
 };
 
+const scheduleTemplateConverter = {
+    toFirestore: (template: Omit<ScheduleTemplate, 'id' | 'createdAt'>) => {
+        return {
+            ...template,
+            createdAt: Timestamp.now(),
+        };
+    },
+    fromFirestore: (snapshot: any, options: any): ScheduleTemplate => {
+        const data = snapshot.data(options);
+        return {
+            id: snapshot.id,
+            name: data.name,
+            type: data.type,
+            data: data.data,
+            createdAt: data.createdAt,
+        };
+    }
+};
+
 // Firestore data converter for Notifications
 const notificationConverter = {
   toFirestore: (notification: Omit<Notification, 'id'>) => {
@@ -192,6 +211,10 @@ const getSchedulesCollection = (userId: string) => {
     return collection(db, "users", userId, "schedules").withConverter(scheduleConverter);
 }
 
+const getScheduleTemplatesCollection = (userId: string) => {
+    return collection(db, "users", userId, "schedule_templates").withConverter(scheduleTemplateConverter);
+}
+
 const getNotificationsCollection = (userId: string) => {
     return collection(db, "users", userId, "notifications").withConverter(notificationConverter);
 };
@@ -211,15 +234,18 @@ export const findUserByTelegramId = async (telegramId: number): Promise<AppUser 
 }
 
 export const createUserFromTelegram = async (telegramUser: {id: number, first_name: string, last_name?: string, username?: string}): Promise<AppUser> => {
+    // This function creates a user document in Firestore, NOT a Firebase Auth user.
+    // The Firebase Auth user must be created separately.
     const usersCollection = getUsersCollection();
     
     // Using email as a unique identifier for Firebase Auth
     const email = `${telegramUser.username || telegramUser.id}@telegram.user`;
-    const password = Math.random().toString(36).slice(-8); // Generate a random password
-
-    // Create a Firebase Auth user
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    
+    // This is a placeholder, in a real app you'd need a secure way to handle this
+    // For now, we assume an auth user is created elsewhere and we just store the profile
+    const userCredential = await signInAnonymously(auth);
     const firebaseUser = userCredential.user;
+
 
     const newUser: AppUser & { telegramId: number } = {
         uid: firebaseUser.uid,
@@ -393,11 +419,11 @@ export const deleteTask = async (userId: string, taskId: string): Promise<void> 
 // --- SCHEDULE-RELATED FUNCTIONS ---
 
 // Save a weekly schedule
-export const saveSchedule = async (userId: string, schedule: WeeklySchedule): Promise<void> => {
+export const saveSchedule = async (userId: string, schedule: DailySchedule[]): Promise<void> => {
     const schedulesCollection = getSchedulesCollection(userId);
     // We use a fixed ID to ensure only one schedule per user.
     const docRef = doc(schedulesCollection, 'current_week');
-    await setDoc(docRef, schedule);
+    await setDoc(docRef, { scheduleData: schedule });
 };
 
 // Get the current weekly schedule
@@ -410,6 +436,25 @@ export const getSchedule = async (userId: string): Promise<WeeklySchedule | null
     }
     return null;
 };
+
+// --- SCHEDULE TEMPLATE FUNCTIONS ---
+
+export const getScheduleTemplates = async (userId: string): Promise<ScheduleTemplate[]> => {
+    const templatesCollection = getScheduleTemplatesCollection(userId);
+    const snapshot = await getDocs(query(templatesCollection, orderBy("createdAt", "desc")));
+    return snapshot.docs.map(doc => doc.data());
+};
+
+export const addScheduleTemplate = async (userId: string, templateData: Omit<ScheduleTemplate, 'id' | 'createdAt'>): Promise<void> => {
+    const templatesCollection = getScheduleTemplatesCollection(userId);
+    await addDoc(templatesCollection, templateData);
+};
+
+export const deleteScheduleTemplate = async (userId: string, templateId: string): Promise<void> => {
+    const docRef = doc(getScheduleTemplatesCollection(userId), templateId);
+    await deleteDoc(docRef);
+};
+
 
 
 // --- GOAL TEMPLATE FUNCTIONS ---
@@ -489,4 +534,4 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
   await batch.commit();
 };
 
-export type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task };
+export type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate };

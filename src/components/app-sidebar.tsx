@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutDashboard, KanbanSquare, Zap, Library, User, Settings, LogOut, HelpCircle, Flag, ListTodo } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Zap, Library, User, Settings, LogOut, HelpCircle, Flag, ListTodo, Send } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import {
@@ -118,6 +118,12 @@ export function AppSidebar() {
                         <Button variant="ghost" className="w-full justify-start">
                             <Settings className="mr-2 h-4 w-4" />
                             Settings
+                        </Button>
+                         <Button variant="ghost" className="w-full justify-start" asChild>
+                            <Link href="/link-telegram">
+                                <Send className="mr-2 h-4 w-4" />
+                                Link Telegram
+                            </Link>
                         </Button>
                         <Button variant="ghost" className="w-full justify-start">
                             <HelpCircle className="mr-2 h-4 w-4" />
