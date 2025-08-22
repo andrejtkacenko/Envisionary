@@ -92,6 +92,11 @@ const taskConverter = {
         const data: any = { ...task };
         if (task.dueDate) {
             data.dueDate = Timestamp.fromDate(task.dueDate);
+        } else {
+            delete data.dueDate
+        }
+        if (!data.createdAt) {
+            data.createdAt = Timestamp.now();
         }
         return data;
     },
@@ -101,6 +106,7 @@ const taskConverter = {
             id: snapshot.id,
             ...data,
             dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : undefined,
+            createdAt: data.createdAt,
         };
         return task;
     },
@@ -304,6 +310,15 @@ export const getTasks = (
     return unsubscribe;
 };
 
+// Get a one-time snapshot of tasks (for server-side operations)
+export const getTasksSnapshot = async (userId: string): Promise<Task[]> => {
+    const tasksCollection = getTasksCollection(userId);
+    const q = query(tasksCollection, orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data());
+};
+
+
 // Add a single task
 export const addTask = async (userId: string, taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task> => {
     const tasksCollection = getTasksCollection(userId);
@@ -433,5 +448,3 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
 };
 
 export type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task };
-
-    

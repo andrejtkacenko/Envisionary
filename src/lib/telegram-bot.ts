@@ -1,5 +1,6 @@
+
 import { Bot } from "grammy";
-import { addTask, getTasks } from "./goals-service";
+import { addTask, getTasksSnapshot } from "./goals-service"; // Changed getTasks to getTasksSnapshot
 import type { Task } from "@/types";
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -33,18 +34,8 @@ if (bot) {
         const mockUserId = "telegram-user"; 
         
         try {
-            let tasks: Task[] = [];
-            
-            const unsubscribe = getTasks(mockUserId, (userTasks) => {
-                tasks = userTasks;
-            }, (error) => {
-                console.error(error);
-                ctx.reply("Sorry, there was an error fetching your tasks.");
-            });
-
-            // Let's give it a moment to fetch the tasks.
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            unsubscribe();
+            // Use the new snapshot function for a one-time fetch
+            const tasks = await getTasksSnapshot(mockUserId);
 
             if (tasks.length === 0) {
                 ctx.reply("You have no tasks. Send a message to create one!");
