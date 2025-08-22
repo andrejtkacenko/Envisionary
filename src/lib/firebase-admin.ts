@@ -1,35 +1,36 @@
 
+require('dotenv').config();
 import * as admin from 'firebase-admin';
 
 let serviceAccount: admin.ServiceAccount | null = null;
 
 try {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-      // Vercel might pass it as a Base64 encoded string, or it could be a direct JSON string.
-      // We try to handle both.
-      if (key.startsWith('{')) {
-          serviceAccount = JSON.parse(key);
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (serviceAccountKey) {
+      if (serviceAccountKey.startsWith('{')) {
+          serviceAccount = JSON.parse(serviceAccountKey);
       } else {
-          serviceAccount = JSON.parse(Buffer.from(key, 'base64').toString('utf-8'));
+          serviceAccount = JSON.parse(Buffer.from(serviceAccountKey, 'base64').toString('utf-8'));
       }
+  } else {
+    console.warn("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
   }
 } catch (e) {
-    console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY", e);
+    console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", e);
 }
 
 
 if (!admin.apps.length) {
-  if (!serviceAccount) {
-    console.warn("Firebase Admin SDK not initialized. Service account key is missing or malformed. Some server-side Firebase operations might fail.");
-  } else {
+  if (serviceAccount) {
      try {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
      } catch (e) {
-        console.error("Firebase Admin SDK initialization failed", e);
+        console.error("Firebase Admin SDK initialization failed:", e);
      }
+  } else {
+    console.warn("Firebase Admin SDK not initialized because the service account key is missing or malformed. Server-side Firebase operations will fail.");
   }
 }
 
