@@ -5,6 +5,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from '@/context/AuthContext';
 import { AppSidebar } from "@/components/app-sidebar";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const fontInter = Inter({ 
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({
             </div>
         </AuthProvider>
         <Toaster />
+        <SpeedInsights />
       </body>
     </html>
   );
