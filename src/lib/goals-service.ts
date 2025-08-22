@@ -1,7 +1,9 @@
 
-import { db } from "@/lib/firebase";
+
+import { db, auth } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task } from "@/types";
+import { signInAnonymously } from "firebase/auth";
 
 // Firestore data converter for Users
 const userConverter = {
@@ -10,6 +12,7 @@ const userConverter = {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
+            telegramId: (user as any).telegramId, // Store telegramId if exists
         };
     },
     fromFirestore: (snapshot: any, options: any): AppUser => {
@@ -18,6 +21,7 @@ const userConverter = {
             uid: data.uid,
             email: data.email,
             displayName: data.displayName,
+            ...data
         };
     }
 };
@@ -194,6 +198,33 @@ const getNotificationsCollection = (userId: string) => {
 
 
 // --- USER-RELATED FUNCTIONS ---
+
+// Get or create a user mapping for a Telegram user
+export const getOrCreateUserForTelegram = async (telegramId: string, firstName: string, username?: string): Promise<AppUser> => {
+    const usersCollection = getUsersCollection();
+    const q = query(usersCollection, where("telegramId", "==", telegramId), limit(1));
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+        // User already exists
+        return snapshot.docs[0].data();
+    } else {
+        // User does not exist, create a new anonymous user in Firebase Auth
+        const userCredential = await signInAnonymously(auth);
+        const firebaseUser = userCredential.user;
+
+        // Create a profile for them in Firestore
+        const newUser: AppUser & { telegramId: string } = {
+            uid: firebaseUser.uid,
+            email: null,
+            displayName: username || firstName,
+            telegramId: telegramId,
+        };
+
+        await setDoc(doc(usersCollection, firebaseUser.uid), newUser);
+        return newUser;
+    }
+};
 
 
 // --- GOAL-RELATED FUNCTIONS ---
