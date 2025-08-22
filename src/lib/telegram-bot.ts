@@ -13,9 +13,9 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 const webAppUrl = process.env.NEXT_PUBLIC_APP_URL;
 
 
-const getWebAppKeyboard = (userId: number) => {
+const getWebAppKeyboard = () => {
     return Markup.inlineKeyboard([
-      Markup.button.webApp('Open App', `${webAppUrl}/telegram?userId=${userId}`),
+      Markup.button.webApp('Open App', `${webAppUrl}/telegram`),
     ]);
 }
 
@@ -30,7 +30,7 @@ bot.use(async (ctx, next) => {
             // If user doesn't exist, prompt them to open the web app to create an account.
             ctx.reply(
                 'Welcome! To get started, please open our web app to create and link your account.', 
-                getWebAppKeyboard(from.id)
+                getWebAppKeyboard()
             );
             return; // Stop processing further
         }
@@ -48,7 +48,7 @@ bot.start((ctx) => {
 `Welcome to your AI Goal Coach!
 
 You can manage your tasks directly from Telegram or by opening our web app.`,
-    getWebAppKeyboard(ctx.from.id)
+    getWebAppKeyboard()
     );
 });
 
@@ -60,7 +60,7 @@ bot.help((ctx) => {
 /help - Show this help message.
 
 Open the web app for full functionality.`,
-    getWebAppKeyboard(ctx.from.id)
+    getWebAppKeyboard()
     );
 });
 
@@ -71,7 +71,7 @@ bot.command('tasks', async (ctx) => {
         const tasks = await getTasksSnapshot(userId);
         
         if (tasks.length === 0) {
-            ctx.reply("You have no tasks! Send a message to add one or open the app.", getWebAppKeyboard(ctx.from.id));
+            ctx.reply("You have no tasks! Send a message to add one or open the app.", getWebAppKeyboard());
             return;
         }
 
