@@ -49,18 +49,18 @@ export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
 // Types for the new Weekly Planner feature
 export type ScheduledItem = {
   id: string;
-  time: string;
+  time: string; // e.g., "09:00 AM - 10:00 AM"
   task: string;
-  priority?: GoalPriority;
+  priority: GoalPriority;
 };
 
 export type DailySchedule = {
-  day: string;
+  day: string; // e.g., "Monday"
   schedule: ScheduledItem[];
 };
 
 export type WeeklySchedule = {
-  id: string;
+  id: string; // e.g., "current_week"
   scheduleData: DailySchedule[];
   createdAt?: Timestamp;
 };
@@ -75,22 +75,6 @@ export type GoalTemplate = {
     authorId: string;
     authorName: string;
     likes: number;
-    createdAt: Timestamp;
-};
-
-// Represents a daily goal with tasks that have estimated times
-export type DailyGoalTask = {
-    id: string;
-    title: string;
-    estimatedTime?: string;
-};
-
-// Represents a schedule template stored in Firestore
-export type ScheduleTemplate = {
-    id: string;
-    name: string;
-    type: 'day' | 'week';
-    data: DailySchedule[];
     createdAt: Timestamp;
 };
     

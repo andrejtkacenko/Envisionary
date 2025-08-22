@@ -21,11 +21,13 @@ const GenerateScheduleInputSchema = z.object({
         estimatedTime: z.string().optional(),
     })).describe("A list of user's goals to be included in the schedule."),
     preferences: z.object({
-        workHours: z.string().describe("User's typical work or study hours (e.g., 9 AM - 5 PM)."),
-        sleepHours: z.string().describe("User's typical sleep schedule (e.g., 11 PM - 7 AM)."),
-        training: z.string().describe("User's training or exercise preferences (e.g., 3 times a week in the morning)."),
-        meditation: z.string().describe("User's meditation or mindfulness preferences (e.g., 15 minutes daily)."),
-        other: z.string().optional().describe("Any other constraints or preferences."),
+        priorities: z.string().describe("User's main priorities for the week (e.g., 'Focus on work, but make time for learning Spanish in the evenings')."),
+        workHours: z.string().describe("User's typical work or study hours (e.g., '9 AM - 5 PM, Mon-Fri')."),
+        sleepHours: z.string().describe("User's typical sleep schedule (e.g., '11 PM - 7 AM')."),
+        mealHours: z.string().describe("User's preferred meal times (e.g., 'Lunch around 1 PM, Dinner around 7 PM')."),
+        restHours: z.string().describe("User's preferences for rest and leisure time (e.g., 'Need short breaks during work, and want evenings free on weekends')."),
+        habits: z.string().describe("Any regular habits to incorporate (e.g., 'Gym 3 times a week in the morning, daily 15-min meditation')."),
+        commitments: z.string().describe("Any fixed, non-negotiable commitments (e.g., 'Team meeting every Monday at 10 AM, Kid's soccer practice Wed & Fri at 5 PM')."),
     }).describe("User's personal preferences for scheduling."),
 });
 export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
@@ -51,29 +53,32 @@ const prompt = ai.definePrompt({
 - **{{title}}**{{#if estimatedTime}} (Estimated Time: {{estimatedTime}}){{/if}}
 {{/each}}
 {{#if (eq goals.length 0)}}
-- No specific goals provided. Create a balanced general wellness and productivity schedule.
+- No specific goals provided. Create a balanced general wellness and productivity schedule based on preferences.
 {{/if}}
 
-**User's Preferences:**
+**User's Preferences & Priorities:**
+- **Main Priorities:** {{preferences.priorities}}
 - **Work/Study Hours:** {{preferences.workHours}}
 - **Sleep Schedule:** {{preferences.sleepHours}}
-- **Training/Exercise:** {{preferences.training}}
-- **Meditation/Mindfulness:** {{preferences.meditation}}
-{{#if preferences.other}}
-- **Other Notes:** {{preferences.other}}
-{{/if}}
+- **Habits to Include:** {{preferences.habits}}
+- **Fixed Commitments:** {{preferences.commitments}}
+- **Meal Times:** {{preferences.mealHours}}
+- **Rest & Leisure:** {{preferences.restHours}}
 
 **Instructions:**
 1.  **Create a full 7-day schedule** from Monday to Sunday.
 2.  **Integrate Goals:** Intelligently schedule tasks related to the user's goals. Pay close attention to estimated times to allocate appropriate time blocks. If a goal seems large, break it down into smaller, logical tasks within the schedule (e.g., "Work on 'Launch a Blog': Draft post outline").
-3.  **Incorporate Preferences:** Build the schedule around the user's stated work, sleep, training, and meditation habits. These are the fixed pillars of their week.
-4.  **Balance & Realism:** Ensure the schedule is not overwhelming. Include time for meals (Breakfast, Lunch, Dinner), breaks, and relaxation/free time. A packed schedule is an ineffective one.
+3.  **Incorporate Preferences:** Build the schedule around the user's stated preferences. These are the pillars of their week.
+    - Start by blocking out fixed commitments, then sleep, work hours, and meals.
+    - Weave in habits like exercise or meditation at appropriate times.
+    - Use the remaining time slots for goal-related tasks, guided by the user's main priorities.
+4.  **Balance & Realism:** Ensure the schedule is not overwhelming. Include time for breaks and relaxation/free time as requested. A packed schedule is an ineffective one.
 5.  **Structure the Output:** For each day, provide a list of scheduled items. Each item must have:
     - A unique \`id\` (string).
     - A specific time range (\`time\`, e.g., "08:00 AM - 09:00 AM").
     - The name of the \`task\`.
     - A \`priority\` level ("low", "medium", or "high"). High for critical tasks, medium for regular work, low for breaks/flexible items.
-6.  **Be Smart:** If a user wants to train 3 times a week, spread it out (e.g., Mon, Wed, Fri). If they have daily meditation, schedule it at a consistent time, perhaps in the morning or evening.
+6.  **Be Smart:** If a user wants to train 3 times a week, spread it out (e.g., Mon, Wed, Fri). If they have daily habits, schedule them at a consistent time.
 7.  **Fill Gaps:** For any empty time slots, add reasonable default activities like "Review plans", "Tidy up workspace", or "Free time".
 `,
 });

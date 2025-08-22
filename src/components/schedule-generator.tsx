@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -26,11 +27,13 @@ interface ScheduleGeneratorProps {
 }
 
 const generatorSchema = z.object({
+  priorities: z.string().min(1, "Please describe your priorities."),
   workHours: z.string().min(1, "Please enter your work hours."),
   sleepHours: z.string().min(1, "Please enter your sleep hours."),
-  training: z.string().min(1, "Please describe your training habits."),
-  meditation: z.string().min(1, "Please describe your meditation habits."),
-  other: z.string().optional(),
+  habits: z.string().min(1, "Please describe your habits."),
+  commitments: z.string().min(1, "Please enter your commitments."),
+  mealHours: z.string().min(1, "Please describe your meal preferences."),
+  restHours: z.string().min(1, "Please describe your rest preferences."),
 });
 type GeneratorFormValues = z.infer<typeof generatorSchema>;
 
@@ -51,11 +54,13 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
     const form = useForm<GeneratorFormValues>({
         resolver: zodResolver(generatorSchema),
         defaultValues: { 
+            priorities: "Work is the main priority, but I want to dedicate evenings to learning.",
             workHours: "9 AM to 5 PM, Mon-Fri",
             sleepHours: "11 PM to 7 AM",
-            training: "3 times a week in the morning",
-            meditation: "10 minutes daily after waking up",
-            other: ""
+            habits: "Gym 3 times a week in the morning, daily 15-min meditation.",
+            commitments: "Team meeting every Monday at 10 AM.",
+            mealHours: "Lunch around 1 PM, Dinner around 7 PM.",
+            restHours: "Short breaks during work, and want evenings free on weekends.",
         },
     });
     
@@ -121,9 +126,19 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
                     <form onSubmit={form.handleSubmit(handleGenerate)}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4">
                             {/* Left column for preferences */}
+                            <ScrollArea className="h-96 pr-4">
                             <div className="space-y-6">
-                                <h4 className="text-base font-semibold text-muted-foreground">Your Lifestyle Preferences</h4>
-                               
+                                <FormField
+                                    control={form.control}
+                                    name="priorities"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Priorities</FormLabel>
+                                            <FormControl><Textarea placeholder="e.g., Focus on work, with evenings for learning." {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                 <FormField
                                     control={form.control}
                                     name="workHours"
@@ -134,8 +149,29 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
                                             <div className="flex flex-wrap gap-2 pt-1">
                                                 <SuggestionButton onClick={() => form.setValue('workHours', '9 AM to 5 PM, Mon-Fri')}>9-5 Full-time</SuggestionButton>
                                                 <SuggestionButton onClick={() => form.setValue('workHours', 'Flexible, about 8 hours a day')}>Flexible Hours</SuggestionButton>
-                                                <SuggestionButton onClick={() => form.setValue('workHours', 'Part-time, 4 hours a day')}>Part-time</SuggestionButton>
                                             </div>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="habits"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Habits</FormLabel>
+                                            <FormControl><Input placeholder="e.g., Gym 3x a week, read 30 mins daily" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="commitments"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Fixed Commitments</FormLabel>
+                                            <FormControl><Input placeholder="e.g., Team meeting Mon 10am" {...field} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -145,12 +181,11 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
                                     name="sleepHours"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Sleep Schedule</FormLabel>
+                                            <FormLabel>Desired Sleep Hours</FormLabel>
                                             <FormControl><Input placeholder="e.g., 11 PM to 7 AM" {...field} /></FormControl>
-                                            <div className="flex flex-wrap gap-2 pt-1">
+                                             <div className="flex flex-wrap gap-2 pt-1">
                                                 <SuggestionButton onClick={() => form.setValue('sleepHours', '10 PM to 6 AM')}>10 PM - 6 AM</SuggestionButton>
                                                 <SuggestionButton onClick={() => form.setValue('sleepHours', '11 PM to 7 AM')}>11 PM - 7 AM</SuggestionButton>
-                                                <SuggestionButton onClick={() => form.setValue('sleepHours', '12 AM to 8 AM')}>12 AM - 8 AM</SuggestionButton>
                                             </div>
                                             <FormMessage />
                                         </FormItem>
@@ -158,48 +193,28 @@ export function ScheduleGenerator({ children, onScheduleGenerated, allGoals }: S
                                 />
                                 <FormField
                                     control={form.control}
-                                    name="training"
+                                    name="mealHours"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Training / Exercise</FormLabel>
-                                            <FormControl><Input placeholder="e.g., 3 times a week in the morning" {...field} /></FormControl>
-                                             <div className="flex flex-wrap gap-2 pt-1">
-                                                <SuggestionButton onClick={() => form.setValue('training', '3 times a week')}>3x a week</SuggestionButton>
-                                                <SuggestionButton onClick={() => form.setValue('training', '5 times a week')}>5x a week</SuggestionButton>
-                                                <SuggestionButton onClick={() => form.setValue('training', 'Daily light exercise')}>Daily light exercise</SuggestionButton>
-                                            </div>
+                                            <FormLabel>Meal Times</FormLabel>
+                                            <FormControl><Input placeholder="e.g., Lunch at 1pm, dinner at 7pm" {...field} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                                 <FormField
                                     control={form.control}
-                                    name="meditation"
+                                    name="restHours"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Meditation / Mindfulness</FormLabel>
-                                            <FormControl><Input placeholder="e.g., 10 minutes daily" {...field} /></FormControl>
-                                             <div className="flex flex-wrap gap-2 pt-1">
-                                                <SuggestionButton onClick={() => form.setValue('meditation', 'None')}>None</SuggestionButton>
-                                                <SuggestionButton onClick={() => form.setValue('meditation', '10 minutes daily')}>10 mins daily</SuggestionButton>
-                                                <SuggestionButton onClick={() => form.setValue('meditation', '20 minutes daily, twice a day')}>20 mins daily</SuggestionButton>
-                                            </div>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="other"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Other Constraints or Notes</FormLabel>
-                                            <FormControl><Textarea placeholder="e.g., I have a long commute, Lunch breaks are flexible" {...field} /></FormControl>
+                                            <FormLabel>Rest & Leisure</FormLabel>
+                                            <FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             </div>
+                            </ScrollArea>
                             
                             {/* Right column for goal selection */}
                             <div>
