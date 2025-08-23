@@ -1,10 +1,9 @@
 
 
-import { db, auth } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate } from "@/types";
-import { adminApp } from "@/lib/firebase-admin";
-import { getAuth } from "firebase-admin/auth";
+
 
 // Firestore data converter for Users
 const userConverter = {
@@ -192,10 +191,6 @@ const notificationConverter = {
   },
 };
 
-const getUsersCollection = () => {
-    return collection(db, "users").withConverter(userConverter);
-}
-
 const getGoalsCollection = (userId: string) => {
     return collection(db, "users", userId, "goals").withConverter(goalConverter);
 }
@@ -219,67 +214,6 @@ const getScheduleTemplatesCollection = (userId: string) => {
 const getNotificationsCollection = (userId: string) => {
     return collection(db, "users", userId, "notifications").withConverter(notificationConverter);
 };
-
-
-// --- USER-RELATED FUNCTIONS ---
-
-export const findUserByTelegramId = async (telegramId: number): Promise<AppUser | null> => {
-    const usersCollection = getUsersCollection();
-    const q = query(usersCollection, where("telegramId", "==", telegramId), limit(1));
-    const snapshot = await getDocs(q);
-
-    if (!snapshot.empty) {
-        return snapshot.docs[0].data();
-    }
-    return null;
-}
-
-export const createUserFromTelegramData = async (telegramData: any): Promise<AppUser> => {
-    if (!adminApp) throw new Error("Firebase Admin not initialized");
-    const auth = getAuth(adminApp);
-    const usersCollection = getUsersCollection();
-    
-    // Use Telegram ID as UID in Firebase Auth for simplicity
-    const uid = `tg-${telegramData.id}`;
-    
-    let firebaseUser;
-    try {
-        firebaseUser = await auth.createUser({
-            uid: uid,
-            displayName: `${telegramData.first_name} ${telegramData.last_name || ''}`.trim(),
-            photoURL: telegramData.photo_url,
-        });
-    } catch (error: any) {
-        if (error.code === 'auth/uid-already-exists') {
-            // User already exists in Firebase Auth, just fetch them
-            firebaseUser = await auth.getUser(uid);
-        } else {
-            throw error; // Re-throw other errors
-        }
-    }
-
-    const newUser: AppUser = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || null, // Telegram doesn't provide email
-        displayName: firebaseUser.displayName || 'Telegram User',
-        telegramId: telegramData.id,
-    };
-
-    // Create or update the user document in Firestore
-    await setDoc(doc(usersCollection, firebaseUser.uid), newUser, { merge: true });
-    
-    return newUser;
-};
-
-export const linkTelegramToUser = async (userId: string, telegramId: number) => {
-    const userRef = doc(getUsersCollection(), userId);
-    const existingUser = await findUserByTelegramId(telegramId);
-    if (existingUser && existingUser.uid !== userId) {
-        throw new Error("This Telegram account is already linked to another user.");
-    }
-    await setDoc(userRef, { telegramId: telegramId }, { merge: true });
-}
-
 
 // --- GOAL-RELATED FUNCTIONS ---
 

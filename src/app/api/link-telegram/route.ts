@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { findUserByTelegramId, linkTelegramToUser } from '@/lib/goals-service';
+import { findUserByTelegramId, linkTelegramToUser } from '@/lib/firebase-admin-service';
 
 export async function POST(req: NextRequest) {
     try {

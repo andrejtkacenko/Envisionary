@@ -1,7 +1,8 @@
 
 
 import { Telegraf, Markup } from 'telegraf';
-import { getTasksSnapshot, addTask, findUserByTelegramId } from './goals-service';
+import { getTasksSnapshot, addTask } from './goals-service';
+import { findUserByTelegramId } from './firebase-admin-service';
 
 if (!process.env.TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN is not defined in the environment variables");

@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { findUserByTelegramId, createUserFromTelegramData } from '@/lib/goals-service';
+import { findUserByTelegramId, createUserFromTelegramData } from '@/lib/firebase-admin-service';
 import { getAuth } from 'firebase-admin/auth';
 import { adminApp } from '@/lib/firebase-admin';
 
