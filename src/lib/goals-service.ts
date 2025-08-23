@@ -3,8 +3,8 @@
 import { db, auth } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate } from "@/types";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { randomBytes } from "crypto";
+import { adminApp } from "@/lib/firebase-admin";
+import { getAuth } from "firebase-admin/auth";
 
 // Firestore data converter for Users
 const userConverter = {
@@ -234,42 +234,49 @@ export const findUserByTelegramId = async (telegramId: number): Promise<AppUser 
     return null;
 }
 
-export const createUserFromTelegram = async (telegramUser: {id: number, first_name: string, last_name?: string, username?: string}): Promise<AppUser> => {
+export const createUserFromTelegramData = async (telegramData: any): Promise<AppUser> => {
+    if (!adminApp) throw new Error("Firebase Admin not initialized");
+    const auth = getAuth(adminApp);
     const usersCollection = getUsersCollection();
     
-    // Using email as a unique identifier for Firebase Auth.
-    // If a username is not available, a unique email is generated.
-    const email = `${telegramUser.username || `tg_${telegramUser.id}`}@telegram.user`;
+    // Use Telegram ID as UID in Firebase Auth for simplicity
+    const uid = `tg-${telegramData.id}`;
     
-    // Generate a secure random password for the new user.
-    // This password won't be used directly by the user but is required for account creation.
-    const password = randomBytes(16).toString('hex');
-
+    let firebaseUser;
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const firebaseUser = userCredential.user;
-
-        const newUser: AppUser & { telegramId: number } = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: telegramUser.first_name + (telegramUser.last_name ? ` ${telegramUser.last_name}`: ''),
-            telegramId: telegramUser.id
-        };
-
-        await setDoc(doc(usersCollection, firebaseUser.uid), newUser);
-        return newUser;
+        firebaseUser = await auth.createUser({
+            uid: uid,
+            displayName: `${telegramData.first_name} ${telegramData.last_name || ''}`.trim(),
+            photoURL: telegramData.photo_url,
+        });
     } catch (error: any) {
-        // Handle cases where the email might already exist (e.g., from a previous manual creation)
-        if (error.code === 'auth/email-already-in-use') {
-            console.warn(`Email ${email} already in use. A user profile may already exist.`);
-            // In a real-world scenario, you might want to find and return the existing user here.
+        if (error.code === 'auth/uid-already-exists') {
+            // User already exists in Firebase Auth, just fetch them
+            firebaseUser = await auth.getUser(uid);
+        } else {
+            throw error; // Re-throw other errors
         }
-        throw error; // Re-throw the error to be handled by the caller.
     }
-}
+
+    const newUser: AppUser = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || null, // Telegram doesn't provide email
+        displayName: firebaseUser.displayName || 'Telegram User',
+        telegramId: telegramData.id,
+    };
+
+    // Create or update the user document in Firestore
+    await setDoc(doc(usersCollection, firebaseUser.uid), newUser, { merge: true });
+    
+    return newUser;
+};
 
 export const linkTelegramToUser = async (userId: string, telegramId: number) => {
     const userRef = doc(getUsersCollection(), userId);
+    const existingUser = await findUserByTelegramId(telegramId);
+    if (existingUser && existingUser.uid !== userId) {
+        throw new Error("This Telegram account is already linked to another user.");
+    }
     await setDoc(userRef, { telegramId: telegramId }, { merge: true });
 }
 

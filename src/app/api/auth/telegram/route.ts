@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { findUserByTelegramId, createUserFromTelegram } from '@/lib/goals-service';
+import { findUserByTelegramId, createUserFromTelegramData } from '@/lib/goals-service';
 import { getAuth } from 'firebase-admin/auth';
 import { adminApp } from '@/lib/firebase-admin';
 
@@ -11,7 +11,8 @@ if (!BOT_TOKEN) {
   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
 }
 
-const validateHash = (data: URLSearchParams, botToken: string): boolean => {
+// Function to validate hash for Telegram Mini App (Web App)
+const validateWebAppHash = (data: URLSearchParams, botToken: string): boolean => {
     const hash = data.get('hash');
     if (!hash) return false;
 
@@ -28,41 +29,75 @@ const validateHash = (data: URLSearchParams, botToken: string): boolean => {
     return checkHash === hash;
 };
 
+// Function to validate hash for Telegram Login Widget
+const validateLoginWidgetHash = (data: Record<string, any>, botToken: string): boolean => {
+    const hash = data.hash;
+    if (!hash) return false;
+
+    const dataToCheck = Object.keys(data)
+        .filter(key => key !== 'hash')
+        .map(key => `${key}=${data[key]}`)
+        .sort()
+        .join('\n');
+    
+    const secretKey = crypto.createHash('sha256').update(botToken).digest();
+    const checkHash = crypto.createHmac('sha256', secretKey).update(dataToCheck).digest('hex');
+
+    return checkHash === hash;
+};
+
 
 export async function POST(req: NextRequest) {
+    if (!adminApp) {
+        return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+    }
+    
     try {
         const body = await req.text();
-        const params = new URLSearchParams(body);
-        const isValid = validateHash(params, BOT_TOKEN!);
+        let telegramUser: any;
+        let isValid = false;
 
-        if (!isValid) {
-            return NextResponse.json({ error: 'Invalid hash' }, { status: 401 });
+        // Try to parse as JSON for Login Widget
+        try {
+            const jsonData = JSON.parse(body);
+            if (jsonData.telegramData) {
+                isValid = validateLoginWidgetHash(jsonData.telegramData, BOT_TOKEN!);
+                if (isValid) {
+                    telegramUser = jsonData.telegramData;
+                }
+            }
+        } catch (e) {
+            // Not JSON, assume it's URL-encoded for Mini App
+        }
+
+        // If not parsed as JSON, try URL-encoded
+        if (!telegramUser) {
+             const params = new URLSearchParams(body);
+             isValid = validateWebAppHash(params, BOT_TOKEN!);
+             const userJson = params.get('user');
+             if (isValid && userJson) {
+                telegramUser = JSON.parse(userJson);
+             }
+        }
+
+
+        if (!isValid || !telegramUser) {
+            return NextResponse.json({ error: 'Invalid hash or user data not found' }, { status: 401 });
         }
         
-        const userJson = params.get('user');
-        if (!userJson) {
-            return NextResponse.json({ error: 'User data not found' }, { status: 400 });
-        }
-        
-        const telegramUser = JSON.parse(userJson);
-
         let appUser = await findUserByTelegramId(telegramUser.id);
         
         if (!appUser) {
-            // User exists in Telegram but not in our DB or is not linked.
-            // Instruct them to log in and link their account.
-            return NextResponse.json({ 
-                error: 'Account not linked', 
-                message: 'Please log in to your Zenith Flow account via browser and link your Telegram account from the profile settings.' 
-            }, { status: 404 });
+            // If user doesn't exist, create one
+            appUser = await createUserFromTelegramData(telegramUser);
         }
 
-        const auth = getAuth(adminApp!);
-        const customToken = await auth.createCustomToken(appUser.uid);
+        const auth = getAuth(adminApp);
+        const customToken = await auth.createCustomToken(appUser.uid, { telegramId: appUser.telegramId });
         
         return NextResponse.json({ token: customToken, user: appUser });
 
-    } catch (error) => {
+    } catch (error) {
         console.error('Error in telegram auth:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

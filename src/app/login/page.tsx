@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { TelegramLoginButton } from "@/components/telegram-login-button";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -38,11 +39,12 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, signInWithToken } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isTelegramLoading, setIsTelegramLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -80,6 +82,34 @@ export default function LoginPage() {
       setIsGoogleLoading(false);
     }
   }
+  
+  const handleTelegramLogin = async (telegramData: any) => {
+      setIsTelegramLoading(true);
+      try {
+        const response = await fetch('/api/auth/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramData }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Telegram login failed.');
+        }
+
+        await signInWithToken(result.token);
+        router.push('/');
+
+      } catch (error: any) {
+          toast({
+              variant: "destructive",
+              title: "Telegram Login Failed",
+              description: error.message,
+          });
+      } finally {
+          setIsTelegramLoading(false);
+      }
+  };
 
 
   return (
@@ -124,7 +154,7 @@ export default function LoginPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading || isTelegramLoading}>
                   {isLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </form>
@@ -136,9 +166,10 @@ export default function LoginPage() {
             </div>
           </div>
            <div className="space-y-2">
-              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading || isTelegramLoading}>
                 {isGoogleLoading ? 'Redirecting...' : 'Sign in with Google'}
               </Button>
+               <TelegramLoginButton onAuth={handleTelegramLogin} isLoading={isTelegramLoading} />
            </div>
         </CardContent>
         <CardFooter className="justify-center text-sm">
