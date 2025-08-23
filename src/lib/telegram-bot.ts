@@ -1,4 +1,5 @@
 
+
 import { Telegraf, Markup } from 'telegraf';
 import { getTasksSnapshot, addTask, findUserByTelegramId } from './goals-service';
 
@@ -13,24 +14,28 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 const webAppUrl = process.env.NEXT_PUBLIC_APP_URL;
 
 
-const getWebAppKeyboard = () => {
-    // This URL will open the main page, which will then handle the Telegram auth flow.
-    return Markup.inlineKeyboard([
-      Markup.button.webApp('Open App', `${webAppUrl}/?from=telegram`),
-    ]);
+const getWebAppKeyboard = (isLinked: boolean) => {
+    const buttons = [];
+    if (isLinked) {
+        buttons.push(Markup.button.webApp('Open App', `${webAppUrl}/?from=telegram`));
+    } else {
+        // This button will open the linking page.
+        buttons.push(Markup.button.webApp('Link Account', `${webAppUrl}/link-telegram`));
+    }
+    return Markup.inlineKeyboard(buttons);
 }
 
-// Middleware to ensure user has an account.
+// Middleware to check if the user is linked
 bot.use(async (ctx, next) => {
     const from = ctx.from;
-    if (!from) return; // Should not happen for messages/commands
+    if (!from) return;
 
     try {
         let user = await findUserByTelegramId(from.id);
         if (!user) {
             ctx.reply(
-                'Welcome! To get started, please open our web app to create and link your account.', 
-                getWebAppKeyboard()
+                'Welcome! To use me, you need to link your Telegram account to your Zenith Flow profile. Please open the web app to link your account.', 
+                getWebAppKeyboard(false)
             );
             return; // Stop processing further
         }
@@ -43,12 +48,21 @@ bot.use(async (ctx, next) => {
 });
 
 
-bot.start((ctx) => {
+bot.start(async (ctx) => {
+    const userId = (ctx as any).firebaseUser?.uid;
+    if (!userId) {
+        ctx.reply(
+            'Welcome! It looks like your account is not linked. Please link it to continue.', 
+            getWebAppKeyboard(false)
+        );
+        return;
+    }
+    
     ctx.reply(
-`Welcome to your AI Goal Coach!
+`Welcome back to your AI Goal Coach!
 
 You can manage your tasks directly from Telegram or by opening our web app.`,
-    getWebAppKeyboard()
+    getWebAppKeyboard(true)
     );
 });
 
@@ -60,7 +74,7 @@ bot.help((ctx) => {
 /help - Show this help message.
 
 Open the web app for full functionality.`,
-    getWebAppKeyboard()
+    getWebAppKeyboard(true)
     );
 });
 
@@ -71,7 +85,7 @@ bot.command('tasks', async (ctx) => {
         const tasks = await getTasksSnapshot(userId);
         
         if (tasks.length === 0) {
-            ctx.reply("You have no tasks! Send a message to add one or open the app.", getWebAppKeyboard());
+            ctx.reply("You have no tasks! Send a message to add one or open the app.", getWebAppKeyboard(true));
             return;
         }
 

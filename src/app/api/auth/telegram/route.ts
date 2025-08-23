@@ -49,15 +49,20 @@ export async function POST(req: NextRequest) {
         let appUser = await findUserByTelegramId(telegramUser.id);
         
         if (!appUser) {
-            appUser = await createUserFromTelegram(telegramUser);
+            // User exists in Telegram but not in our DB or is not linked.
+            // Instruct them to log in and link their account.
+            return NextResponse.json({ 
+                error: 'Account not linked', 
+                message: 'Please log in to your Zenith Flow account via browser and link your Telegram account from the profile settings.' 
+            }, { status: 404 });
         }
 
-        const auth = getAuth(adminApp);
+        const auth = getAuth(adminApp!);
         const customToken = await auth.createCustomToken(appUser.uid);
         
         return NextResponse.json({ token: customToken, user: appUser });
 
-    } catch (error) {
+    } catch (error) => {
         console.error('Error in telegram auth:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

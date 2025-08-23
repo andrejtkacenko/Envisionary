@@ -120,10 +120,10 @@ export function AppSidebar() {
                             Settings
                         </Button>
                          <Button variant="ghost" className="w-full justify-start" asChild>
-                            <Link href="/link-telegram">
+                            <a href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME}?start=link`} target="_blank" rel="noopener noreferrer">
                                 <Send className="mr-2 h-4 w-4" />
                                 Link Telegram
-                            </Link>
+                            </a>
                         </Button>
                         <Button variant="ghost" className="w-full justify-start">
                             <HelpCircle className="mr-2 h-4 w-4" />
