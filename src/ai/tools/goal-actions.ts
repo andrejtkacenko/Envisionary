@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -10,8 +11,8 @@ import { recommendGoals as recommendGoalsFlow, type RecommendGoalsInput, type Re
 import { suggestGoals as suggestGoalsFlow, type SuggestGoalsInput, type SuggestGoalsOutput } from '@/ai/flows/suggest-goals';
 import { breakDownGoal as breakDownGoalFlow, type BreakDownGoalInput, type BreakDownGoalOutput } from '@/ai/flows/break-down-goal';
 import { coachChat as coachChatFlow, type CoachChatInput, type CoachChatOutput } from '@/ai/flows/coach-chat';
-import { createGoal as createGoalAction, updateGoal as updateGoalAction, findGoals as findGoalsAction } from './goal-tools';
-import type { Goal, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate } from "@/types";
+import { createGoal as createGoalTool, updateGoal as updateGoalTool, findGoals as findGoalsTool } from './goal-tools';
+import type { Goal, GoalStatus } from "@/types";
 import { z } from 'zod';
 
 
@@ -43,15 +44,15 @@ const FindGoalsSchema = z.object({
 
 
 export async function createGoal(input: z.infer<typeof CreateGoalSchema>): Promise<Goal> {
-    return createGoalAction(input);
+    return createGoalTool(input);
 }
 
 export async function updateGoal(input: z.infer<typeof UpdateGoalSchema>): Promise<{ success: boolean }> {
-    return updateGoalAction(input);
+    return updateGoalTool(input);
 }
 
 export async function findGoals(input: z.infer<typeof FindGoalsSchema>): Promise<Goal[]> {
-    return findGoalsAction(input);
+    return findGoalsTool(input);
 }
 
 // --- AI Flow Server Actions ---
