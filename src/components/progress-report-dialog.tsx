@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import type { Goal } from "@/types";
-import { summarizeProgress } from "@/ai/flows/summarize-progress";
+import { summarizeProgress } from "@/ai/tools/goal-actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

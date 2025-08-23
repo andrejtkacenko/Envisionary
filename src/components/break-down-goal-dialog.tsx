@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Loader2, Sparkles, Wand2, Plus, X, Clock, ListX } from "lucide-react";
-import { breakDownGoal, BreakDownGoalOutput } from "@/ai/flows/break-down-goal";
+import { breakDownGoal } from "@/ai/tools/goal-actions";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,11 @@ interface BreakDownGoalDialogProps {
   onSubGoalsAdd: (subGoals: SubGoal[]) => void;
 }
 
-export type SubGoal = BreakDownGoalOutput["subGoals"][0] & { estimatedTime?: string };
+export type SubGoal = {
+  title: string;
+  description: string;
+  estimatedTime?: string;
+};
 
 export function BreakDownGoalDialog({ goal, children, onSubGoalsAdd }: BreakDownGoalDialogProps) {
   const [open, setOpen] = useState(false);

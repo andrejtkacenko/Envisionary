@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -5,7 +6,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { suggestGoals } from "@/ai/flows/suggest-goals";
+import { suggestGoals } from "@/ai/tools/goal-actions";
 import { Button } from "@/components/ui/button";
 import {
   Form,

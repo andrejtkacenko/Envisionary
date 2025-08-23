@@ -7,10 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
-import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
-import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-actions';
+import { coachChat, createGoal, updateGoal, findGoals, summarizeProgress } from '@/ai/tools/goal-actions';
 import { getSchedule } from '@/ai/tools/schedule-actions';
-import { summarizeProgress, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
 import { getGoalsSnapshot } from '@/lib/goals-service';
 import type { Goal } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -68,7 +66,7 @@ export default function CoachPage() {
     const [userInput, setUserInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
-    const [analysisResult, setAnalysisResult] = useState<SummarizeProgressOutput | null>(null);
+    const [analysisResult, setAnalysisResult] = useState<{summary: string} | null>(null);
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [goals, setGoals] = useState<Goal[]>([]);
     
@@ -140,7 +138,7 @@ export default function CoachPage() {
 
         try {
             const result = await coachChat({
-                history: newHistory,
+                history: newHistory.map(m => ({ role: m.role, content: m.content, toolRequest: m.toolRequest, toolResult: m.toolResult })),
                 message: message,
                 userId: user.uid,
             });

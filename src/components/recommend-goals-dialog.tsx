@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Sparkles, Plus } from "lucide-react";
 import type { Goal } from "@/types";
-import { recommendGoals, RecommendGoalsOutput } from "@/ai/flows/recommend-goals";
+import { recommendGoals } from "@/ai/tools/goal-actions";
 import { useAuth } from "@/context/AuthContext";
 import { addGoals } from "@/lib/goals-service";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,12 @@ interface RecommendGoalsDialogProps {
   children: React.ReactNode;
 }
 
-type RecommendedGoal = RecommendGoalsOutput["recommendations"][0];
+type RecommendedGoal = {
+    title: string;
+    description: string;
+    project: string;
+    priority: "low" | "medium" | "high";
+};
 
 export function RecommendGoalsDialog({ allGoals, children }: RecommendGoalsDialogProps) {
   const [open, setOpen] = useState(false);

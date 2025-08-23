@@ -18,7 +18,7 @@ import {
 import { PieChart, Pie, Cell } from "recharts"
 import type { Goal } from "@/types"
 import { getGoals } from "@/lib/goals-service"
-import { summarizeProgress, SummarizeProgressOutput } from "@/ai/flows/summarize-progress";
+import { summarizeProgress } from "@/ai/tools/goal-actions";
 import { useToast } from "@/hooks/use-toast"
 
 const chartColors = [
@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isInsightsLoading, setIsInsightsLoading] = useState(false);
-  const [insights, setInsights] = useState<SummarizeProgressOutput | null>(null);
+  const [insights, setInsights] = useState<{summary: string} | null>(null);
 
   useEffect(() => {
     if (user) {
