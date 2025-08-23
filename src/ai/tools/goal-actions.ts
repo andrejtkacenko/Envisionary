@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -6,12 +5,18 @@
  * These actions are safe to call from client components.
  */
 
-import { summarizeProgress as summarizeProgressFlow, type SummarizeProgressInput, type SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
-import { recommendGoals as recommendGoalsFlow, type RecommendGoalsInput, type RecommendGoalsOutput } from '@/ai/flows/recommend-goals';
-import { suggestGoals as suggestGoalsFlow, type SuggestGoalsInput, type SuggestGoalsOutput } from '@/ai/flows/suggest-goals';
-import { breakDownGoal as breakDownGoalFlow, type BreakDownGoalInput, type BreakDownGoalOutput } from '@/ai/flows/break-down-goal';
-import { coachChat as coachChatFlow, type CoachChatInput, type CoachChatOutput } from '@/ai/flows/coach-chat';
-import { createGoal as createGoalTool, updateGoal as updateGoalTool, findGoals as findGoalsTool } from './goal-tools';
+import { breakDownGoal as breakDownGoalFlow } from '@/ai/flows/break-down-goal';
+import { coachChat as coachChatFlow } from '@/ai/flows/coach-chat';
+import { recommendGoals as recommendGoalsFlow } from '@/ai/flows/recommend-goals';
+import { suggestGoals as suggestGoalsFlow } from '@/ai/flows/suggest-goals';
+import { summarizeProgress as summarizeProgressFlow } from '@/ai/flows/summarize-progress';
+import { createGoal as createGoalTool, findGoals as findGoalsTool, updateGoal as updateGoalTool } from './goal-tools';
+import type { BreakDownGoalInput, BreakDownGoalOutput } from "@/ai/flows/break-down-goal";
+import type { CoachChatInput, CoachChatOutput } from "@/ai/flows/coach-chat";
+import type { RecommendGoalsInput, RecommendGoalsOutput } from "@/ai/flows/recommend-goals";
+import type { SuggestGoalsInput, SuggestGoalsOutput } from "@/ai/flows/suggest-goals";
+import type { SummarizeProgressInput, SummarizeProgressOutput } from "@/ai/flows/summarize-progress";
+
 import type { Goal, GoalStatus } from "@/types";
 import { z } from 'zod';
 
