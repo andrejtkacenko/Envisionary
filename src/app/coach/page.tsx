@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -262,7 +261,7 @@ export default function CoachPage() {
                                         return (
                                             <div key={index} className={cn("flex items-start gap-3", msg.role === 'user' && "flex-row-reverse")}>
                                                 <Avatar>
-                                                    <AvatarImage src={msg.role === 'user' ? user?.photoURL ?? '' : ''} data-ai-hint="user avatar" />
+                                                    <AvatarImage src={msg.role === 'user' ? user?.photoURL ?? ''} data-ai-hint="user avatar" />
                                                     <AvatarFallback>
                                                         {msg.role === 'user' ? (user?.email?.[0]?.toUpperCase() ?? <User/>) : <Zap/>}
                                                     </AvatarFallback>

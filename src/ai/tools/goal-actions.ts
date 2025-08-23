@@ -5,14 +5,14 @@
  * These actions are safe to call from client components.
  */
 
-import { z } from 'genkit';
-import { createGoalTool, updateGoalTool, findGoalsTool } from './goal-tools';
-import type { Goal, GoalStatus } from '@/types';
-import { summarizeProgress as summarizeProgressFlow, SummarizeProgressInput, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
-import { recommendGoals as recommendGoalsFlow, RecommendGoalsInput, RecommendGoalsOutput } from '@/ai/flows/recommend-goals';
-import { suggestGoals as suggestGoalsFlow, SuggestGoalsInput, SuggestGoalsOutput } from '@/ai/flows/suggest-goals';
-import { breakDownGoal as breakDownGoalFlow, BreakDownGoalInput, BreakDownGoalOutput } from '@/ai/flows/break-down-goal';
-import { coachChat as coachChatFlow, CoachChatInput, CoachChatOutput } from '@/ai/flows/coach-chat';
+import { summarizeProgress as summarizeProgressFlow, type SummarizeProgressInput, type SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
+import { recommendGoals as recommendGoalsFlow, type RecommendGoalsInput, type RecommendGoalsOutput } from '@/ai/flows/recommend-goals';
+import { suggestGoals as suggestGoalsFlow, type SuggestGoalsInput, type SuggestGoalsOutput } from '@/ai/flows/suggest-goals';
+import { breakDownGoal as breakDownGoalFlow, type BreakDownGoalInput, type BreakDownGoalOutput } from '@/ai/flows/break-down-goal';
+import { coachChat as coachChatFlow, type CoachChatInput, type CoachChatOutput } from '@/ai/flows/coach-chat';
+import { createGoal as createGoalAction, updateGoal as updateGoalAction, findGoals as findGoalsAction } from './goal-tools';
+import type { Goal, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate } from "@/types";
+import { z } from 'zod';
 
 
 // --- Goal CRUD Actions ---
@@ -43,15 +43,15 @@ const FindGoalsSchema = z.object({
 
 
 export async function createGoal(input: z.infer<typeof CreateGoalSchema>): Promise<Goal> {
-    return createGoalTool(input);
+    return createGoalAction(input);
 }
 
 export async function updateGoal(input: z.infer<typeof UpdateGoalSchema>): Promise<{ success: boolean }> {
-    return updateGoalTool(input);
+    return updateGoalAction(input);
 }
 
 export async function findGoals(input: z.infer<typeof FindGoalsSchema>): Promise<Goal[]> {
-    return findGoalsTool(input);
+    return findGoalsAction(input);
 }
 
 // --- AI Flow Server Actions ---

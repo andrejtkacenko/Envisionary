@@ -41,7 +41,7 @@ const FindGoalsSchema = z.object({
 /**
  * A Genkit tool that creates a new goal for a user.
  */
-export const createGoalTool = ai.defineTool(
+export const createGoal = ai.defineTool(
     {
         name: 'createGoal',
         description: 'Creates a new goal for the user.',
@@ -65,7 +65,7 @@ export const createGoalTool = ai.defineTool(
 /**
  * A Genkit tool that updates an existing goal for a user.
  */
-export const updateGoalTool = ai.defineTool(
+export const updateGoal = ai.defineTool(
     {
         name: 'updateGoal',
         description: "Updates an existing user goal. Requires the goal's ID.",
@@ -95,7 +95,7 @@ export const updateGoalTool = ai.defineTool(
 /**
  * A Genkit tool to find user goals based on a query.
  */
-export const findGoalsTool = ai.defineTool(
+export const findGoals = ai.defineTool(
     {
         name: 'findGoals',
         description: 'Finds user goals based on a search query to get their details and IDs.',

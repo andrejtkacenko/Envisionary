@@ -6,7 +6,6 @@
  */
 
 import { z } from 'genkit';
-import { getSchedule as getScheduleFromDb } from '@/lib/goals-service';
 import type { WeeklySchedule } from '@/types';
 import { getScheduleTool } from './schedule-tools';
 

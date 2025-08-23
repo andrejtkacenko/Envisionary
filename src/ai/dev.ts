@@ -1,17 +1,14 @@
-
 import { config } from 'dotenv';
 config();
 
 // Import flows so they are registered with Genkit
-import '@/ai/flows/summarize-progress.ts';
-import '@/ai/flows/suggest-goals.ts';
-import '@/ai/flows/break-down-goal.ts';
-import '@/ai/flows/coach-chat.ts';
-import '@/ai/flows/recommend-goals.ts';
-import '@/ai/flows/generate-schedule.ts';
+import '@/ai/flows/summarize-progress';
+import '@/ai/flows/suggest-goals';
+import '@/ai/flows/break-down-goal';
+import '@/ai/flows/coach-chat';
+import '@/ai/flows/recommend-goals';
+import '@/ai/flows/generate-schedule';
 
 // Import tools so they are registered with Genkit and available to models
-import '@/ai/tools/goal-tools.ts';
-import '@/ai/tools/schedule-tools.ts';
-
-    
+import '@/ai/tools/goal-tools';
+import '@/ai/tools/schedule-tools';

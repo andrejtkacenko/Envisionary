@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { createGoalTool, updateGoalTool, findGoalsTool } from '@/ai/tools/goal-tools';
+import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';
 import { getScheduleTool } from '@/ai/tools/schedule-tools';
 import type { Goal } from '@/types';
 
@@ -66,7 +66,7 @@ const coachChatFlow = ai.defineFlow(
 
     const response = await ai.generate({
         model: 'googleai/gemini-2.0-flash',
-        tools: [createGoalTool, updateGoalTool, findGoalsTool, getScheduleTool],
+        tools: [createGoal, updateGoal, findGoals, getScheduleTool],
         toolConfig: {
             // By default, the model will decide when to call tools.
             // You can also force it to call a specific tool or none at all.
