@@ -23,6 +23,7 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  const botName = process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME;
 
   const handleLogout = async () => {
     await logout();
@@ -119,8 +120,8 @@ export function AppSidebar() {
                             <Settings className="mr-2 h-4 w-4" />
                             Settings
                         </Button>
-                         <Button variant="ghost" className="w-full justify-start" asChild>
-                            <a href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME}?start=link`} target="_blank" rel="noopener noreferrer">
+                         <Button variant="ghost" className="w-full justify-start" asChild disabled={!botName}>
+                            <a href={botName ? `https://t.me/${botName}?start=link` : '#'} target="_blank" rel="noopener noreferrer">
                                 <Send className="mr-2 h-4 w-4" />
                                 Link Telegram
                             </a>
