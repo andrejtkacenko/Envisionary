@@ -2,6 +2,8 @@
 
 /**
  * @fileOverview Defines Genkit tools for interacting with user schedules in Firestore.
+ * This file should only define the tools and not export them directly for client use.
+ * The actions in schedule-actions.ts are the public API for the client.
  */
 
 import { ai } from '@/ai/genkit';
@@ -30,10 +32,3 @@ export const getScheduleTool = ai.defineTool(
         return schedule;
     }
 );
-
-/**
- * An async function that can be called directly to get the schedule.
- */
-export async function getSchedule(input: z.infer<typeof GetScheduleSchema>): Promise<WeeklySchedule | null> {
-    return getScheduleTool(input);
-}

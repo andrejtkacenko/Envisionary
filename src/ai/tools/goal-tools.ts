@@ -2,6 +2,8 @@
 
 /**
  * @fileOverview Defines Genkit tools for interacting with user goals in Firestore.
+ * This file should only define the tools and not export them directly for client use.
+ * The actions in goal-actions.ts are the public API for the client.
  */
 
 import { ai } from '@/ai/genkit';
@@ -59,13 +61,6 @@ export const createGoalTool = ai.defineTool(
     }
 );
 
-/**
- * An async function that can be called directly from server components to create a goal.
- */
-export async function createGoal(input: z.infer<typeof CreateGoalSchema>): Promise<Goal> {
-    return createGoalTool(input);
-}
-
 
 /**
  * A Genkit tool that updates an existing goal for a user.
@@ -96,12 +91,6 @@ export const updateGoalTool = ai.defineTool(
     }
 );
 
-/**
- * An async function that can be called directly to update a goal.
- */
-export async function updateGoal(input: z.infer<typeof UpdateGoalSchema>): Promise<{ success: boolean }> {
-    return updateGoalTool(input);
-}
 
 /**
  * A Genkit tool to find user goals based on a query.
@@ -128,10 +117,3 @@ export const findGoalsTool = ai.defineTool(
         return foundGoals.map(({ id, title, description, category }) => ({ id, title, description, category })) as Goal[];
     }
 );
-
-/**
- * An async function that can be called directly to find goals.
- */
-export async function findGoals(input: z.infer<typeof FindGoalsSchema>): Promise<Goal[]> {
-    return findGoalsTool(input);
-}

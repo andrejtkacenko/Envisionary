@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { coachChat, CoachChatInput } from '@/ai/flows/coach-chat';
-import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';
-import { getSchedule } from '@/ai/tools/schedule-tools';
+import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-actions';
+import { getSchedule } from '@/ai/tools/schedule-actions';
 import { summarizeProgress, SummarizeProgressOutput } from '@/ai/flows/summarize-progress';
 import { getGoalsSnapshot } from '@/lib/goals-service';
 import type { Goal } from '@/types';
