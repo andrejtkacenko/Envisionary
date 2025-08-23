@@ -9,6 +9,13 @@ import { linkTelegramToUser } from '@/lib/goals-service';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+// Add Telegram script to the window interface
+declare global {
+    interface Window {
+        Telegram: any;
+    }
+}
+
 export default function LinkTelegramPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -25,32 +32,35 @@ export default function LinkTelegramPage() {
 
         const linkAccount = async () => {
             if (typeof window !== 'undefined' && window.Telegram && window.Telegram.WebApp) {
-                const initData = new URLSearchParams(window.Telegram.WebApp.initData);
-                const telegramUserRaw = initData.get('user');
-                
-                if (!telegramUserRaw) {
-                    setStatus('error');
-                    setMessage('Could not retrieve Telegram user data.');
-                    return;
-                }
-
-                try {
-                    const telegramUser = JSON.parse(telegramUserRaw);
-                    await linkTelegramToUser(user.uid, telegramUser.id);
+                // Give telegram script a moment to initialize
+                setTimeout(async () => {
+                    const initData = new URLSearchParams(window.Telegram.WebApp.initData);
+                    const telegramUserRaw = initData.get('user');
                     
-                    setStatus('success');
-                    setMessage('Your Telegram account has been successfully linked!');
-                    toast({ title: "Account Linked!", description: message });
-                    
-                    // Close the web app
-                    setTimeout(() => window.Telegram.WebApp.close(), 2000);
+                    if (!telegramUserRaw) {
+                        setStatus('error');
+                        setMessage('Could not retrieve Telegram user data. Please ensure you open this from the bot.');
+                        return;
+                    }
 
-                } catch (err) {
-                    console.error(err);
-                    setStatus('error');
-                    setMessage('An error occurred while linking your account.');
-                     toast({ variant: 'destructive', title: "Linking Failed", description: message });
-                }
+                    try {
+                        const telegramUser = JSON.parse(telegramUserRaw);
+                        await linkTelegramToUser(user.uid, telegramUser.id);
+                        
+                        setStatus('success');
+                        setMessage('Your Telegram account has been successfully linked!');
+                        toast({ title: "Account Linked!", description: message });
+                        
+                        // Close the web app
+                        setTimeout(() => window.Telegram.WebApp.close(), 2000);
+
+                    } catch (err) {
+                        console.error(err);
+                        setStatus('error');
+                        setMessage('An error occurred while linking your account.');
+                         toast({ variant: 'destructive', title: "Linking Failed", description: message });
+                    }
+                }, 100);
 
             } else {
                 setStatus('error');
@@ -80,11 +90,4 @@ export default function LinkTelegramPage() {
             </Card>
         </div>
     );
-}
-
-// Add Telegram script to the window interface
-declare global {
-    interface Window {
-        Telegram: any;
-    }
 }

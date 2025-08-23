@@ -37,6 +37,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn("font-body antialiased", fontInter.variable, fontSpaceGrotesk.variable)}>
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
         <AuthProvider>
             <div className="flex min-h-screen w-full flex-col bg-muted/40">
               <AppSidebar />
@@ -47,10 +51,6 @@ export default function RootLayout({
         </AuthProvider>
         <Toaster />
         <SpeedInsights />
-        <Script
-          src="https://telegram.org/js/telegram-web-app.js"
-          strategy="beforeInteractive"
-        />
       </body>
     </html>
   );
