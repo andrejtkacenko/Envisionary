@@ -31,8 +31,18 @@ const GenerateScheduleInputSchema = z.object({
 });
 export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
 
+const DailyScheduleSchema = z.object({
+  day: z.string(),
+  schedule: z.array(z.object({
+    id: z.string(),
+    time: z.string(),
+    task: z.string(),
+    priority: z.enum(['low', 'medium', 'high']),
+  })),
+});
+
 const GenerateScheduleOutputSchema = z.object({
-  weeklySchedule: z.array(z.custom<DailySchedule>()),
+  weeklySchedule: z.array(DailyScheduleSchema),
 });
 export type GenerateScheduleOutput = z.infer<typeof GenerateScheduleOutputSchema>;
 
