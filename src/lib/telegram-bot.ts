@@ -39,8 +39,14 @@ const setupBot = () => {
     });
 
     const getWebAppKeyboard = (isLinked: boolean) => {
-        // Hardcode the production URL to ensure correctness
-        const WEB_APP_URL = "https://envisionary-topaz.vercel.app";
+        const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+
+        if (!WEB_APP_URL) {
+            console.error("NEXT_PUBLIC_APP_URL is not set in environment variables.");
+            // We can't show a button if we don't have a URL.
+            // You might want to return an empty keyboard or handle this case differently.
+            return Markup.inlineKeyboard([]);
+        }
         
         const buttons = [];
         if (isLinked) {
