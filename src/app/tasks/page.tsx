@@ -11,10 +11,9 @@ import { Planner } from '@/components/planner';
 import { useTasks } from '@/hooks/use-tasks';
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { Task, TaskPriority } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TaskDialog } from '@/components/ui/task-dialog';
+import { TaskDialog } from '@/components/task-dialog';
 
 
 // --- Draggable Task Components (moved here to share between unscheduled and planner) ---
