@@ -5,6 +5,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from '@/context/AuthContext';
 import { AppSidebar } from "@/components/app-sidebar";
+import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import Script from "next/script";
 
@@ -50,6 +51,7 @@ export default function RootLayout({
             </div>
         </AuthProvider>
         <Toaster />
+        <Analytics />
         <SpeedInsights />
       </body>
     </html>
