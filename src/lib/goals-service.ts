@@ -1,5 +1,6 @@
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate } from "@/types";
@@ -90,6 +91,34 @@ const goalConverter = {
     }
 };
 
+const subTaskToFirestore = (task: Task) => {
+    const data: any = { ...task };
+    if (task.dueDate) {
+        data.dueDate = Timestamp.fromDate(task.dueDate);
+    } else {
+        delete data.dueDate
+    }
+    if (!data.createdAt) {
+        data.createdAt = Timestamp.now();
+    }
+    if (data.subTasks) {
+        data.subTasks = data.subTasks.map(subTaskToFirestore);
+    }
+    return data;
+}
+
+const subTaskFromFirestore = (data: any): Task => {
+    const task: Task = {
+        ...data,
+        dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : undefined,
+        createdAt: data.createdAt,
+    };
+    if (data.subTasks) {
+        task.subTasks = data.subTasks.map(subTaskFromFirestore);
+    }
+    return task;
+}
+
 // Firestore data converter for Tasks
 const taskConverter = {
     toFirestore: (task: Omit<Task, 'id'>) => {
@@ -102,6 +131,9 @@ const taskConverter = {
         if (!data.createdAt) {
             data.createdAt = Timestamp.now();
         }
+        if (task.subTasks) {
+            data.subTasks = task.subTasks.map(subTaskToFirestore);
+        }
         return data;
     },
     fromFirestore: (snapshot: any, options: any): Task => {
@@ -112,6 +144,9 @@ const taskConverter = {
             dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : undefined,
             createdAt: data.createdAt,
         };
+        if (data.subTasks) {
+            task.subTasks = data.subTasks.map(subTaskFromFirestore);
+        }
         return task;
     },
 };

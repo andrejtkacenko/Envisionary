@@ -33,10 +33,10 @@ export type Task = {
     title: string;
     description?: string;
     priority: TaskPriority;
-    project?: string;
     dueDate?: Date;
     isCompleted: boolean;
     createdAt: any;
+    subTasks?: Task[];
 };
 
 

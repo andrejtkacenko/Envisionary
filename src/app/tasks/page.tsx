@@ -80,7 +80,8 @@ export default function TasksPage() {
                 if (a.isCompleted !== b.isCompleted) {
                     return a.isCompleted ? 1 : -1;
                 }
-                return a.priority.localeCompare(b.priority);
+                const priorityOrder = ['p1', 'p2', 'p3', 'p4'];
+                return priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
             });
     }, [tasks, selectedDate]);
 

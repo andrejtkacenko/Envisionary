@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Flag, Calendar, Trash2, Edit } from 'lucide-react';
+import { Flag, Calendar, ListTree } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { Task, TaskPriority } from '@/types';
@@ -11,6 +11,7 @@ import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { TaskDialog } from './task-dialog';
 import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
 
 const priorityMap: Record<TaskPriority, { color: string; icon: React.ReactNode }> = {
     p1: { color: "text-red-500", icon: <Flag /> },
@@ -31,6 +32,10 @@ export const TaskItem = ({ task, onUpdate, onDelete }: TaskItemProps) => {
     const handleToggleComplete = () => {
         onUpdate({ ...task, isCompleted: !task.isCompleted });
     };
+    
+    const completedSubTasks = task.subTasks?.filter(st => st.isCompleted).length || 0;
+    const totalSubTasks = task.subTasks?.length || 0;
+    const progress = totalSubTasks > 0 ? (completedSubTasks / totalSubTasks) * 100 : 0;
 
     return (
         <motion.div
@@ -52,33 +57,37 @@ export const TaskItem = ({ task, onUpdate, onDelete }: TaskItemProps) => {
                     )}
                 />
             </div>
-            <div className="flex-grow">
-                <p className={cn("text-sm font-medium", task.isCompleted && "line-through text-muted-foreground")}>
-                    {task.title}
-                </p>
-                {task.description && (
-                     <p className={cn("text-xs text-muted-foreground", task.isCompleted && "line-through")}>
-                        {task.description}
+            <TaskDialog task={task} onSave={onUpdate} onDelete={onDelete}>
+                <div className="flex-grow cursor-pointer">
+                    <p className={cn("text-sm font-medium", task.isCompleted && "line-through text-muted-foreground")}>
+                        {task.title}
                     </p>
-                )}
-                <div className="flex items-center gap-4 mt-1">
-                    {task.dueDate && (
-                        <div className={cn("flex items-center gap-1.5 text-xs", task.isCompleted ? "text-muted-foreground" : "text-blue-600")}>
-                            <Calendar className="h-3 w-3" />
-                            <span>{format(task.dueDate, "MMM d")}</span>
-                        </div>
+                    {task.description && (
+                         <p className={cn("text-xs text-muted-foreground", task.isCompleted && "line-through")}>
+                            {task.description}
+                        </p>
                     )}
-                    {task.project && (
-                        <Badge variant="secondary">{task.project}</Badge>
+                    <div className="flex items-center gap-4 mt-1">
+                        {task.dueDate && (
+                            <div className={cn("flex items-center gap-1.5 text-xs", task.isCompleted ? "text-muted-foreground" : "text-blue-600")}>
+                                <Calendar className="h-3 w-3" />
+                                <span>{format(task.dueDate, "MMM d")}</span>
+                            </div>
+                        )}
+                        {totalSubTasks > 0 && (
+                            <div className={cn("flex items-center gap-1.5 text-xs", task.isCompleted ? "text-muted-foreground" : "text-gray-600")}>
+                                <ListTree className="h-3 w-3" />
+                                <span>{completedSubTasks}/{totalSubTasks}</span>
+                            </div>
+                        )}
+                    </div>
+                    {totalSubTasks > 0 && (
+                        <Progress value={progress} className="h-1 mt-2" />
                     )}
                 </div>
-            </div>
+            </TaskDialog>
+
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <TaskDialog task={task} onSave={onUpdate} onDelete={onDelete}>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <Edit className="h-4 w-4" />
-                    </Button>
-                </TaskDialog>
                 <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
                     <div className={cn(priorityMap[task.priority].color, "h-4 w-4")}>
                         {priorityMap[task.priority].icon}

@@ -2,20 +2,19 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, Flag, Circle, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Flag, Circle, Plus, Trash2, Wand2 } from "lucide-react";
 import { format } from "date-fns";
+import { nanoid } from "nanoid";
 
 import type { Task, TaskPriority } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -25,7 +24,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -44,6 +42,10 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { Separator } from "./ui/separator";
+import { Checkbox } from "./ui/checkbox";
+import { ScrollArea } from "./ui/scroll-area";
+import { BreakDownTaskDialog, type SubTask as GeneratedSubTask } from "./break-down-task-dialog";
 
 const priorityMap: Record<TaskPriority, { label: string; color: string; icon: React.ReactNode }> = {
     p1: { label: "Priority 1", color: "text-red-500", icon: <Flag className="h-4 w-4" /> },
@@ -55,7 +57,6 @@ const priorityMap: Record<TaskPriority, { label: string; color: string; icon: Re
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  project: z.string().optional(),
   priority: z.custom<TaskPriority>(),
   dueDate: z.date().optional(),
 });
@@ -71,25 +72,37 @@ interface TaskDialogProps {
 
 export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps) {
   const [open, setOpen] = useState(false);
+  const [subTasks, setSubTasks] = useState<Task[]>([]);
   const isEditMode = !!task;
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
-    defaultValues: {
-      title: task?.title ?? "",
-      description: task?.description ?? "",
-      project: task?.project ?? "",
-      priority: task?.priority ?? "p4",
-      dueDate: task?.dueDate,
-    },
   });
 
-  const onSubmit = (data: TaskFormValues) => {
-    if (isEditMode) {
-      onSave({ ...task, ...data });
-    } else {
-      onSave({ ...data, isCompleted: false });
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        title: task?.title ?? "",
+        description: task?.description ?? "",
+        priority: task?.priority ?? "p4",
+        dueDate: task?.dueDate,
+      });
+      setSubTasks(task?.subTasks || []);
     }
+  }, [task, open, form]);
+  
+  const watchedTitle = form.watch("title");
+  const watchedDescription = form.watch("description");
+
+
+  const onSubmit = (data: TaskFormValues) => {
+    const taskToSave = {
+        ...task,
+        ...data,
+        subTasks: subTasks,
+        isCompleted: task?.isCompleted || false
+    };
+    onSave(taskToSave);
     setOpen(false);
     form.reset();
   };
@@ -97,25 +110,45 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   const handleOpenChange = (isOpen: boolean) => {
       setOpen(isOpen);
       if (!isOpen) {
-          form.reset({
-              title: task?.title ?? "",
-              description: task?.description ?? "",
-              project: task?.project ?? "",
-              priority: task?.priority ?? "p4",
-              dueDate: task?.dueDate,
-          })
+          form.reset();
+          setSubTasks([]);
       }
   }
+
+  const handleSubTaskAdd = (newSubTasks: GeneratedSubTask[]) => {
+    const newTasks: Task[] = newSubTasks.map(st => ({
+        id: nanoid(),
+        title: st.title,
+        description: st.description,
+        isCompleted: false,
+        priority: 'p4',
+        createdAt: new Date(),
+    }));
+    setSubTasks(prev => [...prev, ...tasks]);
+  };
+  
+  const handleToggleSubTask = (subTaskId: string) => {
+    setSubTasks(current => 
+      current.map(st => 
+        st.id === subTaskId ? { ...st, isCompleted: !st.isCompleted } : st
+      )
+    );
+  };
+  
+  const handleDeleteSubTask = (subTaskId: string) => {
+     setSubTasks(current => current.filter(st => st.id !== subTaskId));
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="font-headline">{isEditMode ? "Edit Task" : "Add a new Task"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             <FormField
               control={form.control}
               name="title"
@@ -206,27 +239,65 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                     )}
                 />
              </div>
-             <FormField
-                control={form.control}
-                name="project"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormControl>
-                        <Input placeholder="Project or Category" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <DialogFooter>
+             
+             <Separator />
+
+            <div>
+                <div className="flex justify-between items-center mb-2">
+                     <h4 className="text-sm font-medium text-muted-foreground">Sub-tasks</h4>
+                     <BreakDownTaskDialog 
+                        task={{title: watchedTitle, description: watchedDescription}} 
+                        onSubTasksAdd={handleSubTaskAdd}
+                    >
+                        <Button type="button" variant="outline" size="sm">
+                            <Wand2 className="mr-2 h-4 w-4"/> AI Breakdown
+                        </Button>
+                     </BreakDownTaskDialog>
+                </div>
+                <ScrollArea className="h-48 border rounded-md p-2">
+                    {subTasks.length > 0 ? (
+                        <div className="space-y-1">
+                            {subTasks.map(st => (
+                                <div key={st.id} className="flex items-center gap-2 group p-1 rounded-md hover:bg-muted/50">
+                                    <Checkbox
+                                        checked={st.isCompleted}
+                                        onCheckedChange={() => handleToggleSubTask(st.id)}
+                                    />
+                                    <span className={cn("text-sm flex-grow", st.isCompleted && "line-through text-muted-foreground")}>
+                                        {st.title}
+                                    </span>
+                                    <Button 
+                                        type="button" 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                        onClick={() => handleDeleteSubTask(st.id)}
+                                    >
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center text-xs text-muted-foreground py-16">
+                            No sub-tasks yet.
+                        </div>
+                    )}
+                </ScrollArea>
+            </div>
+            
+
+            <div className={cn("flex", isEditMode ? "justify-between" : "justify-end")}>
                 {isEditMode && onDelete && (
-                    <Button type="button" variant="destructive" onClick={() => {onDelete(task.id); setOpen(false);}} className="mr-auto">
+                    <Button type="button" variant="destructive" onClick={() => {onDelete(task.id); setOpen(false);}}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 )}
-                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button type="submit">{isEditMode ? "Save Changes" : "Add Task"}</Button>
-            </DialogFooter>
+                <div className="flex gap-2">
+                    <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button type="submit">{isEditMode ? "Save Changes" : "Add Task"}</Button>
+                </div>
+            </div>
           </form>
         </Form>
       </DialogContent>
