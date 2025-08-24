@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { format, setHours, getHours } from 'date-fns';
+import { format, setHours, getHours, isToday } from 'date-fns';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -87,7 +87,6 @@ interface PlannerProps {
 
 export const Planner = ({ date, tasks, unscheduledTasks, isLoading, onTaskCreate, onTaskUpdate, onTaskDelete }: PlannerProps) => {
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.time), [tasks]);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
     const timelineRef = useRef<HTMLDivElement>(null);
     const [nowIndicatorTop, setNowIndicatorTop] = useState(0);
 
@@ -154,32 +153,9 @@ export const Planner = ({ date, tasks, unscheduledTasks, isLoading, onTaskCreate
                     </div>
                 ) : (
                     <div className="flex-grow flex h-full">
-                        {/* Unscheduled Tasks Column */}
-                         <div className="w-1/3 border-r h-full flex flex-col">
-                            <h3 className="text-sm font-semibold p-4 border-b">Unscheduled Tasks</h3>
-                             <ScrollArea className="flex-grow p-2">
-                                <SortableContext items={unscheduledTasks.map(t => t.id)}>
-                                    <div id="unscheduled">
-                                        {unscheduledTasks.map(task => (
-                                            <DraggableTask key={task.id} task={task} />
-                                        ))}
-                                    </div>
-                                </SortableContext>
-                                {unscheduledTasks.length === 0 && (
-                                    <div className="text-center text-xs text-muted-foreground pt-10">No tasks for today.</div>
-                                )}
-                            </ScrollArea>
-                            <div className="p-2 border-t">
-                                <TaskDialog onSave={(data) => onTaskCreate({...data, dueDate: date, isCompleted: false})} >
-                                    <Button variant="outline" className="w-full">
-                                        <Plus className="mr-2 h-4 w-4"/> Add Task
-                                    </Button>
-                                </TaskDialog>
-                            </div>
-                        </div>
 
                         {/* Timeline Column */}
-                        <div className="w-2/3 relative h-full">
+                        <div className="w-full relative h-full">
                             <ScrollArea className="h-full" ref={timelineRef}>
                                 <div className="relative" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
                                     {Array.from({ length: TOTAL_HOURS }).map((_, i) => (
