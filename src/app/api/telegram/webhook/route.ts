@@ -11,6 +11,17 @@ export async function POST(req: NextRequest) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
     }
+    
+    // Ensure bot token is set before handling update
+    if (!bot.token) {
+        const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        if (BOT_TOKEN) {
+            bot.token = BOT_TOKEN;
+        } else {
+             console.error("TELEGRAM_BOT_TOKEN is not configured. Cannot handle webhook.");
+             return new NextResponse('Internal Server Error: Bot not configured', { status: 500 });
+        }
+    }
 
     try {
         const json = await req.json();

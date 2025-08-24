@@ -1,13 +1,8 @@
-
-'use server';
-
 import { Telegraf, Markup } from 'telegraf';
 import { getTasksSnapshot, addTask } from '@/lib/goals-service';
 import { findUserByTelegramId } from '@/lib/firebase-admin-service';
 
 // --- Singleton Pattern for Telegraf Bot ---
-
-// Extend the NodeJS.Global interface to include our bot instance
 declare global {
   var bot: Telegraf | undefined;
 }
@@ -15,9 +10,7 @@ declare global {
 const initializeBot = (): Telegraf => {
   const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   if (!BOT_TOKEN) {
-    // We don't throw an error here to allow the build to pass.
-    // The error will be handled at runtime when the bot is actually used.
-    console.error("TELEGRAM_BOT_TOKEN is not defined in the environment variables");
+    console.error("TELEGRAM_BOT_TOKEN is not defined in the environment variables. Bot will not work.");
     return new Telegraf(''); // Return a dummy instance
   }
 
