@@ -1,25 +1,24 @@
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, ListTodo, Plus, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ListTodo } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Planner, DraggableTask } from '@/components/planner';
 import { useTasks } from '@/hooks/use-tasks';
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext } from '@dnd-kit/sortable';
 import type { Task, Goal, DailySchedule } from '@/types';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext } from '@dnd-kit/sortable';
 import { TaskDialog } from '@/components/task-dialog';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { ScheduleGenerator } from '@/components/schedule-generator';
 import { getGoals, saveSchedule } from '@/lib/goals-service';
-import { ScheduleTemplates } from '@/components/schedule-templates';
-
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { TaskActions } from '@/components/task-actions';
 
 const UnscheduledTasks = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }: { tasks: Task[], onAddTask: (data: any) => void, onUpdateTask: (data: any) => void, onDeleteTask: (id: string) => void }) => {
     const { setNodeRef, isOver } = useDroppable({
@@ -29,22 +28,21 @@ const UnscheduledTasks = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }: { ta
 
     return (
         <Card>
-            <CardHeader>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <CardTitle>Inbox</CardTitle>
-                        <CardDescription>Unscheduled tasks</CardDescription>
-                    </div>
-                     <TaskDialog onSave={onAddTask}>
-                        <Button variant="ghost" size="icon">
-                            <Plus className="h-5 w-5" />
-                        </Button>
-                    </TaskDialog>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Inbox</CardTitle>
+                    <p className="text-sm text-muted-foreground">Unscheduled tasks</p>
                 </div>
+                 <TaskDialog onSave={onAddTask}>
+                    <Button variant="ghost" size="icon">
+                        <ListTodo className="h-5 w-5" />
+                    </Button>
+                </TaskDialog>
             </CardHeader>
             <CardContent>
                 <ScrollArea ref={setNodeRef} className={cn("h-96 rounded-md p-1", isOver && "bg-primary/10")}>
-                     <SortableContext items={tasks.map(t => t.id)}>
+                    <SortableContext items={tasks.map(t => t.id)}>
+                        <div className="space-y-2">
                         {tasks.length > 0 ? (
                             tasks.map(task => (
                                 <DraggableTask key={task.id} task={task} />
@@ -52,6 +50,7 @@ const UnscheduledTasks = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }: { ta
                         ) : (
                             <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
                         )}
+                        </div>
                     </SortableContext>
                 </ScrollArea>
             </CardContent>
@@ -69,7 +68,6 @@ export default function TasksPage() {
     const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [allGoals, setAllGoals] = useState<Goal[]>([]);
 
-    // Calendar logic
     const firstDayOfMonth = startOfMonth(currentMonth);
     const lastDayOfMonth = endOfMonth(currentMonth);
     const daysInMonth = eachDayOfInterval({
@@ -132,59 +130,21 @@ export default function TasksPage() {
             handleUpdateTask({ ...task, time: newTime, dueDate: selectedDate });
         } else if (overIsUnscheduledArea) {
              if (task.time || task.dueDate) {
-                handleUpdateTask({ ...task, time: null, dueDate: undefined });
+                handleUpdateTask({ ...task, time: undefined, dueDate: undefined });
             }
         }
     };
 
-     const handleScheduleGenerated = async (schedule: DailySchedule[]) => {
+     const handleScheduleApplied = async (schedule: DailySchedule[]) => {
         if (!user) return;
         try {
             await saveSchedule(user.uid, schedule);
             toast({ title: 'Schedule Saved!', description: 'Your new AI-generated schedule has been saved.' });
-            // Here you might want to refetch tasks or intelligently merge them
         } catch (e) {
             console.error(e);
             toast({ variant: 'destructive', title: 'Failed to save schedule' });
         }
     };
-    
-    const handleApplyTemplate = async (templateData: DailySchedule[]) => {
-        // This is a simplified application. A more complex version might
-        // merge tasks or ask the user how to handle conflicts.
-        if (!user) return;
-
-        // For now, let's just create new tasks based on the template for the upcoming week.
-        const batchOfTasks: Omit<Task, 'id'|'createdAt'>[] = [];
-        const today = startOfWeek(new Date(), { weekStartsOn: 1 });
-
-        templateData.forEach((daySchedule, dayIndex) => {
-            const dateForDay = new Date(today);
-            dateForDay.setDate(today.getDate() + dayIndex);
-
-            daySchedule.schedule.forEach(item => {
-                batchOfTasks.push({
-                    title: item.task,
-                    priority: item.priority === 'high' ? 'p1' : item.priority === 'medium' ? 'p2' : 'p3',
-                    isCompleted: false,
-                    time: item.time,
-                    dueDate: dateForDay,
-                });
-            });
-        });
-        
-        try {
-            // A dedicated `addTasks` function would be better.
-            // For now, adding one by one.
-            for (const taskData of batchOfTasks) {
-                await handleAddTask(taskData);
-            }
-            toast({ title: 'Template Applied', description: `Added ${batchOfTasks.length} tasks to your schedule.` });
-        } catch(e) {
-             toast({ variant: 'destructive', title: 'Failed to apply template' });
-        }
-    }
-
 
     return (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -198,16 +158,10 @@ export default function TasksPage() {
                             Plan and visualize your day. Drag tasks to schedule them.
                         </p>
                     </div>
-                     <ScheduleGenerator onScheduleGenerated={handleScheduleGenerated} allGoals={allGoals}>
-                        <Button>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Generate Weekly Schedule
-                        </Button>
-                    </ScheduleGenerator>
+                    <TaskActions allGoals={allGoals} onScheduleApplied={handleScheduleApplied} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-                    {/* Left Column: Calendar & Unscheduled Tasks */}
                     <div className="lg:col-span-1 space-y-8">
                         <Card>
                             <CardHeader>
@@ -252,10 +206,8 @@ export default function TasksPage() {
                         
                         <UnscheduledTasks tasks={unscheduledTasks} onAddTask={handleAddTask} onUpdateTask={handleUpdateTask} onDeleteTask={handleDeleteTask} />
                         
-                        <ScheduleTemplates onApplyTemplate={handleApplyTemplate} allGoals={allGoals}/>
                     </div>
 
-                    {/* Right Column: Planner View */}
                     <div className="lg:col-span-3">
                         <Planner
                             date={selectedDate}
@@ -271,3 +223,5 @@ export default function TasksPage() {
         </DndContext>
     );
 }
+
+    
