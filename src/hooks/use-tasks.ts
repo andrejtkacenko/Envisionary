@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getTasks, addTask, updateTask, deleteTask } from '@/lib/goals-service';
@@ -91,8 +91,11 @@ export const useTasks = () => {
         }
     }, [user, toast]);
 
+    const tasksForDay = useMemo(() => tasks, [tasks]);
+
     return {
         tasks,
+        tasksForDay,
         isLoading,
         handleAddTask,
         handleUpdateTask,

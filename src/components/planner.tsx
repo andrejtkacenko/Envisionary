@@ -2,18 +2,16 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { format, isSameDay } from 'date-fns';
-import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { format } from 'date-fns';
+import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Plus, GripVertical } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from './ui/button';
-import { TaskDialog } from './task-dialog';
 import type { Task, TaskPriority } from '@/types';
 import { cn } from '@/lib/utils';
-import { useDroppable } from '@dnd-kit/core';
+
 
 // --- Time Slot Data ---
 const timeSlots = Array.from({ length: 15 }, (_, i) => {
@@ -21,7 +19,7 @@ const timeSlots = Array.from({ length: 15 }, (_, i) => {
     return `${String(hour).padStart(2, '0')}:00`;
 });
 
-// --- Sortable Task Item ---
+// --- Draggable Task Item ---
 const DraggableTask = ({ task, isOverlay }: { task: Task, isOverlay?: boolean }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: task.id,
@@ -89,16 +87,8 @@ interface PlannerProps {
     onTaskDelete: (taskId: string) => void;
 }
 
-export const Planner = ({ date, tasks, isLoading, onTaskCreate, onTaskUpdate }: PlannerProps) => {
-    const [activeTask, setActiveTask] = useState<Task | null>(null);
-
-    const { unscheduledTasks, scheduledTasks } = useMemo(() => {
-        const tasksForDay = tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), date));
-        return {
-            unscheduledTasks: tasksForDay.filter(t => !t.time),
-            scheduledTasks: tasksForDay.filter(t => !!t.time),
-        };
-    }, [tasks, date]);
+export const Planner = ({ date, tasks, isLoading, onTaskCreate, onTaskUpdate, onTaskDelete }: PlannerProps) => {
+    const scheduledTasks = useMemo(() => tasks.filter(t => !!t.time), [tasks]);
 
     const tasksByTime = useMemo(() => {
         const map = new Map<string, Task[]>();
@@ -112,86 +102,31 @@ export const Planner = ({ date, tasks, isLoading, onTaskCreate, onTaskUpdate }: 
         return map;
     }, [scheduledTasks]);
 
-    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        setActiveTask(null);
-        const { active, over } = event;
-
-        if (!over || !active.data.current) return;
-        
-        const task = active.data.current.task as Task;
-        const overId = over.id as string;
-        const overIsTimeSlot = over.data.current?.type === 'timeSlot';
-
-        if (overIsTimeSlot && task.time !== overId) {
-            onTaskUpdate({ ...task, time: overId });
-        }
-    };
-    
-    const handleDragStart = (event: any) => {
-      const { active } = event;
-      setActiveTask(active.data.current?.task || null);
-    };
 
     return (
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="md:col-span-3">
-                    <Card className="h-full">
-                        <CardHeader>
-                            <CardTitle className="font-headline">Schedule for {format(date, "eeee, MMMM do")}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {isLoading ? (
-                                <div className="flex flex-col items-center justify-center h-[calc(100vh-22rem)] gap-2 text-muted-foreground">
-                                    <Loader2 className="h-8 w-8 animate-spin" />
-                                </div>
-                            ) : (
-                                <ScrollArea className="h-[calc(100vh-22rem)] pr-4">
-                                    {timeSlots.map(time => (
-                                        <TimeSlot key={time} time={time}>
-                                            <SortableContext items={tasksByTime.get(time)?.map(t => t.id) || []} strategy={verticalListSortingStrategy}>
-                                            {(tasksByTime.get(time) || []).map(task => (
-                                                <DraggableTask key={task.id} task={task} />
-                                            ))}
-                                            </SortableContext>
-                                        </TimeSlot>
-                                    ))}
-                                </ScrollArea>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="md:col-span-1">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">Unscheduled</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                             <TaskDialog onSave={(data) => onTaskCreate({...data, dueDate: date, isCompleted: false})} >
-                                <Button variant="outline" className="w-full mb-4">
-                                    <Plus className="mr-2 h-4 w-4"/> Add Task
-                                </Button>
-                             </TaskDialog>
-                            <ScrollArea className="h-[calc(100vh-26rem)]">
-                                <SortableContext items={unscheduledTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                                {unscheduledTasks.map(task => (
+        <Card className="h-full">
+            <CardHeader>
+                <CardTitle className="font-headline">Schedule for {format(date, "eeee, MMMM do")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center h-[calc(100vh-22rem)] gap-2 text-muted-foreground">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                ) : (
+                    <ScrollArea className="h-[calc(100vh-15rem)] pr-4">
+                        {timeSlots.map(time => (
+                            <TimeSlot key={time} time={time}>
+                                <SortableContext items={tasksByTime.get(time)?.map(t => t.id) || []} strategy={verticalListSortingStrategy}>
+                                {(tasksByTime.get(time) || []).map(task => (
                                     <DraggableTask key={task.id} task={task} />
                                 ))}
                                 </SortableContext>
-                                {unscheduledTasks.length === 0 && !isLoading && (
-                                    <div className="text-center text-sm text-muted-foreground py-10">No tasks for this day.</div>
-                                )}
-                                {isLoading && <Loader2 className="mx-auto my-10 h-6 w-6 animate-spin" />}
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-             <DragOverlay>
-                {activeTask ? <DraggableTask task={activeTask} isOverlay /> : null}
-            </DragOverlay>
-        </DndContext>
+                            </TimeSlot>
+                        ))}
+                    </ScrollArea>
+                )}
+            </CardContent>
+        </Card>
     );
 };
