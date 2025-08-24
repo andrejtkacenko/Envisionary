@@ -13,7 +13,14 @@ export interface MyContext extends Context {
 let bot: Telegraf<MyContext> | null = null;
 
 const setupBot = () => {
-    const newBot = new Telegraf<MyContext>(process.env.TELEGRAM_BOT_TOKEN || '');
+    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (!BOT_TOKEN) {
+        console.error("TELEGRAM_BOT_TOKEN is not defined!");
+        // Return a dummy bot so the app doesn't crash
+        return new Telegraf<MyContext>('');
+    }
+
+    const newBot = new Telegraf<MyContext>(BOT_TOKEN);
 
     // --- MIDDLEWARE to attach Firebase user to context ---
     newBot.use(async (ctx, next) => {
@@ -32,11 +39,9 @@ const setupBot = () => {
     });
 
     const getWebAppKeyboard = (isLinked: boolean) => {
-        const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
-        if (!WEB_APP_URL) {
-            console.error("NEXT_PUBLIC_APP_URL is not defined, web app buttons will not work.");
-            return Markup.inlineKeyboard([]);
-        }
+        // Hardcode the production URL to ensure correctness
+        const WEB_APP_URL = "https://envisionary-topaz.vercel.app";
+        
         const buttons = [];
         if (isLinked) {
             buttons.push(Markup.button.webApp('🚀 Open App', `${WEB_APP_URL}/?from=telegram`));
@@ -117,5 +122,3 @@ export const initializeBot = () => {
     }
     return bot;
 }
-
-export { bot };
