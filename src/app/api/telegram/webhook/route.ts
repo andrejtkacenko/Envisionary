@@ -2,9 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bot } from '@/lib/telegram-bot';
 
-const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
-
 export async function POST(req: NextRequest) {
+    const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
+
     if (WEBHOOK_SECRET) {
         const secretToken = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
         if (secretToken !== WEBHOOK_SECRET) {
