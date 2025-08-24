@@ -39,20 +39,22 @@ const setupBot = () => {
     });
 
     const getWebAppKeyboard = (isLinked: boolean) => {
-        // const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+        // Use the environment variable, but have a hardcoded fallback to prevent errors.
+        const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://envisionary-topaz.vercel.app/';
 
-        if (!process.env.NEXT_PUBLIC_APP_URL) {
-            console.error("NEXT_PUBLIC_APP_URL is not set in environment variables.");
-            // We can't show a button if we don't have a URL.
-            // You might want to return an empty keyboard or handle this case differently.
+        if (!WEB_APP_URL) {
+            console.error("No Web App URL is configured.");
             return Markup.inlineKeyboard([]);
         }
         
         const buttons = [];
+        // Ensure the URL doesn't have a trailing slash before appending our path
+        const baseUrl = WEB_APP_URL.endsWith('/') ? WEB_APP_URL.slice(0, -1) : WEB_APP_URL;
+        
         if (isLinked) {
-            buttons.push(Markup.button.webApp('🚀 Open App', `${process.env.NEXT_PUBLIC_APP_URL}/?from=telegram`));
+            buttons.push(Markup.button.webApp('🚀 Open App', `${baseUrl}/?from=telegram`));
         } else {
-            buttons.push(Markup.button.webApp('🔗 Link Account', `${process.env.NEXT_PUBLIC_APP_URL}/link-telegram`));
+            buttons.push(Markup.button.webApp('🔗 Link Account', `${baseUrl}/link-telegram`));
         }
         return Markup.inlineKeyboard(buttons);
     };
