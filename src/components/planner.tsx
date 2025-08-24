@@ -1,9 +1,10 @@
 
 "use client";
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { format, setHours, getHours, isToday } from 'date-fns';
-import { useDroppable, useSortable } from '@dnd-kit/core';
+import { useDroppable } from '@dnd-kit/core';
+import { useSortable, SortableContext } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, GripVertical, Navigation } from 'lucide-react';
@@ -12,7 +13,7 @@ import type { Task, TaskPriority } from '@/types';
 import { cn } from '@/lib/utils';
 import { TaskDialog } from './task-dialog';
 import { Button } from './ui/button';
-import { SortableContext } from '@dnd-kit/sortable';
+
 
 // --- Time Constants ---
 const HOUR_HEIGHT = 60; // height of one hour in pixels
