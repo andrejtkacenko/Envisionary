@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Zap, Activity, Star, MessageCircle, Trash2, Info, Briefcase, Aperture, Heart, Clock, User, Send, FileText, Wand2, Calendar, Link as LinkIcon, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -244,35 +245,35 @@ export default function CoachPage() {
                         <CardContent className="flex-grow flex flex-col gap-4">
                            <ScrollArea className="h-[50vh] lg:h-[500px] w-full pr-4">
                                 <div className="space-y-6">
-                                    {chatHistory.map((msg, index) => {
-                                        if (msg.role === 'tool') {
-                                            return (
-                                                <div key={index} className="text-xs text-center text-muted-foreground flex items-center gap-2 justify-center">
-                                                    <Wand2 className="h-4 w-4" />
-                                                    <span>Tool action: `{msg.toolResult?.name}` executed.</span>
-                                                    { msg.toolResult?.name === 'getSchedule' ? (
-                                                         <a href="/planner" className="text-xs p-0 h-auto underline">View Schedule</a>
-                                                    ) : (
-                                                         <Button variant="link" size="sm" onClick={fetchGoals} className="text-xs p-0 h-auto">Refresh Board</Button>
-                                                    )
-                                                    }
-                                                </div>
-                                            )
-                                        }
-                                        return (
-                                            <div key={index} className={cn("flex items-start gap-3", msg.role === 'user' && "flex-row-reverse")}>
-                                                <Avatar>
-                                                    <AvatarImage src={msg.role === 'user' ? user?.photoURL ?? ''} data-ai-hint="user avatar" />
-                                                    <AvatarFallback>
-                                                        {msg.role === 'user' ? (user?.email?.[0]?.toUpperCase() ?? <User/>) : <Zap/>}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className={cn("p-3 rounded-lg max-w-sm", msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                                                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
+                                {chatHistory.map((msg, index) => {
+                                if (msg.role === 'tool') {
+                                    return (
+                                    <div key={index} className="text-xs text-center text-muted-foreground flex items-center gap-2 justify-center">
+                                        <Wand2 className="h-4 w-4" />
+                                        <span>Tool action: `{msg.toolResult?.name}` executed.</span>
+                                        {msg.toolResult?.name === 'getSchedule' ? (
+                                        <a href="/planner" className="text-xs p-0 h-auto underline">View Schedule</a>
+                                        ) : (
+                                        <Button variant="link" size="sm" onClick={fetchGoals} className="text-xs p-0 h-auto">Refresh Board</Button>
+                                        )}
+                                    </div>
+                                    );
+                                }
+                                const avatarSrc = msg.role === 'user' ? user?.photoURL || '' : '';
+                                return (
+                                    <div key={index} className={cn("flex items-start gap-3", msg.role === 'user' && "flex-row-reverse")}>
+                                    <Avatar>
+                                        <AvatarImage src={avatarSrc} data-ai-hint="user avatar" />
+                                        <AvatarFallback>
+                                        {msg.role === 'user' ? (user?.email?.[0]?.toUpperCase() ?? <User />) : <Zap />}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className={cn("p-3 rounded-lg max-w-sm", msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                    </div>
+                                    </div>
+                                );
+                                })}
                                      {isLoading && (
                                         <div className="flex items-start gap-3">
                                              <Avatar>
