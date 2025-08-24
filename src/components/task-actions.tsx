@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, Sparkles, Plus, Trash2, Wand2, FileText, Calendar, ListTodo } from 'lucide-react';
+import { Loader2, Sparkles, Plus, Trash2, Wand2, FileText, Calendar } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -245,21 +245,22 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     <Sparkles className="mr-2 h-4 w-4" /> AI Scheduler
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl min-h-[80vh]">
-                <Tabs defaultValue="generator" className="h-full flex flex-col">
-                    <DialogHeader>
-                        <DialogTitle className="font-headline">AI Scheduler</DialogTitle>
-                        <DialogDescription>
-                             Use the generator for a custom plan, or apply a saved template.
-                        </DialogDescription>
-                         <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="generator">Generator</TabsTrigger>
-                            <TabsTrigger value="templates">Templates</TabsTrigger>
-                        </TabsList>
-                    </DialogHeader>
+            <DialogContent className="sm:max-w-4xl h-[90vh] sm:h-auto sm:max-h-[90vh] flex flex-col">
+                <DialogHeader className="flex-shrink-0">
+                    <DialogTitle className="font-headline">AI Scheduler</DialogTitle>
+                    <DialogDescription>
+                         Use the generator for a custom plan, or apply a saved template.
+                    </DialogDescription>
+                </DialogHeader>
 
+                 <Tabs defaultValue="generator" className="flex-grow flex flex-col overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                        <TabsTrigger value="generator">Generator</TabsTrigger>
+                        <TabsTrigger value="templates">Templates</TabsTrigger>
+                    </TabsList>
+                    
                     {/* --- GENERATOR TAB --- */}
-                    <TabsContent value="generator" className="flex-grow">
+                    <TabsContent value="generator" className="flex-grow flex flex-col overflow-hidden mt-4">
                         <Form {...generatorForm}>
                             <form onSubmit={generatorForm.handleSubmit(handleGenerateSchedule)} className="h-full flex flex-col">
                                 <ScrollArea className="flex-grow">
@@ -287,10 +288,10 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                             control={generatorForm.control} name="restHours"
                                             render={({ field }) => ( <FormItem><FormLabel>Rest & Leisure</FormLabel><FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
-                                    <div>
-                                         <h4 className="text-base font-semibold text-muted-foreground">Goals to Include (Optional)</h4>
+                                    <div className="flex flex-col">
+                                         <FormLabel>Goals to Include (Optional)</FormLabel>
                                          <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
-                                         <ScrollArea className="h-[calc(80vh-16rem)] mt-4 border rounded-md">
+                                         <ScrollArea className="flex-grow border rounded-md">
                                             <div className="p-2 space-y-1">
                                                 {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals found.</div>)}
                                                 {allGoals.map(goal => (
@@ -301,7 +302,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                                 ))}
                                             </div>
                                          </ScrollArea>
-                                         <div className="text-xs text-muted-foreground mt-2">Selected goals: {selectedGoalsForGenerator.length}</div>
+                                         <div className="text-xs text-muted-foreground mt-2 flex-shrink-0">Selected goals: {selectedGoalsForGenerator.length}</div>
                                     </div>
                                 </div>
                                 </ScrollArea>
@@ -316,9 +317,9 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     </TabsContent>
 
                     {/* --- TEMPLATES TAB --- */}
-                    <TabsContent value="templates" className="flex-grow">
+                    <TabsContent value="templates" className="flex-grow flex flex-col mt-4 overflow-hidden">
                        <Card className="h-full flex flex-col">
-                           <CardHeader className="flex flex-row items-center justify-between">
+                           <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
                                <div>
                                     <CardTitle>Schedule Templates</CardTitle>
                                     <CardDescription>Create or apply reusable schedule templates.</CardDescription>
@@ -365,7 +366,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                     </DialogContent>
                                 </Dialog>
                            </CardHeader>
-                            <CardContent className="flex-grow">
+                            <CardContent className="flex-grow overflow-hidden">
                                 {isLoadingTemplates ? (
                                      <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
                                 ) : (
@@ -401,5 +402,3 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
         </Dialog>
     );
 }
-
-    
