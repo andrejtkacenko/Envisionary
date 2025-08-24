@@ -30,6 +30,12 @@ export function AppSidebar() {
     router.push('/login');
   }
 
+  const handleLinkTelegram = () => {
+    if (botName) {
+      window.open(`https://t.me/${botName}?start=link`, '_blank', 'noopener,noreferrer');
+    }
+  }
+
   const navItems = [
     {
       href: "/dashboard",
@@ -120,11 +126,9 @@ export function AppSidebar() {
                             <Settings className="mr-2 h-4 w-4" />
                             Settings
                         </Button>
-                         <Button variant="ghost" className="w-full justify-start" asChild disabled={!botName}>
-                            <a href={botName ? `https://t.me/${botName}?start=link` : '#'} target="_blank" rel="noopener noreferrer">
-                                <Send className="mr-2 h-4 w-4" />
-                                Link Telegram
-                            </a>
+                         <Button variant="ghost" className="w-full justify-start" onClick={handleLinkTelegram} disabled={!botName}>
+                            <Send className="mr-2 h-4 w-4" />
+                            Link Telegram
                         </Button>
                         <Button variant="ghost" className="w-full justify-start">
                             <HelpCircle className="mr-2 h-4 w-4" />
