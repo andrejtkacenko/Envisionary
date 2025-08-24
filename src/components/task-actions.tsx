@@ -250,11 +250,12 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     <DialogHeader>
                         <DialogTitle className="font-headline">AI Scheduler</DialogTitle>
                         <DialogDescription>
-                             <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="generator">Generator</TabsTrigger>
-                                <TabsTrigger value="templates">Templates</TabsTrigger>
-                            </TabsList>
+                             Use the generator for a custom plan, or apply a saved template.
                         </DialogDescription>
+                         <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="generator">Generator</TabsTrigger>
+                            <TabsTrigger value="templates">Templates</TabsTrigger>
+                        </TabsList>
                     </DialogHeader>
 
                     {/* --- GENERATOR TAB --- */}
