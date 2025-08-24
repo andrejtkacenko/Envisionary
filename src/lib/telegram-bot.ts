@@ -1,32 +1,30 @@
 
-
 import { Telegraf, Markup } from 'telegraf';
-import { getTasksSnapshot, addTask } from './goals-service';
-import { findUserByTelegramId } from './firebase-admin-service';
+import { getTasksSnapshot, addTask } from '@/lib/goals-service';
+import { findUserByTelegramId } from '@/lib/firebase-admin-service';
 
-if (!process.env.TELEGRAM_BOT_TOKEN) {
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+
+if (!BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN is not defined in the environment variables");
 }
-if (!process.env.NEXT_PUBLIC_APP_URL) {
+if (!WEB_APP_URL) {
     throw new Error("NEXT_PUBLIC_APP_URL is not defined in the environment variables");
 }
 
-const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
-const webAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-
+const bot = new Telegraf(BOT_TOKEN);
 
 const getWebAppKeyboard = (isLinked: boolean) => {
     const buttons = [];
     if (isLinked) {
-        buttons.push(Markup.button.webApp('Open App', `${webAppUrl}/?from=telegram`));
+        buttons.push(Markup.button.webApp('🚀 Open App', `${WEB_APP_URL}/?from=telegram`));
     } else {
-        // This button will open the linking page.
-        buttons.push(Markup.button.webApp('Link Account', `${webAppUrl}/link-telegram`));
+        buttons.push(Markup.button.webApp('🔗 Link Account', `${WEB_APP_URL}/link-telegram`));
     }
     return Markup.inlineKeyboard(buttons);
-}
+};
 
-// Middleware to check if the user is linked
 bot.use(async (ctx, next) => {
     const from = ctx.from;
     if (!from) return;
@@ -38,10 +36,10 @@ bot.use(async (ctx, next) => {
                 'Welcome! To use me, you need to link your Telegram account to your Zenith Flow profile. Please open the web app to link your account.', 
                 getWebAppKeyboard(false)
             );
-            return; // Stop processing further
+            return;
         }
-        (ctx as any).firebaseUser = user; // Attach user to context
-        await next(); // Continue to next middleware
+        (ctx as any).firebaseUser = user;
+        await next();
     } catch (error) {
         console.error("Firebase auth error for Telegram user:", error);
         ctx.reply("Sorry, I'm having trouble authenticating you right now. Please try again later.");
@@ -107,7 +105,6 @@ bot.on('message', async (ctx) => {
     if ('text' in ctx.message) {
         const taskTitle = ctx.message.text;
 
-        // Ignore commands
         if (taskTitle.startsWith('/')) return;
 
         try {
@@ -115,7 +112,7 @@ bot.on('message', async (ctx) => {
             await addTask(userId, {
                 title: taskTitle,
                 isCompleted: false,
-                priority: 'p3', // Default priority
+                priority: 'p3',
             });
             ctx.reply(`✅ Task added: "${taskTitle}"`);
         } catch (error) {
@@ -126,10 +123,8 @@ bot.on('message', async (ctx) => {
 });
 
 
-// Global error handler
 bot.catch((err, ctx) => {
   console.log(`Ooops, encountered an error for ${ctx.updateType}`, err);
-  // Specifically log if the bot is blocked
   if ((err as any).code === 403 && (err as any).description === 'Forbidden: bot was blocked by the user') {
     console.log(`Bot was blocked by user: ${ctx.from?.id}. No further messages will be sent to this user.`);
   }

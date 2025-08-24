@@ -1,19 +1,14 @@
 
-require('dotenv').config();
 import * as admin from 'firebase-admin';
 
 let serviceAccount: admin.ServiceAccount | null = null;
 
 try {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (serviceAccountKey) {
-      if (serviceAccountKey.startsWith('{')) {
-          serviceAccount = JSON.parse(serviceAccountKey);
-      } else {
-          serviceAccount = JSON.parse(Buffer.from(serviceAccountKey, 'base64').toString('utf-8'));
-      }
-  } else {
+  if (!serviceAccountKey) {
     console.warn("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
+  } else {
+    serviceAccount = JSON.parse(Buffer.from(serviceAccountKey, 'base64').toString('utf-8'));
   }
 } catch (e) {
     console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", e);
