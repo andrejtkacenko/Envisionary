@@ -2,22 +2,52 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, ListTodo, Plus, GripVertical, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ListTodo } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Planner, DraggableTask } from '@/components/planner';
+import { Planner, DraggableTask, TaskCard } from '@/components/planner';
 import { useTasks } from '@/hooks/use-tasks';
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext } from '@dnd-kit/sortable';
 import type { Task } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TaskDialog } from '@/components/task-dialog';
+import { useDroppable } from '@dnd-kit/core';
+
+
+const UnscheduledTasks = ({ tasks }: { tasks: Task[] }) => {
+    const { setNodeRef, isOver } = useDroppable({
+        id: 'unscheduled-drop-area',
+        data: { type: 'unscheduledArea' }
+    });
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Unscheduled</CardTitle>
+                <CardDescription>Tasks for today</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ScrollArea ref={setNodeRef} className={cn("h-96 rounded-md p-1", isOver && "bg-primary/10")}>
+                    <SortableContext items={tasks.map(t => t.id)}>
+                        {tasks.length > 0 ? (
+                            tasks.map(task => (
+                                <DraggableTask key={task.id} task={task} />
+                            ))
+                        ) : (
+                            <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks for today.</div>
+                        )}
+                    </SortableContext>
+                </ScrollArea>
+            </CardContent>
+        </Card>
+    );
+};
 
 
 export default function TasksPage() {
-    const { tasksForDay, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
+    const { tasks, isLoading, handleUpdateTask } = useTasks();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -26,7 +56,7 @@ export default function TasksPage() {
     const firstDayOfMonth = startOfMonth(currentMonth);
     const lastDayOfMonth = endOfMonth(currentMonth);
     const daysInMonth = eachDayOfInterval({
-        start: startOfWeek(firstDayOfMonth, { weekStartsOn: 1 }), // Assuming week starts on Monday
+        start: startOfWeek(firstDayOfMonth, { weekStartsOn: 1 }),
         end: endOfWeek(lastDayOfMonth, { weekStartsOn: 1 }),
     });
     const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
@@ -34,16 +64,19 @@ export default function TasksPage() {
 
     const tasksByDate = useMemo(() => {
         const map = new Map<string, number>();
-        tasksForDay.forEach(task => {
+        tasks.forEach(task => {
             if (task.dueDate) {
                 const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd');
                 map.set(dateKey, (map.get(dateKey) || 0) + 1);
             }
         });
         return map;
-    }, [tasksForDay]);
-
-    const todaysTasks = useMemo(() => tasksForDay.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), selectedDate)), [tasksForDay, selectedDate]);
+    }, [tasks]);
+    
+    const todaysTasks = useMemo(() => {
+        return tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), selectedDate))
+    }, [tasks, selectedDate]);
+    
     const unscheduledTasks = useMemo(() => todaysTasks.filter(t => !t.time), [todaysTasks]);
 
     const hasTasksForDay = (day: Date) => {
@@ -51,7 +84,12 @@ export default function TasksPage() {
         return tasksByDate.has(dateKey);
     };
     
-    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+    const handleDragStart = (event: any) => {
+      const { active } = event;
+      setActiveTask(active.data.current?.task || null);
+    };
 
     const handleDragEnd = (event: DragEndEvent) => {
         setActiveTask(null);
@@ -61,8 +99,9 @@ export default function TasksPage() {
         
         const task = active.data.current.task as Task;
         const overId = over.id as string;
+
         const overIsTimeSlot = over.data.current?.type === 'timeSlot';
-        const overIsUnscheduledArea = over.id === 'unscheduled-drop-area';
+        const overIsUnscheduledArea = overId === 'unscheduled-drop-area';
 
 
         if (overIsTimeSlot) {
@@ -71,16 +110,12 @@ export default function TasksPage() {
                 handleUpdateTask({ ...task, time: newTime });
             }
         } else if (overIsUnscheduledArea) {
-             if (task.time !== null) {
+             if (task.time) {
                 handleUpdateTask({ ...task, time: null });
             }
         }
     };
     
-    const handleDragStart = (event: any) => {
-      const { active } = event;
-      setActiveTask(active.data.current?.task || null);
-    };
 
     return (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -96,7 +131,7 @@ export default function TasksPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
                     {/* Left Column: Calendar & Unscheduled Tasks */}
                     <div className="lg:col-span-1 space-y-8">
                         <Card>
@@ -139,26 +174,9 @@ export default function TasksPage() {
                                 </div>
                             </CardContent>
                         </Card>
+                        
+                        <UnscheduledTasks tasks={unscheduledTasks} />
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Unscheduled</CardTitle>
-                                <CardDescription>Tasks for {format(selectedDate, 'MMMM do')}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <ScrollArea className="h-96">
-                                     <SortableContext items={unscheduledTasks.map(t => t.id)}>
-                                        {unscheduledTasks.length > 0 ? (
-                                            unscheduledTasks.map(task => (
-                                                <DraggableTask key={task.id} task={task} />
-                                            ))
-                                        ) : (
-                                            <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
-                                        )}
-                                    </SortableContext>
-                                </ScrollArea>
-                            </CardContent>
-                        </Card>
                     </div>
 
                     {/* Right Column: Planner View */}
@@ -167,13 +185,12 @@ export default function TasksPage() {
                             date={selectedDate}
                             tasks={todaysTasks}
                             isLoading={isLoading}
-                            onTaskUpdate={handleUpdateTask}
                         />
                     </div>
                 </div>
             </div>
              <DragOverlay>
-                {activeTask ? <DraggableTask task={activeTask} isOverlay /> : null}
+                {activeTask ? <TaskCard task={activeTask} isOverlay /> : null}
             </DragOverlay>
         </DndContext>
     );

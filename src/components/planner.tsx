@@ -1,44 +1,46 @@
 
-
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { format, setHours, getHours, isToday } from 'date-fns';
-import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { useDroppable, useSortable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Plus, GripVertical, Navigation, Sun, Moon } from 'lucide-react';
+import { Loader2, GripVertical, Navigation } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Task, TaskPriority } from '@/types';
 import { cn } from '@/lib/utils';
 import { TaskDialog } from './task-dialog';
 import { Button } from './ui/button';
+import { SortableContext } from '@dnd-kit/sortable';
 
 // --- Time Constants ---
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 const TOTAL_HOURS = 24;
 
-// --- Task Card UI ---
-const TaskCard = ({ task, attributes, listeners }: { task: Task; attributes: any; listeners: any }) => {
-    const priorityColors: Record<TaskPriority, string> = {
-        p1: 'bg-red-500',
-        p2: 'bg-orange-500',
-        p3: 'bg-blue-500',
-        p4: 'bg-gray-400',
-    };
+const priorityColors: Record<TaskPriority, string> = {
+    p1: 'border-red-500',
+    p2: 'border-orange-500',
+    p3: 'border-blue-500',
+    p4: 'border-gray-400',
+};
 
+
+// --- Task Card UI ---
+export const TaskCard = ({ task, isOverlay, attributes, listeners }: { task: Task; isOverlay?: boolean; attributes?: any; listeners?: any }) => {
     return (
-        <Card className="mb-2 bg-card/80 backdrop-blur-sm relative group border-l-4" style={{ borderColor: priorityColors[task.priority].replace('bg-', 'var(--color-') }}>
-             <TaskDialog task={task} onSave={() => {}} onDelete={() => {}}>
+        <Card className={cn("mb-2 bg-card/80 backdrop-blur-sm relative group border-l-4", priorityColors[task.priority], isOverlay && "shadow-lg")}>
+            <TaskDialog task={task} onSave={() => {}} onDelete={() => {}}>
                 <div className="p-3 pl-2 flex items-center cursor-pointer">
                     <div className="flex-grow">
                         <p className="font-semibold text-sm">{task.title}</p>
                         {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
                     </div>
-                    <button {...attributes} {...listeners} className="p-2 opacity-0 group-hover:opacity-100 cursor-grab touch-none">
-                        <GripVertical className="h-5 w-5" />
-                    </button>
+                     {listeners && (
+                        <button {...attributes} {...listeners} className="p-2 opacity-0 group-hover:opacity-100 cursor-grab touch-none">
+                            <GripVertical className="h-5 w-5" />
+                        </button>
+                    )}
                 </div>
             </TaskDialog>
         </Card>
@@ -47,7 +49,7 @@ const TaskCard = ({ task, attributes, listeners }: { task: Task; attributes: any
 
 
 // --- Draggable Task Item ---
-export const DraggableTask = ({ task, isOverlay }: { task: Task, isOverlay?: boolean }) => {
+export const DraggableTask = ({ task }: { task: Task }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: task.id,
         data: { type: 'task', task },
@@ -56,10 +58,11 @@ export const DraggableTask = ({ task, isOverlay }: { task: Task, isOverlay?: boo
     const style = {
         transform: transform ? CSS.Transform.toString(transform) : undefined,
         transition,
+        opacity: isDragging ? 0.5 : 1,
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={cn("relative", isDragging && 'opacity-50', isOverlay && 'z-50')}>
+        <div ref={setNodeRef} style={style}>
             <TaskCard task={task} attributes={attributes} listeners={listeners} />
         </div>
     );
@@ -71,8 +74,10 @@ export const DraggableTask = ({ task, isOverlay }: { task: Task, isOverlay?: boo
 const TimeSlot = ({ time, children }: { time: string; children: React.ReactNode }) => {
     const { setNodeRef, isOver } = useDroppable({ id: time, data: { type: 'timeSlot' } });
     return (
-        <div ref={setNodeRef} className={cn("relative h-full", isOver && "bg-primary/10")}>
-            {children}
+        <div ref={setNodeRef} className={cn("relative h-full pl-4", isOver && "bg-primary/10")}>
+            <SortableContext items={React.Children.toArray(children).map((child: any) => child.key)}>
+                 {children}
+            </SortableContext>
         </div>
     );
 };
@@ -82,10 +87,9 @@ interface PlannerProps {
     date: Date;
     tasks: Task[];
     isLoading: boolean;
-    onTaskUpdate: (task: Task) => void;
 }
 
-export const Planner = ({ date, tasks, isLoading, onTaskUpdate }: PlannerProps) => {
+export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.time), [tasks]);
     const timelineRef = useRef<HTMLDivElement>(null);
     const [nowIndicatorTop, setNowIndicatorTop] = useState(0);
@@ -130,7 +134,8 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate }: PlannerProps) 
 
     useEffect(() => {
         if (isToday(date)) {
-            scrollToNow();
+            // Give it a moment for the DOM to be ready
+            setTimeout(scrollToNow, 100);
         }
     }, [date]);
 
@@ -150,41 +155,36 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate }: PlannerProps) 
                     )}
                 </div>
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col p-0">
+            <CardContent className="flex-grow p-0">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
                         <Loader2 className="h-8 w-8 animate-spin" />
                     </div>
                 ) : (
-                    <div className="flex-grow flex h-full">
-
-                        {/* Timeline Column */}
-                        <div className="w-full relative h-full">
-                            <ScrollArea className="h-full" ref={timelineRef}>
-                                <div className="relative" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
-                                    {Array.from({ length: TOTAL_HOURS }).map((_, i) => (
-                                        <div key={i} className="h-[60px] flex border-b relative">
-                                            <div className="w-16 text-right text-xs text-muted-foreground pr-2 pt-[-2px] relative top-[-6px]">
-                                                {format(setHours(new Date(), i), 'ha')}
-                                            </div>
-                                            <TimeSlot time={format(setHours(new Date(), i), 'HH:00')}>
-                                                <SortableContext items={tasksByTime.get(format(setHours(new Date(), i), 'HH:00'))?.map(t => t.id) || []}>
-                                                    {(tasksByTime.get(format(setHours(new Date(), i), 'HH:00')) || []).map(task => (
-                                                        <DraggableTask key={task.id} task={task} />
-                                                    ))}
-                                                </SortableContext>
-                                            </TimeSlot>
-                                        </div>
-                                    ))}
-                                    {isToday(date) && (
-                                        <div className="absolute left-16 right-0 h-px bg-red-500 z-20 flex items-center" style={{ top: `${nowIndicatorTop}px` }}>
-                                            <div className="h-2 w-2 rounded-full bg-red-500 absolute -left-1"></div>
-                                        </div>
-                                    )}
+                    <ScrollArea className="h-full" ref={timelineRef}>
+                        <div className="relative" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
+                             {isToday(date) && (
+                                <div className="absolute left-16 right-0 h-px bg-red-500 z-20 flex items-center" style={{ top: `${nowIndicatorTop}px` }}>
+                                    <div className="h-2 w-2 rounded-full bg-red-500 absolute -left-1"></div>
                                 </div>
-                            </ScrollArea>
+                            )}
+                            {Array.from({ length: TOTAL_HOURS }).map((_, i) => {
+                                const timeKey = format(setHours(new Date(), i), 'HH:00');
+                                const tasksForSlot = tasksByTime.get(timeKey) || [];
+                                return (
+                                <div key={i} className="h-[60px] flex border-b">
+                                    <div className="w-16 text-right text-xs text-muted-foreground pr-2 pt-[-2px] relative top-[-6px]">
+                                        {format(setHours(new Date(), i), 'ha')}
+                                    </div>
+                                    <TimeSlot time={timeKey}>
+                                        {tasksForSlot.map(task => (
+                                            <DraggableTask key={task.id} task={task} />
+                                        ))}
+                                    </TimeSlot>
+                                </div>
+                            )})}
                         </div>
-                    </div>
+                    </ScrollArea>
                 )}
             </CardContent>
         </Card>
