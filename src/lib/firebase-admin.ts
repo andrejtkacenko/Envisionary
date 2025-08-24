@@ -1,42 +1,36 @@
 
 import * as admin from 'firebase-admin';
 
-let serviceAccount: admin.ServiceAccount | null = null;
-let initialized = false;
+let adminApp: admin.App | null = null;
 
-try {
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!serviceAccountKey) {
-    console.warn("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.");
-  } else {
-    // The key is expected to be a Base64 encoded string.
-    serviceAccount = JSON.parse(Buffer.from(serviceAccountKey, 'base64').toString('utf-8'));
-  }
-} catch (e) {
-    if (e instanceof SyntaxError) {
-        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY:", e.message);
-    } else {
-        console.error("An unexpected error occurred while processing FIREBASE_SERVICE_ACCOUNT_KEY:", e);
-    }
-}
-
-
-if (!admin.apps.length) {
-  if (serviceAccount) {
-     try {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-        initialized = true;
-     } catch (e) {
-        console.error("Firebase Admin SDK initialization failed:", e);
-     }
-  } else {
-    console.warn("Firebase Admin SDK not initialized because the service account key is missing or malformed. Server-side Firebase operations will fail.");
-  }
+// Check if the app is already initialized to prevent errors during hot-reloading
+if (admin.apps.length > 0) {
+  adminApp = admin.apps[0];
 } else {
-    initialized = true; // Already initialized
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+  if (serviceAccountKey) {
+    try {
+      // The key is expected to be a Base64 encoded string. Decode it.
+      const decodedKey = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
+      const serviceAccount = JSON.parse(decodedKey);
+
+      adminApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    } catch (e: any) {
+      if (e.code === 'ENOENT') {
+         console.error('Could not find Firebase service account key. Server-side Firebase operations will fail.');
+      } else if (e instanceof SyntaxError) {
+        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY due to a syntax error in the JSON. Please ensure it is a valid, Base64-encoded JSON object.', e.message);
+      }
+      else {
+        console.error('Firebase Admin SDK initialization failed:', e);
+      }
+    }
+  } else {
+    console.warn('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set. Server-side Firebase operations will fail.');
+  }
 }
 
-
-export const adminApp = initialized ? admin.apps[0] : null;
+export { adminApp };
