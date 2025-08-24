@@ -41,11 +41,6 @@ const setupBot = () => {
     const getWebAppKeyboard = (isLinked: boolean) => {
         // Use the environment variable, but have a hardcoded fallback to prevent errors.
         const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://envisionary-topaz.vercel.app/';
-
-        if (!WEB_APP_URL) {
-            console.error("No Web App URL is configured.");
-            return Markup.inlineKeyboard([]);
-        }
         
         const buttons = [];
         // Ensure the URL doesn't have a trailing slash before appending our path
