@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -21,10 +21,21 @@ interface TelegramLoginButtonProps {
 export const TelegramLoginButton = ({ onAuth, isLoading }: TelegramLoginButtonProps) => {
     const ref = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
+    const [isBotNameMissing, setIsBotNameMissing] = useState(false);
     const botName = process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME;
 
     useEffect(() => {
-        if (ref.current === null || !botName) {
+        if (!botName) {
+            setIsBotNameMissing(true);
+            toast({
+                variant: "destructive",
+                title: "Configuration Error",
+                description: "Telegram Bot Name is not configured.",
+            });
+            return;
+        }
+
+        if (ref.current === null) {
             return;
         }
 
@@ -37,6 +48,7 @@ export const TelegramLoginButton = ({ onAuth, isLoading }: TelegramLoginButtonPr
         script.setAttribute('data-request-access', 'write');
 
         // The key part: define a global function that Telegram will call
+        window.Telegram = window.Telegram || {};
         window.Telegram.Login = {
             auth: (data: any) => onAuth(data)
         };
@@ -50,14 +62,9 @@ export const TelegramLoginButton = ({ onAuth, isLoading }: TelegramLoginButtonPr
                 ref.current.removeChild(script);
             }
         };
-    }, [botName, onAuth]);
+    }, [botName, onAuth, toast]);
 
-    if (!botName) {
-        toast({
-            variant: "destructive",
-            title: "Configuration Error",
-            description: "Telegram Bot Name is not configured.",
-        });
+    if (isBotNameMissing) {
         return <Button disabled>Telegram Login Unavailable</Button>;
     }
     
