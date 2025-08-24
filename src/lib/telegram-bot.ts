@@ -39,9 +39,9 @@ const setupBot = () => {
     });
 
     const getWebAppKeyboard = (isLinked: boolean) => {
-        const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+        // const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
-        if (!WEB_APP_URL) {
+        if (!process.env.NEXT_PUBLIC_APP_URL) {
             console.error("NEXT_PUBLIC_APP_URL is not set in environment variables.");
             // We can't show a button if we don't have a URL.
             // You might want to return an empty keyboard or handle this case differently.
@@ -50,9 +50,9 @@ const setupBot = () => {
         
         const buttons = [];
         if (isLinked) {
-            buttons.push(Markup.button.webApp('🚀 Open App', `${WEB_APP_URL}/?from=telegram`));
+            buttons.push(Markup.button.webApp('🚀 Open App', `${process.env.NEXT_PUBLIC_APP_URL}/?from=telegram`));
         } else {
-            buttons.push(Markup.button.webApp('🔗 Link Account', `${WEB_APP_URL}/link-telegram`));
+            buttons.push(Markup.button.webApp('🔗 Link Account', `${process.env.NEXT_PUBLIC_APP_URL}/link-telegram`));
         }
         return Markup.inlineKeyboard(buttons);
     };
