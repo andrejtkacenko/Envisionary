@@ -13,10 +13,10 @@ import { TaskDialog } from './task-dialog';
 import { Badge } from './ui/badge';
 
 const priorityMap: Record<TaskPriority, { color: string; icon: React.ReactNode }> = {
-    p1: { color: "text-red-500", icon: <Flag className="h-4 w-4 text-red-500" /> },
-    p2: { color: "text-orange-500", icon: <Flag className="h-4 w-4 text-orange-500" /> },
-    p3: { color: "text-blue-500", icon: <Flag className="h-4 w-4 text-blue-500" /> },
-    p4: { color: "text-muted-foreground", icon: <Flag className="h-4 w-4 text-muted-foreground" /> },
+    p1: { color: "text-red-500", icon: <Flag /> },
+    p2: { color: "text-orange-500", icon: <Flag /> },
+    p3: { color: "text-blue-500", icon: <Flag /> },
+    p4: { color: "text-muted-foreground", icon: <Flag /> },
 };
 
 
@@ -41,11 +41,17 @@ export const TaskItem = ({ task, onUpdate, onDelete }: TaskItemProps) => {
             transition={{ duration: 0.2 }}
             className="group flex items-start gap-3 p-3 rounded-lg border border-transparent hover:bg-muted/50"
         >
-            <Checkbox
-                checked={task.isCompleted}
-                onCheckedChange={handleToggleComplete}
-                className="mt-1"
-            />
+            <div className="flex items-center pt-1">
+                <Checkbox
+                    checked={task.isCompleted}
+                    onCheckedChange={handleToggleComplete}
+                    className={cn(
+                        "transition-colors duration-200",
+                        !task.isCompleted && priorityMap[task.priority].color.replace('text-', 'border-'),
+                        task.isCompleted && 'border-muted-foreground'
+                    )}
+                />
+            </div>
             <div className="flex-grow">
                 <p className={cn("text-sm font-medium", task.isCompleted && "line-through text-muted-foreground")}>
                     {task.title}
@@ -68,16 +74,16 @@ export const TaskItem = ({ task, onUpdate, onDelete }: TaskItemProps) => {
                 </div>
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                    <div className={priorityMap[task.priority].color}>
-                        {priorityMap[task.priority].icon}
-                    </div>
-                </Button>
                 <TaskDialog task={task} onSave={onUpdate} onDelete={onDelete}>
                     <Button variant="ghost" size="icon" className="h-7 w-7">
                         <Edit className="h-4 w-4" />
                     </Button>
                 </TaskDialog>
+                <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                    <div className={cn(priorityMap[task.priority].color, "h-4 w-4")}>
+                        {priorityMap[task.priority].icon}
+                    </div>
+                </Button>
             </div>
         </motion.div>
     );

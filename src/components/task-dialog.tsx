@@ -46,10 +46,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
 const priorityMap: Record<TaskPriority, { label: string; color: string; icon: React.ReactNode }> = {
-    p1: { label: "Priority 1", color: "text-red-500", icon: <Flag className="h-4 w-4 text-red-500" /> },
-    p2: { label: "Priority 2", color: "text-orange-500", icon: <Flag className="h-4 w-4 text-orange-500" /> },
-    p3: { label: "Priority 3", color: "text-blue-500", icon: <Flag className="h-4 w-4 text-blue-500" /> },
-    p4: { label: "Priority 4", color: "text-muted-foreground", icon: <Flag className="h-4 w-4 text-muted-foreground" /> },
+    p1: { label: "Priority 1", color: "text-red-500", icon: <Flag className="h-4 w-4" /> },
+    p2: { label: "Priority 2", color: "text-orange-500", icon: <Flag className="h-4 w-4" /> },
+    p3: { label: "Priority 3", color: "text-blue-500", icon: <Flag className="h-4 w-4" /> },
+    p4: { label: "Priority 4", color: "text-muted-foreground", icon: <Flag className="h-4 w-4" /> },
 };
 
 const taskSchema = z.object({
@@ -194,8 +194,8 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                                 <SelectContent>
                                     {Object.entries(priorityMap).map(([key, value]) => (
                                         <SelectItem key={key} value={key}>
-                                            <div className="flex items-center gap-2">
-                                                {React.cloneElement(value.icon, { className: cn("h-4 w-4", value.color)})}
+                                            <div className={cn("flex items-center gap-2", value.color)}>
+                                                {React.cloneElement(value.icon as React.ReactElement)}
                                                 <span>{value.label}</span>
                                             </div>
                                         </SelectItem>

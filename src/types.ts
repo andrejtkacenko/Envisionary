@@ -92,3 +92,11 @@ export type GoalTemplate = {
     likes: number;
     createdAt: Timestamp;
 };
+
+export type ScheduleTemplate = {
+  id: string;
+  name: string;
+  type: 'day' | 'week';
+  data: DailySchedule[];
+  createdAt: Timestamp;
+};
