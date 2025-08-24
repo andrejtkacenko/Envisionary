@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo } from 'react';
@@ -63,7 +64,7 @@ const TaskCard = ({ task, attributes, listeners }: { task: Task, attributes: any
 
 
 export default function TasksPage() {
-    const { tasksForDay, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
+    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -80,16 +81,16 @@ export default function TasksPage() {
 
     const tasksByDate = useMemo(() => {
         const map = new Map<string, number>();
-        tasksForDay.forEach(task => {
+        tasks.forEach(task => {
             if (task.dueDate) {
                 const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd');
                 map.set(dateKey, (map.get(dateKey) || 0) + 1);
             }
         });
         return map;
-    }, [tasksForDay]);
+    }, [tasks]);
     
-    const todaysTasks = useMemo(() => tasksForDay.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), selectedDate)), [tasksForDay, selectedDate]);
+    const todaysTasks = useMemo(() => tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), selectedDate)), [tasks, selectedDate]);
     const unscheduledTasks = useMemo(() => todaysTasks.filter(t => !t.time), [todaysTasks]);
 
     const hasTasksForDay = (day: Date) => {
@@ -109,8 +110,11 @@ export default function TasksPage() {
         const overId = over.id as string;
         const overIsTimeSlot = over.data.current?.type === 'timeSlot';
 
-        if (overIsTimeSlot && task.time !== overId) {
-            handleUpdateTask({ ...task, time: overId });
+        if (overIsTimeSlot) {
+            const newTime = overId === 'unscheduled' ? null : overId;
+            if (task.time !== newTime) {
+                handleUpdateTask({ ...task, time: newTime });
+            }
         }
     };
     
@@ -128,7 +132,7 @@ export default function TasksPage() {
                             <ListTodo /> My Day
                         </h1>
                         <p className="text-muted-foreground">
-                            Plan and visualize your day.
+                            Plan and visualize your day. Drag tasks to schedule them.
                         </p>
                     </div>
                 </div>
@@ -176,31 +180,6 @@ export default function TasksPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                        
-                        <Card>
-                             <CardHeader>
-                                <CardTitle className="text-lg">Unscheduled</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <TaskDialog onSave={(data) => handleAddTask({...data, dueDate: selectedDate, isCompleted: false})} >
-                                    <Button variant="outline" className="w-full mb-4">
-                                        <Plus className="mr-2 h-4 w-4"/> Add Task
-                                    </Button>
-                                </TaskDialog>
-                                <ScrollArea className="h-96">
-                                    <SortableContext items={unscheduledTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                                    {unscheduledTasks.map(task => (
-                                        <DraggableTask key={task.id} task={task} />
-                                    ))}
-                                    </SortableContext>
-                                    {unscheduledTasks.length === 0 && !isLoading && (
-                                        <div className="text-center text-sm text-muted-foreground py-10">No unscheduled tasks for this day.</div>
-                                    )}
-                                    {isLoading && <Loader2 className="mx-auto my-10 h-6 w-6 animate-spin" />}
-                                </ScrollArea>
-                            </CardContent>
-                        </Card>
-
                     </div>
 
                     {/* Right Column: Planner View */}
@@ -208,6 +187,7 @@ export default function TasksPage() {
                         <Planner
                             date={selectedDate}
                             tasks={todaysTasks}
+                            unscheduledTasks={unscheduledTasks}
                             isLoading={isLoading}
                             onTaskCreate={handleAddTask}
                             onTaskUpdate={handleUpdateTask}
