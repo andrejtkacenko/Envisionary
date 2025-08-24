@@ -58,10 +58,11 @@ const prompt = ai.definePrompt({
   prompt: `You are a world-class productivity expert and life coach. Your task is to generate a highly optimized, realistic, and balanced weekly schedule (Monday to Sunday) for a user based on their goals and personal preferences.
 
 **User's Goals:**
+{{#if goals}}
 {{#each goals}}
 - **{{title}}**{{#if estimatedTime}} (Estimated Time: {{estimatedTime}}){{/if}}
 {{/each}}
-{{#if (eq goals.length 0)}}
+{{else}}
 - No specific goals provided. Create a balanced general wellness and productivity schedule based on preferences.
 {{/if}}
 
