@@ -33,10 +33,11 @@ export type Task = {
     title: string;
     description?: string;
     priority: TaskPriority;
-    dueDate?: Date;
+    dueDate?: Date | string; // Allow string for serialization
     isCompleted: boolean;
     createdAt: any;
     subTasks?: Task[];
+    time?: string | null; // e.g., "09:00"
 };
 
 

@@ -10,14 +10,13 @@ import type { Task, TaskPriority } from '@/types';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { TaskDialog } from './task-dialog';
-import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 
 const priorityMap: Record<TaskPriority, { color: string; icon: React.ReactNode }> = {
     p1: { color: "text-red-500", icon: <Flag /> },
     p2: { color: "text-orange-500", icon: <Flag /> },
     p3: { color: "text-blue-500", icon: <Flag /> },
-    p4: { color: "text-muted-foreground", icon: <Flag /> },
+    p4: { color: "text-gray-500", icon: <Flag /> },
 };
 
 
@@ -51,7 +50,7 @@ export const TaskItem = ({ task, onUpdate, onDelete }: TaskItemProps) => {
                     checked={task.isCompleted}
                     onCheckedChange={handleToggleComplete}
                     className={cn(
-                        "transition-colors duration-200",
+                        "transition-colors duration-200 h-5 w-5 rounded-full",
                         !task.isCompleted && priorityMap[task.priority].color.replace('text-', 'border-'),
                         task.isCompleted && 'border-muted-foreground'
                     )}
@@ -71,7 +70,7 @@ export const TaskItem = ({ task, onUpdate, onDelete }: TaskItemProps) => {
                         {task.dueDate && (
                             <div className={cn("flex items-center gap-1.5 text-xs", task.isCompleted ? "text-muted-foreground" : "text-blue-600")}>
                                 <Calendar className="h-3 w-3" />
-                                <span>{format(task.dueDate, "MMM d")}</span>
+                                <span>{format(new Date(task.dueDate), "MMM d")}</span>
                             </div>
                         )}
                         {totalSubTasks > 0 && (

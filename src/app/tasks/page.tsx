@@ -1,95 +1,25 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Loader2, Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ListTodo, CheckCircle, Circle } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday, parseISO } from 'date-fns';
+import React, { useState, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, ListTodo } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/AuthContext';
-import { getTasks, addTask, updateTask, deleteTask } from '@/lib/goals-service';
-import type { Task } from '@/types';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { TaskDialog } from '@/components/task-dialog';
-import { TaskItem } from '@/components/task-item';
+import { Planner } from '@/components/planner';
+import { useTasks } from '@/hooks/use-tasks';
 
 export default function TasksPage() {
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const [isLoading, setIsLoading] = useState(true);
-    const [tasks, setTasks] = useState<Task[]>([]);
-    
-    // Calendar state
+    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
-
-    useEffect(() => {
-        if (user) {
-            setIsLoading(true);
-            const unsubscribe = getTasks(user.uid, (userTasks) => {
-                setTasks(userTasks);
-                setIsLoading(false);
-            }, (error) => {
-                console.error(error);
-                toast({ variant: 'destructive', title: 'Error loading tasks' });
-                setIsLoading(false);
-            });
-            return () => unsubscribe();
-        }
-    }, [user, toast]);
-    
-    const handleAddTask = async (taskData: Omit<Task, 'id' | 'createdAt'>) => {
-        if (!user) return;
-        try {
-            await addTask(user.uid, taskData);
-            toast({ title: "Task Created" });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: "Failed to create task" });
-        }
-    };
-
-    const handleUpdateTask = async (task: Task) => {
-        if (!user) return;
-        try {
-            await updateTask(user.uid, task);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: "Failed to update task" });
-        }
-    };
-    
-    const handleDeleteTask = async (taskId: string) => {
-        if (!user) return;
-        try {
-            await deleteTask(user.uid, taskId);
-            toast({ title: "Task Deleted" });
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: "Failed to delete task" });
-        }
-    }
-
-    const filteredTasks = useMemo(() => {
-        return tasks
-            .filter(task => task.dueDate && isSameDay(task.dueDate, selectedDate))
-            .sort((a, b) => {
-                // Sort by completion status first (incomplete first), then by priority
-                if (a.isCompleted !== b.isCompleted) {
-                    return a.isCompleted ? 1 : -1;
-                }
-                const priorityOrder = ['p1', 'p2', 'p3', 'p4'];
-                return priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
-            });
-    }, [tasks, selectedDate]);
 
     // Calendar logic
     const firstDayOfMonth = startOfMonth(currentMonth);
     const lastDayOfMonth = endOfMonth(currentMonth);
     const daysInMonth = eachDayOfInterval({
-        start: startOfWeek(firstDayOfMonth, { weekStartsOn: 1 }),
+        start: startOfWeek(firstDayOfMonth, { weekStartsOn: 1 }), // Assuming week starts on Monday
         end: endOfWeek(lastDayOfMonth, { weekStartsOn: 1 }),
     });
     const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
@@ -99,7 +29,7 @@ export default function TasksPage() {
         const map = new Map<string, number>();
         tasks.forEach(task => {
             if (task.dueDate) {
-                const dateKey = format(task.dueDate, 'yyyy-MM-dd');
+                const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd');
                 map.set(dateKey, (map.get(dateKey) || 0) + 1);
             }
         });
@@ -116,20 +46,15 @@ export default function TasksPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-                        <ListTodo /> Tasks
+                        <ListTodo /> My Day
                     </h1>
                     <p className="text-muted-foreground">
-                        Manage your daily tasks and to-do lists.
+                        Plan and visualize your day.
                     </p>
                 </div>
-                <TaskDialog onSave={handleAddTask}>
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" /> Add Task
-                    </Button>
-                </TaskDialog>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Left Column: Calendar */}
                 <div className="lg:col-span-1 space-y-8">
                     <Card>
@@ -162,7 +87,7 @@ export default function TasksPage() {
                                             format(day, 'M') !== format(currentMonth, 'M') && "text-muted-foreground/50",
                                             isToday(day) && "bg-primary/10 text-primary",
                                             isSameDay(day, selectedDate) && "bg-primary text-primary-foreground",
-                                            hasTasksForDay(day) && !isSameDay(day, selectedDate) && "bg-accent"
+                                            hasTasksForDay(day) && !isSameDay(day, selectedDate) && "font-bold"
                                         )}
                                     >
                                         <span>{format(day, 'd')}</span>
@@ -174,46 +99,16 @@ export default function TasksPage() {
                     </Card>
                 </div>
 
-                 {/* Right Column: Schedule View */}
-                <div className="lg:col-span-2">
-                    <Card className="h-full">
-                        <CardHeader>
-                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                <div>
-                                    <CardTitle>Tasks for {format(selectedDate, "eeee, MMMM do")}</CardTitle>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {isLoading && (
-                                <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
-                                    <Loader2 className="h-8 w-8 animate-spin" />
-                                    <p>Loading your tasks...</p>
-                                </div>
-                            )}
-                            {!isLoading && (
-                                <ScrollArea className="h-[calc(100vh-22rem)]">
-                                    <div className="space-y-2">
-                                        {filteredTasks.length === 0 && (
-                                            <div className="flex flex-col items-center justify-center h-96 gap-2 text-muted-foreground">
-                                                <CheckCircle className="h-12 w-12" />
-                                                <p>No tasks for this day.</p>
-                                                <p className="text-xs">Add a task or enjoy your day off!</p>
-                                            </div>
-                                        )}
-                                        {filteredTasks.map(task => (
-                                            <TaskItem 
-                                                key={task.id} 
-                                                task={task} 
-                                                onUpdate={handleUpdateTask}
-                                                onDelete={handleDeleteTask}
-                                            />
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                            )}
-                        </CardContent>
-                    </Card>
+                 {/* Right Column: Planner View */}
+                <div className="lg:col-span-3">
+                    <Planner
+                        date={selectedDate}
+                        tasks={tasks}
+                        isLoading={isLoading}
+                        onTaskCreate={handleAddTask}
+                        onTaskUpdate={handleUpdateTask}
+                        onTaskDelete={handleDeleteTask}
+                    />
                 </div>
             </div>
         </div>
