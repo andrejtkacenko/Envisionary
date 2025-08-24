@@ -17,11 +17,25 @@ export const useTasks = () => {
         if (user) {
             setIsLoading(true);
             const unsubscribe = getTasks(user.uid, (userTasks) => {
-                const formattedTasks = userTasks.map(task => ({
-                    ...task,
-                    dueDate: task.dueDate ? new Date((task.dueDate as any).seconds * 1000) : undefined,
-                }));
-                setTasks(formattedTasks);
+                const formattedTasks = userTasks.map(task => {
+                    let dueDate;
+                    if (task.dueDate) {
+                        // Handle both Firestore Timestamps and date strings
+                        if (typeof task.dueDate === 'string') {
+                            dueDate = new Date(task.dueDate);
+                        } else if (task.dueDate && typeof (task.dueDate as any).toDate === 'function') {
+                            // Firestore Timestamp
+                            dueDate = (task.dueDate as any).toDate();
+                        } else {
+                            dueDate = task.dueDate;
+                        }
+                    }
+                    return {
+                        ...task,
+                        dueDate,
+                    };
+                });
+                setTasks(formattedTasks as Task[]);
                 setIsLoading(false);
             }, (error) => {
                 console.error(error);
