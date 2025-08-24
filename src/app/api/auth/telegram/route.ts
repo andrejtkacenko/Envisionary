@@ -5,12 +5,6 @@ import { findUserByTelegramId, createUserFromTelegramData } from '@/lib/firebase
 import { getAuth } from 'firebase-admin/auth';
 import { adminApp } from '@/lib/firebase-admin';
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
-if (!BOT_TOKEN) {
-  throw new Error('TELEGRAM_BOT_TOKEN is not defined');
-}
-
 // Function to validate hash for Telegram Mini App (Web App)
 const validateWebAppHash = (data: URLSearchParams, botToken: string): boolean => {
     const hash = data.get('hash');
@@ -48,6 +42,12 @@ const validateLoginWidgetHash = (data: Record<string, any>, botToken: string): b
 
 
 export async function POST(req: NextRequest) {
+    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+    if (!BOT_TOKEN) {
+      return NextResponse.json({ error: 'TELEGRAM_BOT_TOKEN is not configured' }, { status: 500 });
+    }
+
     if (!adminApp) {
         return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
     }
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         try {
             const jsonData = JSON.parse(body);
             if (jsonData.telegramData) {
-                isValid = validateLoginWidgetHash(jsonData.telegramData, BOT_TOKEN!);
+                isValid = validateLoginWidgetHash(jsonData.telegramData, BOT_TOKEN);
                 if (isValid) {
                     telegramUser = jsonData.telegramData;
                 }
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         // If not parsed as JSON, try URL-encoded
         if (!telegramUser) {
              const params = new URLSearchParams(body);
-             isValid = validateWebAppHash(params, BOT_TOKEN!);
+             isValid = validateWebAppHash(params, BOT_TOKEN);
              const userJson = params.get('user');
              if (isValid && userJson) {
                 telegramUser = JSON.parse(userJson);

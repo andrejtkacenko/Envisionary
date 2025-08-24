@@ -4,18 +4,15 @@ import { getTasksSnapshot, addTask } from '@/lib/goals-service';
 import { findUserByTelegramId } from '@/lib/firebase-admin-service';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
 
-if (!BOT_TOKEN) {
-    throw new Error("TELEGRAM_BOT_TOKEN is not defined in the environment variables");
-}
-if (!WEB_APP_URL) {
-    throw new Error("NEXT_PUBLIC_APP_URL is not defined in the environment variables");
-}
-
-const bot = new Telegraf(BOT_TOKEN);
+const bot = new Telegraf(BOT_TOKEN || '');
 
 const getWebAppKeyboard = (isLinked: boolean) => {
+    const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+     if (!WEB_APP_URL) {
+        console.error("NEXT_PUBLIC_APP_URL is not defined in the environment variables");
+        return Markup.inlineKeyboard([]);
+    }
     const buttons = [];
     if (isLinked) {
         buttons.push(Markup.button.webApp('🚀 Open App', `${WEB_APP_URL}/?from=telegram`));
@@ -26,6 +23,11 @@ const getWebAppKeyboard = (isLinked: boolean) => {
 };
 
 bot.use(async (ctx, next) => {
+    if (!BOT_TOKEN) {
+        console.error("TELEGRAM_BOT_TOKEN is not defined, bot cannot process updates.");
+        return;
+    }
+
     const from = ctx.from;
     if (!from) return;
 
