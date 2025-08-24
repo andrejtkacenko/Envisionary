@@ -1,70 +1,23 @@
 
-
 "use client";
 
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ListTodo, Plus, GripVertical, Loader2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Planner } from '@/components/planner';
+import { Planner, DraggableTask } from '@/components/planner';
 import { useTasks } from '@/hooks/use-tasks';
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import type { Task, TaskPriority } from '@/types';
+import { SortableContext } from '@dnd-kit/sortable';
+import type { Task } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TaskDialog } from '@/components/task-dialog';
 
 
-// --- Draggable Task Components (moved here to share between unscheduled and planner) ---
-
-const DraggableTask = ({ task, isOverlay }: { task: Task, isOverlay?: boolean }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: task.id,
-        data: { type: 'task', task },
-    });
-
-    const style = {
-        transform: transform ? CSS.Transform.toString(transform) : undefined,
-        transition,
-    };
-
-    return (
-        <div ref={setNodeRef} style={style} className={cn("relative", isDragging && 'opacity-50', isOverlay && 'z-50')}>
-            <TaskCard task={task} attributes={attributes} listeners={listeners} />
-        </div>
-    );
-};
-
-const TaskCard = ({ task, attributes, listeners }: { task: Task, attributes: any, listeners: any }) => {
-    const priorityColors: Record<TaskPriority, string> = {
-        p1: 'bg-red-500',
-        p2: 'bg-orange-500',
-        p3: 'bg-blue-500',
-        p4: 'bg-gray-400',
-    };
-
-    return (
-        <Card className="mb-2 bg-card/80 backdrop-blur-sm relative group">
-            <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-lg", priorityColors[task.priority])} />
-            <CardContent className="p-3 pl-4 flex items-center">
-                <div className="flex-grow">
-                    <p className="font-semibold text-sm">{task.title}</p>
-                    {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
-                </div>
-                 <button {...attributes} {...listeners} className="p-2 opacity-50 group-hover:opacity-100 cursor-grab touch-none">
-                     <GripVertical className="h-5 w-5" />
-                 </button>
-            </CardContent>
-        </Card>
-    );
-};
-
-
 export default function TasksPage() {
-    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
+    const { tasksForDay, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -81,16 +34,16 @@ export default function TasksPage() {
 
     const tasksByDate = useMemo(() => {
         const map = new Map<string, number>();
-        tasks.forEach(task => {
+        tasksForDay.forEach(task => {
             if (task.dueDate) {
                 const dateKey = format(new Date(task.dueDate), 'yyyy-MM-dd');
                 map.set(dateKey, (map.get(dateKey) || 0) + 1);
             }
         });
         return map;
-    }, [tasks]);
-    
-    const todaysTasks = useMemo(() => tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), selectedDate)), [tasks, selectedDate]);
+    }, [tasksForDay]);
+
+    const todaysTasks = useMemo(() => tasksForDay.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), selectedDate)), [tasksForDay, selectedDate]);
     const unscheduledTasks = useMemo(() => todaysTasks.filter(t => !t.time), [todaysTasks]);
 
     const hasTasksForDay = (day: Date) => {
@@ -109,11 +62,17 @@ export default function TasksPage() {
         const task = active.data.current.task as Task;
         const overId = over.id as string;
         const overIsTimeSlot = over.data.current?.type === 'timeSlot';
+        const overIsUnscheduledArea = over.id === 'unscheduled-drop-area';
+
 
         if (overIsTimeSlot) {
-            const newTime = overId === 'unscheduled' ? null : overId;
+            const newTime = overId;
             if (task.time !== newTime) {
                 handleUpdateTask({ ...task, time: newTime });
+            }
+        } else if (overIsUnscheduledArea) {
+             if (task.time !== null) {
+                handleUpdateTask({ ...task, time: null });
             }
         }
     };
@@ -180,6 +139,26 @@ export default function TasksPage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Unscheduled</CardTitle>
+                                <CardDescription>Tasks for {format(selectedDate, 'MMMM do')}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ScrollArea className="h-96">
+                                     <SortableContext items={unscheduledTasks.map(t => t.id)}>
+                                        {unscheduledTasks.length > 0 ? (
+                                            unscheduledTasks.map(task => (
+                                                <DraggableTask key={task.id} task={task} />
+                                            ))
+                                        ) : (
+                                            <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
+                                        )}
+                                    </SortableContext>
+                                </ScrollArea>
+                            </CardContent>
+                        </Card>
                     </div>
 
                     {/* Right Column: Planner View */}
@@ -187,11 +166,8 @@ export default function TasksPage() {
                         <Planner
                             date={selectedDate}
                             tasks={todaysTasks}
-                            unscheduledTasks={unscheduledTasks}
                             isLoading={isLoading}
-                            onTaskCreate={handleAddTask}
                             onTaskUpdate={handleUpdateTask}
-                            onTaskDelete={handleDeleteTask}
                         />
                     </div>
                 </div>

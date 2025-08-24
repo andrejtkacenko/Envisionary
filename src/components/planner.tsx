@@ -19,25 +19,6 @@ import { Button } from './ui/button';
 const HOUR_HEIGHT = 60; // height of one hour in pixels
 const TOTAL_HOURS = 24;
 
-// --- Draggable Task Item ---
-const DraggableTask = ({ task }: { task: Task }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: task.id,
-        data: { type: 'task', task },
-    });
-
-    const style = {
-        transform: transform ? CSS.Transform.toString(transform) : undefined,
-        transition,
-    };
-
-    return (
-        <div ref={setNodeRef} style={style} className={cn("relative", isDragging && 'opacity-50', 'z-10')}>
-            <TaskCard task={task} attributes={attributes} listeners={listeners} />
-        </div>
-    );
-};
-
 // --- Task Card UI ---
 const TaskCard = ({ task, attributes, listeners }: { task: Task; attributes: any; listeners: any }) => {
     const priorityColors: Record<TaskPriority, string> = {
@@ -64,6 +45,28 @@ const TaskCard = ({ task, attributes, listeners }: { task: Task; attributes: any
     );
 };
 
+
+// --- Draggable Task Item ---
+export const DraggableTask = ({ task, isOverlay }: { task: Task, isOverlay?: boolean }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: task.id,
+        data: { type: 'task', task },
+    });
+
+    const style = {
+        transform: transform ? CSS.Transform.toString(transform) : undefined,
+        transition,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className={cn("relative", isDragging && 'opacity-50', isOverlay && 'z-50')}>
+            <TaskCard task={task} attributes={attributes} listeners={listeners} />
+        </div>
+    );
+};
+
+
+
 // --- Droppable Time Slot ---
 const TimeSlot = ({ time, children }: { time: string; children: React.ReactNode }) => {
     const { setNodeRef, isOver } = useDroppable({ id: time, data: { type: 'timeSlot' } });
@@ -78,14 +81,11 @@ const TimeSlot = ({ time, children }: { time: string; children: React.ReactNode 
 interface PlannerProps {
     date: Date;
     tasks: Task[];
-    unscheduledTasks: Task[];
     isLoading: boolean;
-    onTaskCreate: (taskData: Omit<Task, 'id' | 'createdAt'>) => void;
     onTaskUpdate: (task: Task) => void;
-    onTaskDelete: (taskId: string) => void;
 }
 
-export const Planner = ({ date, tasks, unscheduledTasks, isLoading, onTaskCreate, onTaskUpdate, onTaskDelete }: PlannerProps) => {
+export const Planner = ({ date, tasks, isLoading, onTaskUpdate }: PlannerProps) => {
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.time), [tasks]);
     const timelineRef = useRef<HTMLDivElement>(null);
     const [nowIndicatorTop, setNowIndicatorTop] = useState(0);
@@ -129,7 +129,9 @@ export const Planner = ({ date, tasks, unscheduledTasks, isLoading, onTaskCreate
     }, []);
 
     useEffect(() => {
-        scrollToNow();
+        if (isToday(date)) {
+            scrollToNow();
+        }
     }, [date]);
 
 
@@ -141,9 +143,11 @@ export const Planner = ({ date, tasks, unscheduledTasks, isLoading, onTaskCreate
                         <CardTitle className="font-headline">Schedule for {format(date, "eeee, MMMM do")}</CardTitle>
                         <CardDescription>A flexible canvas for your day.</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={scrollToNow}>
-                        <Navigation className="h-4 w-4 mr-2" /> Go to Now
-                    </Button>
+                     {isToday(date) && (
+                        <Button variant="outline" size="sm" onClick={scrollToNow}>
+                            <Navigation className="h-4 w-4 mr-2" /> Go to Now
+                        </Button>
+                    )}
                 </div>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col p-0">
