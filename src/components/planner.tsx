@@ -156,7 +156,7 @@ export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
                     )}
                 </div>
             </CardHeader>
-            <CardContent className="flex-grow p-0">
+            <CardContent className="flex-grow p-0 overflow-hidden">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
                         <Loader2 className="h-8 w-8 animate-spin" />
