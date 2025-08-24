@@ -11,6 +11,7 @@ import { Planner } from '@/components/planner';
 import { useTasks } from '@/hooks/use-tasks';
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { Task, TaskPriority } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TaskDialog } from '@/components/task-dialog';
@@ -25,7 +26,7 @@ const DraggableTask = ({ task, isOverlay }: { task: Task, isOverlay?: boolean })
     });
 
     const style = {
-        transform: CSS.Transform.toString(transform),
+        transform: transform ? CSS.Transform.toString(transform) : undefined,
         transition,
     };
 
