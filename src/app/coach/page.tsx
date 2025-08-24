@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -32,9 +33,9 @@ type ChatMessage = {
     toolResult?: any;
 };
 
-const initialMessage: ChatMessage = { 
-    role: 'assistant', 
-    content: "Hello! I'm your AI Coach. I can help you manage your goals and schedule. Try asking me to create a new goal or to find time for an existing one. How can I support you today?" 
+const initialMessage: ChatMessage = {
+    role: 'assistant',
+    content: "Hello! I'm your AI Coach. I can help you manage your goals and schedule. Try asking me to create a new goal or to find time for an existing one. How can I support you today?"
 };
 
 const callTool = async (toolRequest: any, userId: string): Promise<any> => {
@@ -68,13 +69,13 @@ export default function CoachPage() {
     const [analysisResult, setAnalysisResult] = useState<{summary: string} | null>(null);
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [goals, setGoals] = useState<Goal[]>([]);
-    
+
     const suggestions = [
         "Create a new goal to learn Next.js",
         "When can I work on my 'read more' goal?",
         "What are my current goals?",
     ];
-    
+
     useEffect(() => {
       setIsClient(true);
     }, [])
@@ -131,7 +132,7 @@ export default function CoachPage() {
             newHistory.push({ role: 'user', content: message });
             setUserInput('');
         }
-        
+
         setChatHistory(newHistory);
         setIsLoading(true);
 
@@ -164,14 +165,14 @@ export default function CoachPage() {
             fetchGoals(); // Refresh goals after any interaction in case they changed
         }
     };
-    
+
     const handleAnalyzeProgress = async () => {
         setIsAnalysisLoading(true);
         try {
             const taskString = goals
                 .map((goal) => `- ${goal.title} (Status: ${goal.status}, Priority: ${goal.priority})`)
                 .join("\n");
-            
+
             const result = await summarizeProgress({ tasks: taskString || "No goals found." });
             setAnalysisResult(result);
             setIsAnalysisModalOpen(true);
@@ -321,7 +322,7 @@ export default function CoachPage() {
                     </Card>
                 </div>
             </div>
-            
+
             {/* Analysis Modal */}
             <Dialog open={isAnalysisModalOpen} onOpenChange={setIsAnalysisModalOpen}>
                 <DialogContent className="sm:max-w-md">
