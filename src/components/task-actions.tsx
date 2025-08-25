@@ -402,3 +402,5 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
         </Dialog>
     );
 }
+
+    
