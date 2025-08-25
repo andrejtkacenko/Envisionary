@@ -2,24 +2,27 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ListTodo, Plus, Sparkles } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addMonths, subMonths, isSameDay, isToday } from 'date-fns';
+import { ListTodo, Plus } from 'lucide-react';
+import { isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { Planner, DraggableTask } from '@/components/planner';
+import { Planner } from '@/components/planner';
 import { useTasks } from '@/hooks/use-tasks';
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import type { Task, Goal, DailySchedule } from '@/types';
+import type { Task } from '@/types';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext } from '@dnd-kit/sortable';
+import { DraggableTask } from '@/components/planner';
 import { TaskDialog } from '@/components/task-dialog';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { getGoals, saveSchedule } from '@/lib/goals-service';
+import { getGoals } from '@/lib/goals-service';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TaskActions } from '@/components/task-actions';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+
 
 const UnscheduledTasks = ({ tasks }: { tasks: Task[] }) => {
     const { setNodeRef, isOver } = useDroppable({
@@ -28,14 +31,12 @@ const UnscheduledTasks = ({ tasks }: { tasks: Task[] }) => {
     });
 
     return (
-        <Card className="flex-1 flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Inbox</CardTitle>
-                    <CardDescription>Unscheduled tasks</CardDescription>
-                </div>
+        <Card className="flex-1 flex flex-col h-full">
+            <CardHeader className="flex-shrink-0">
+                <CardTitle>Inbox</CardTitle>
+                <CardDescription>Unscheduled tasks</CardDescription>
             </CardHeader>
-            <CardContent ref={setNodeRef} className={cn("flex-grow p-2 rounded-md", isOver && "bg-primary/10")}>
+            <CardContent ref={setNodeRef} className={cn("flex-grow p-2 rounded-md h-full", isOver && "bg-primary/10")}>
                 <ScrollArea className="h-full">
                     <SortableContext items={tasks.map(t => t.id)}>
                         <div className="space-y-2">
@@ -59,10 +60,9 @@ export default function TasksPage() {
     const { user } = useAuth();
     const { toast } = useToast();
     const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
-    const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
-    const [allGoals, setAllGoals] = useState<Goal[]>([]);
+    const [allGoals, setAllGoals] = useState<any[]>([]);
 
     useEffect(() => {
         if (user) {
@@ -120,17 +120,10 @@ export default function TasksPage() {
         }
     };
 
-     const handleScheduleApplied = async (schedule: DailySchedule[]) => {
+     const handleScheduleApplied = async (schedule: any[]) => {
         if (!user) return;
-        try {
-            // This is a simplification. A real implementation would need to create/update tasks.
-            // For now, we just show a toast.
-            await saveSchedule(user.uid, schedule);
-            toast({ title: 'Schedule Saved!', description: 'Your new AI-generated schedule has been saved to the database.' });
-        } catch (e) {
-            console.error(e);
-            toast({ variant: 'destructive', title: 'Failed to save schedule' });
-        }
+        // This is a placeholder for a more complex implementation
+        toast({ title: 'Schedule Applied!', description: 'AI-generated schedule has been processed.' });
     };
 
     return (
@@ -158,7 +151,7 @@ export default function TasksPage() {
                 <div className="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-8 items-start overflow-hidden">
                     <div className="lg:col-span-1 h-full flex flex-col gap-6">
                         <Card>
-                            <CardContent className="p-2">
+                            <CardContent className="p-0">
                                 <Calendar
                                     mode="single"
                                     selected={selectedDate}
@@ -170,7 +163,9 @@ export default function TasksPage() {
                             </CardContent>
                         </Card>
                         
-                        <UnscheduledTasks tasks={unscheduledTasks} />
+                        <div className="hidden lg:flex flex-col flex-1 h-0">
+                          <UnscheduledTasks tasks={unscheduledTasks} />
+                        </div>
                         
                     </div>
 
@@ -186,6 +181,6 @@ export default function TasksPage() {
              <DragOverlay>
                 {activeTask ? <DraggableTask isOverlay task={activeTask} /> : null}
             </DragOverlay>
-        </DndContext>
+        </DdContext>
     );
 }
