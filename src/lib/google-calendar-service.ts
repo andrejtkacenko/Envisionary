@@ -67,7 +67,7 @@ export const getGoogleCalendarEvents = async (userId: string, timeMin: string, t
         console.log(`[Google Calendar Service] TODO: Implement fetching events for user ${userId}. Skipping for now.`);
         return [];
 
-    } catch (error) {
+    } catch (error) => {
         console.error('Error fetching Google Calendar events:', error);
         return [];
     }
@@ -93,7 +93,7 @@ export const createTaskInGoogleCalendar = async (userId: string, task: Task) => 
             },
             end: {
                // This logic needs to be more robust to handle duration
-               dateTime: new Date(new Date(task.dueDate!).getTime() + 60 * 60 * 1000).toISOString(),
+               dateTime: new Date(new Date(task.dueDate as Date).getTime() + 60 * 60 * 1000).toISOString(),
                timeZone: 'America/Los_Angeles',
             },
         };
@@ -117,7 +117,7 @@ export const createTaskInGoogleCalendar = async (userId: string, task: Task) => 
 /**
  * Generates a URL that the user will be sent to to consent to calendar access.
  */
-export const getGoogleAuthUrl = () => {
+export const getGoogleAuthUrl = async () => {
     const scopes = [
         'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/calendar.readonly'
