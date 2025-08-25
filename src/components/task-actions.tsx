@@ -245,25 +245,25 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     <Sparkles className="mr-2 h-4 w-4" /> AI Scheduler
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] h-auto flex flex-col">
-                <DialogHeader className="flex-shrink-0">
+            <DialogContent className="sm:max-w-4xl p-0">
+                 <DialogHeader className="p-6 pb-0">
                     <DialogTitle className="font-headline">AI Scheduler</DialogTitle>
                     <DialogDescription>
                          Use the generator for a custom plan, or apply a saved template.
                     </DialogDescription>
                 </DialogHeader>
-
-                 <Tabs defaultValue="generator" className="flex-grow flex flex-col overflow-hidden">
-                    <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                <ScrollArea className="max-h-[80vh]">
+                 <div className="p-6">
+                 <Tabs defaultValue="generator" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="generator">Generator</TabsTrigger>
                         <TabsTrigger value="templates">Templates</TabsTrigger>
                     </TabsList>
                     
                     {/* --- GENERATOR TAB --- */}
-                    <TabsContent value="generator" className="flex-grow flex flex-col overflow-hidden mt-4">
+                    <TabsContent value="generator">
                         <Form {...generatorForm}>
-                            <form onSubmit={generatorForm.handleSubmit(handleGenerateSchedule)} className="h-full flex flex-col overflow-hidden">
-                                <ScrollArea className="flex-grow pr-4">
+                            <form onSubmit={generatorForm.handleSubmit(handleGenerateSchedule)}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4">
                                     <div className="space-y-6">
                                         <FormField
@@ -288,7 +288,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                             control={generatorForm.control} name="restHours"
                                             render={({ field }) => ( <FormItem><FormLabel>Rest & Leisure</FormLabel><FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
-                                    <div className="flex flex-col overflow-hidden">
+                                    <div className="flex flex-col">
                                          <FormLabel>Goals to Include (Optional)</FormLabel>
                                          <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
                                          <ScrollArea className="flex-1 border rounded-md">
@@ -305,8 +305,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                          <div className="text-xs text-muted-foreground mt-2 flex-shrink-0">Selected goals: {selectedGoalsForGenerator.length}</div>
                                     </div>
                                 </div>
-                                </ScrollArea>
-                                <DialogFooter className="pt-4 flex-shrink-0">
+                                <DialogFooter className="pt-4 flex-shrink-0 sticky bottom-0 bg-background py-4">
                                     <Button type="submit" disabled={isGeneratingSchedule} className="w-full sm:w-auto">
                                         {isGeneratingSchedule ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                         Generate Schedule
@@ -317,7 +316,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     </TabsContent>
 
                     {/* --- TEMPLATES TAB --- */}
-                    <TabsContent value="templates" className="flex-grow flex flex-col mt-4 overflow-hidden">
+                    <TabsContent value="templates">
                        <Card className="h-full flex flex-col">
                            <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
                                <div>
@@ -339,7 +338,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                                         <FormField control={templateForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="e.g., A 9-5 work schedule with morning workouts..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                                                         <FormField control={templateForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>Template Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="week">Full Week</SelectItem><SelectItem value="day">Single Day</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                                     </div>
-                                                    <div className="flex flex-col overflow-hidden">
+                                                    <div className="flex flex-col">
                                                          <FormLabel>Attach Goals (Optional)</FormLabel>
                                                          <p className="text-xs text-muted-foreground mb-2">Select goals to include in the generation.</p>
                                                          <ScrollArea className="h-64 mt-2 border rounded-md">
@@ -366,41 +365,39 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                     </DialogContent>
                                 </Dialog>
                            </CardHeader>
-                            <CardContent className="flex-grow overflow-hidden">
+                            <CardContent className="flex-grow">
                                 {isLoadingTemplates ? (
                                      <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
                                 ) : (
-                                    <ScrollArea className="h-full">
-                                        <div className="pr-4 space-y-3">
-                                             {templates.length === 0 && (
-                                                <div className="text-center text-muted-foreground py-20"><p>No templates found.</p><p className="text-sm">Click "New" to create one.</p></div>
-                                             )}
-                                            {templates.map(template => (
-                                                <Card key={template.id}>
-                                                    <CardContent className="p-3 flex items-center justify-between">
-                                                        <div className="flex-grow">
-                                                            <p className="font-semibold">{template.name}</p>
-                                                            <Badge variant="outline" className="mt-1 capitalize">{template.type === 'week' ? <Calendar className="mr-1.5 h-3 w-3" /> : <FileText className="mr-1.5 h-3 w-3" />}{template.type}</Badge>
-                                                        </div>
-                                                        <div className="flex gap-1">
-                                                            <Button size="sm" variant="secondary" onClick={() => handleApplyTemplate(template.data)}>Apply</Button>
-                                                            <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => handleDeleteTemplate(template.id)} disabled={isDeleting === template.id}>
-                                                                {isDeleting === template.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                                            </Button>
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    </ScrollArea>
+                                    <div className="pr-4 space-y-3">
+                                         {templates.length === 0 && (
+                                            <div className="text-center text-muted-foreground py-20"><p>No templates found.</p><p className="text-sm">Click "New" to create one.</p></div>
+                                         )}
+                                        {templates.map(template => (
+                                            <Card key={template.id}>
+                                                <CardContent className="p-3 flex items-center justify-between">
+                                                    <div className="flex-grow">
+                                                        <p className="font-semibold">{template.name}</p>
+                                                        <Badge variant="outline" className="mt-1 capitalize">{template.type === 'week' ? <Calendar className="mr-1.5 h-3 w-3" /> : <FileText className="mr-1.5 h-3 w-3" />}{template.type}</Badge>
+                                                    </div>
+                                                    <div className="flex gap-1">
+                                                        <Button size="sm" variant="secondary" onClick={() => handleApplyTemplate(template.data)}>Apply</Button>
+                                                        <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => handleDeleteTemplate(template.id)} disabled={isDeleting === template.id}>
+                                                            {isDeleting === template.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                        </Button>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
                                 )}
                             </CardContent>
                        </Card>
                     </TabsContent>
                 </Tabs>
+                </div>
+                </ScrollArea>
             </DialogContent>
         </Dialog>
     );
 }
-
-    
