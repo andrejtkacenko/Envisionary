@@ -10,22 +10,28 @@ import { getAuth } from "firebase-admin/auth";
 
 // Firestore data converter for Users
 const userConverter = {
-    toFirestore: (user: AppUser) => {
-        return {
+    toFirestore: (user: Partial<AppUser>) => {
+        const data: any = {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
-            telegramId: (user as any).telegramId, // Store telegramId if exists
         };
+        if (user.telegramId) {
+            data.telegramId = user.telegramId;
+        }
+        return data;
     },
     fromFirestore: (snapshot: any, options: any): AppUser => {
         const data = snapshot.data(options);
-        return {
+        const user: AppUser = {
             uid: data.uid,
             email: data.email,
             displayName: data.displayName,
-            ...data
         };
+        if (data.telegramId) {
+            user.telegramId = data.telegramId;
+        }
+        return user;
     }
 };
 

@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
         console.log('Received tokens:', tokens);
         
         // Redirect the user back to a page in your app, e.g., the settings or tasks page.
-        return NextResponse.redirect(new URL('/tasks', req.url));
+        const redirectUrl = new URL('/tasks', req.url);
+        return NextResponse.redirect(redirectUrl);
 
     } catch (error) {
         console.error('Error exchanging code for tokens:', error);
