@@ -95,7 +95,7 @@ export default function LinkTelegramPage() {
             <Card className="w-full max-w-md text-center">
                 <CardHeader>
                     <CardTitle>Link Telegram Account</CardTitle>
-                    <CardDescription>Please wait while we connect your Telegram account to your Zenith Flow profile.</CardDescription>
+                    <CardDescription>Please wait while we connect your Telegram account to your Envisionary profile.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center p-8 gap-4">
                     {status === 'loading' && <Loader2 className="h-16 w-16 animate-spin text-primary" />}

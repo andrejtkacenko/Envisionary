@@ -21,7 +21,7 @@ const fontSpaceGrotesk = Space_Grotesk({
 
 
 export const metadata: Metadata = {
-  title: "Zenith Flow",
+  title: "Envisionary",
   description: "Your personal OS for growth and productivity.",
 };
 

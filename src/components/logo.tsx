@@ -7,8 +7,8 @@ export function Logo() {
       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground">
         <Zap className="h-5 w-5" />
       </div>
-      <h1 className="text-xl font-headline font-bold text-foreground">Zenith Flow</h1>
-      <span className="sr-only">Zenith Flow</span>
+      <h1 className="text-xl font-headline font-bold text-foreground">Envisionary</h1>
+      <span className="sr-only">Envisionary</span>
     </Link>
   );
 }

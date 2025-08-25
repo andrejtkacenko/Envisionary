@@ -59,7 +59,7 @@ export default function Home() {
 
     if (tg) {
       tg.ready();
-      tg.MainButton.setText("Login to Zenith Flow");
+      tg.MainButton.setText("Login to Envisionary");
       tg.MainButton.show();
       setTelegramStatus("Please press the button below to log in.");
 
@@ -329,7 +329,7 @@ export default function Home() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
             <div className="flex flex-col items-center gap-4 text-center">
                 <Bot className="h-12 w-12" />
-                <h1 className="text-xl font-semibold">Welcome to Zenith Flow</h1>
+                <h1 className="text-xl font-semibold">Welcome to Envisionary</h1>
                 <p className="text-muted-foreground">{telegramStatus}</p>
             </div>
         </div>

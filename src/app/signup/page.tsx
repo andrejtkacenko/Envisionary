@@ -129,7 +129,7 @@ export default function SignupPage() {
           </div>
           <CardTitle className="font-headline">Create an Account</CardTitle>
           <CardDescription>
-            Join Zenith Flow to start managing your projects.
+            Join Envisionary to start managing your projects.
           </CardDescription>
         </CardHeader>
         <CardContent>
