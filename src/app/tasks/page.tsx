@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -22,7 +23,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TaskActions } from '@/components/task-actions';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { syncWithGoogleCalendar } from '@/ai/tools/calendar-actions';
+import { getGoogleAuthUrl } from '@/lib/google-calendar-service';
 
 
 const UnscheduledTasks = ({ tasks }: { tasks: Task[] }) => {
@@ -135,21 +136,22 @@ export default function TasksPage() {
         }
         setIsSyncing(true);
         try {
-            const result = await syncWithGoogleCalendar({ userId: user.uid });
-            toast({
-                title: 'Sync Result',
-                description: result.message,
-            });
+            // TODO: First, check if the user has already authenticated and has tokens.
+            // If not, redirect to auth URL. If yes, call the syncTool.
+
+            const authUrl = await getGoogleAuthUrl();
+            window.location.href = authUrl;
+
         } catch (error: any) {
             console.error(error);
             toast({
                 variant: 'destructive',
                 title: 'Sync Failed',
-                description: error.message || 'An unexpected error occurred.',
+                description: error.message || 'Could not initiate sync with Google. Please try again.',
             });
-        } finally {
-            setIsSyncing(false);
+             setIsSyncing(false);
         }
+        // Don't set isSyncing to false here, because the page will redirect.
     };
 
 
@@ -215,3 +217,4 @@ export default function TasksPage() {
         </DndContext>
     );
 }
+
