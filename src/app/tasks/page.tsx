@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ListTodo, Plus } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Planner } from '@/components/planner';
 import { useTasks } from '@/hooks/use-tasks';
