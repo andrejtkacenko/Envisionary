@@ -67,7 +67,7 @@ export const getGoogleCalendarEvents = async (userId: string, timeMin: string, t
         console.log(`[Google Calendar Service] TODO: Implement fetching events for user ${userId}. Skipping for now.`);
         return [];
 
-    } catch (error) => {
+    } catch (error) {
         console.error('Error fetching Google Calendar events:', error);
         return [];
     }
