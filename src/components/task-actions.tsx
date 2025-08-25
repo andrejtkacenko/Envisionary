@@ -245,7 +245,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     <Sparkles className="mr-2 h-4 w-4" /> AI Scheduler
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl h-[90vh] sm:h-auto sm:max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] h-auto flex flex-col">
                 <DialogHeader className="flex-shrink-0">
                     <DialogTitle className="font-headline">AI Scheduler</DialogTitle>
                     <DialogDescription>
@@ -262,9 +262,9 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     {/* --- GENERATOR TAB --- */}
                     <TabsContent value="generator" className="flex-grow flex flex-col overflow-hidden mt-4">
                         <Form {...generatorForm}>
-                            <form onSubmit={generatorForm.handleSubmit(handleGenerateSchedule)} className="h-full flex flex-col">
-                                <ScrollArea className="flex-grow">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4 pr-4">
+                            <form onSubmit={generatorForm.handleSubmit(handleGenerateSchedule)} className="h-full flex flex-col overflow-hidden">
+                                <ScrollArea className="flex-grow pr-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4">
                                     <div className="space-y-6">
                                         <FormField
                                             control={generatorForm.control} name="priorities"
@@ -288,10 +288,10 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                             control={generatorForm.control} name="restHours"
                                             render={({ field }) => ( <FormItem><FormLabel>Rest & Leisure</FormLabel><FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col overflow-hidden">
                                          <FormLabel>Goals to Include (Optional)</FormLabel>
                                          <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
-                                         <ScrollArea className="flex-grow border rounded-md">
+                                         <ScrollArea className="flex-1 border rounded-md">
                                             <div className="p-2 space-y-1">
                                                 {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals found.</div>)}
                                                 {allGoals.map(goal => (
@@ -339,7 +339,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                                         <FormField control={templateForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="e.g., A 9-5 work schedule with morning workouts..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                                                         <FormField control={templateForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>Template Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="week">Full Week</SelectItem><SelectItem value="day">Single Day</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                                     </div>
-                                                    <div>
+                                                    <div className="flex flex-col overflow-hidden">
                                                          <FormLabel>Attach Goals (Optional)</FormLabel>
                                                          <p className="text-xs text-muted-foreground mb-2">Select goals to include in the generation.</p>
                                                          <ScrollArea className="h-64 mt-2 border rounded-md">
