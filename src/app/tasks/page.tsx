@@ -181,6 +181,6 @@ export default function TasksPage() {
              <DragOverlay>
                 {activeTask ? <DraggableTask isOverlay task={activeTask} /> : null}
             </DragOverlay>
-        </DdContext>
+        </DndContext>
     );
 }
