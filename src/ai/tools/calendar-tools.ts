@@ -54,15 +54,17 @@ export const syncWithGoogleCalendar = ai.defineTool(
         // Example of creating one task in Google Calendar
         if (localTasks.length > 0 && googleEvents.length === 0) { // Avoid duplicates for now
              console.log("Attempting to create a task in Google Calendar...");
-            // await createTaskInGoogleCalendar(userId, localTasks[0]);
+            // For this to work, the user needs to have granted calendar permissions.
+            // We are calling the service function which contains the placeholder API call.
+            await createTaskInGoogleCalendar(userId, localTasks[0]);
         }
         
         // This is a placeholder response.
-        return { message: "Sync with Google Calendar is not fully implemented yet, but the foundation is here!" };
+        return { message: "Sync with Google Calendar initiated. Check server logs for details. Full implementation requires OAuth setup." };
 
     } catch (error: any) {
         console.error("Error during Google Calendar sync:", error);
-        throw new Error("Failed to sync with Google Calendar. Ensure you have granted permissions.");
+        throw new Error("Failed to sync with Google Calendar. Ensure you have granted permissions via the UI.");
     }
   }
 );
