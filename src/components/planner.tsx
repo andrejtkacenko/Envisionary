@@ -28,29 +28,7 @@ const priorityColors: Record<TaskPriority, string> = {
 
 
 // --- Task Card UI ---
-export const TaskCard = ({ task, isOverlay, attributes, listeners }: { task: Task; isOverlay?: boolean; attributes?: any; listeners?: any }) => {
-    return (
-        <Card className={cn("mb-2 bg-card/80 backdrop-blur-sm relative group border-l-4", priorityColors[task.priority], isOverlay && "shadow-lg")}>
-            <TaskDialog task={task} onSave={() => {}} onDelete={() => {}}>
-                <div className="p-3 pl-2 flex items-center cursor-pointer">
-                    <div className="flex-grow">
-                        <p className="font-semibold text-sm">{task.title}</p>
-                        {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
-                    </div>
-                     {listeners && (
-                        <button {...attributes} {...listeners} className="p-2 opacity-0 group-hover:opacity-100 cursor-grab touch-none">
-                            <GripVertical className="h-5 w-5" />
-                        </button>
-                    )}
-                </div>
-            </TaskDialog>
-        </Card>
-    );
-};
-
-
-// --- Draggable Task Item ---
-export const DraggableTask = ({ task }: { task: Task }) => {
+export const DraggableTask = ({ task, isOverlay }: { task: Task; isOverlay?: boolean; }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: task.id,
         data: { type: 'task', task },
@@ -63,8 +41,20 @@ export const DraggableTask = ({ task }: { task: Task }) => {
     };
 
     return (
-        <div ref={setNodeRef} style={style}>
-            <TaskCard task={task} attributes={attributes} listeners={listeners} />
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            <Card className={cn("mb-2 bg-card/80 backdrop-blur-sm relative group border-l-4", priorityColors[task.priority], isOverlay && "shadow-lg")}>
+                <TaskDialog task={task} onSave={() => {}} onDelete={() => {}}>
+                    <div className="p-3 pl-2 flex items-center cursor-pointer">
+                        <div className="flex-grow">
+                            <p className="font-semibold text-sm">{task.title}</p>
+                            {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
+                        </div>
+                        <div className="p-2 opacity-0 group-hover:opacity-100 cursor-grab touch-none">
+                            <GripVertical className="h-5 w-5" />
+                        </div>
+                    </div>
+                </TaskDialog>
+            </Card>
         </div>
     );
 };
@@ -75,7 +65,7 @@ export const DraggableTask = ({ task }: { task: Task }) => {
 const TimeSlot = ({ time, children }: { time: string; children: React.ReactNode }) => {
     const { setNodeRef, isOver } = useDroppable({ id: time, data: { type: 'timeSlot' } });
     return (
-        <div ref={setNodeRef} className={cn("relative h-full pl-4", isOver && "bg-primary/10")}>
+        <div ref={setNodeRef} className={cn("relative h-full pl-4 border-l", isOver && "bg-primary/10")}>
             <SortableContext items={React.Children.toArray(children).map((child: any) => child.key)}>
                  {children}
             </SortableContext>
@@ -89,11 +79,13 @@ const AllDaySlot = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <div ref={setNodeRef} className={cn("relative p-2 border-b", isOver && "bg-primary/10")}>
-             <div className="w-16 text-center text-xs font-semibold text-muted-foreground absolute left-0 top-2 -translate-x-full pr-2">
+            <div className="w-16 text-center text-xs font-semibold text-muted-foreground absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-2">
                 All-day
             </div>
-            <SortableContext items={React.Children.toArray(children).map((child: any) => child.key)}>
-                {children}
+             <SortableContext items={React.Children.toArray(children).map((child: any) => child.key)}>
+                <div className="min-h-[2rem]">
+                    {children}
+                </div>
             </SortableContext>
              {React.Children.count(children) === 0 && (
                 <div className="text-center text-xs text-muted-foreground py-2">Drop tasks here</div>
@@ -140,7 +132,6 @@ export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
         const pixels = (currentHour + currentMinute / 60) * HOUR_HEIGHT;
 
         if (timelineRef.current) {
-            // Find the viewport element within the ScrollArea
             const viewport = timelineRef.current.querySelector('[data-radix-scroll-area-viewport]');
             if (viewport) {
                 viewport.scrollTo({
@@ -165,14 +156,13 @@ export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
 
     useEffect(() => {
         if (isToday(date)) {
-            // Give it a moment for the DOM to be ready
             setTimeout(scrollToNow, 100);
         }
     }, [date]);
 
 
     return (
-        <Card className="h-[calc(100vh-10rem)] flex flex-col">
+        <Card className="h-full flex flex-col">
             <CardHeader className="flex-shrink-0">
                 <div className="flex justify-between items-center">
                     <div>

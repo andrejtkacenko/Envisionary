@@ -241,30 +241,30 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
     return (
         <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button>
+                <Button variant="outline">
                     <Sparkles className="mr-2 h-4 w-4" /> AI Scheduler
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl p-0">
-                 <DialogHeader className="p-6 pb-0">
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] h-auto flex flex-col">
+                 <DialogHeader className="flex-shrink-0">
                     <DialogTitle className="font-headline">AI Scheduler</DialogTitle>
                     <DialogDescription>
                          Use the generator for a custom plan, or apply a saved template.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[80vh]">
-                 <div className="p-6">
-                 <Tabs defaultValue="generator" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                
+                 <Tabs defaultValue="generator" className="flex-grow flex flex-col overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                         <TabsTrigger value="generator">Generator</TabsTrigger>
                         <TabsTrigger value="templates">Templates</TabsTrigger>
                     </TabsList>
                     
                     {/* --- GENERATOR TAB --- */}
-                    <TabsContent value="generator">
+                    <TabsContent value="generator" className="flex-grow flex flex-col overflow-hidden">
                         <Form {...generatorForm}>
-                            <form onSubmit={generatorForm.handleSubmit(handleGenerateSchedule)}>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4">
+                            <form onSubmit={generatorForm.handleSubmit(handleGenerateSchedule)} className="flex-grow flex flex-col overflow-hidden">
+                                <ScrollArea className="flex-grow">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4 px-1">
                                     <div className="space-y-6">
                                         <FormField
                                             control={generatorForm.control} name="priorities"
@@ -288,24 +288,27 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                             control={generatorForm.control} name="restHours"
                                             render={({ field }) => ( <FormItem><FormLabel>Rest & Leisure</FormLabel><FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     </div>
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col overflow-hidden">
                                          <FormLabel>Goals to Include (Optional)</FormLabel>
                                          <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
-                                         <ScrollArea className="flex-1 border rounded-md">
-                                            <div className="p-2 space-y-1">
-                                                {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals found.</div>)}
-                                                {allGoals.map(goal => (
-                                                    <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
-                                                        <Checkbox id={`gen-goal-${goal.id}`} checked={selectedGoalsForGenerator.includes(goal.id)} onCheckedChange={() => handleGoalToggleForGenerator(goal.id)} />
-                                                        <label htmlFor={`gen-goal-${goal.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow">{goal.title}</label>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                         </ScrollArea>
+                                         <div className="flex-1 min-h-0 border rounded-md">
+                                            <ScrollArea className="h-full">
+                                                <div className="p-2 space-y-1">
+                                                    {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals found.</div>)}
+                                                    {allGoals.map(goal => (
+                                                        <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
+                                                            <Checkbox id={`gen-goal-${goal.id}`} checked={selectedGoalsForGenerator.includes(goal.id)} onCheckedChange={() => handleGoalToggleForGenerator(goal.id)} />
+                                                            <label htmlFor={`gen-goal-${goal.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow">{goal.title}</label>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </ScrollArea>
+                                         </div>
                                          <div className="text-xs text-muted-foreground mt-2 flex-shrink-0">Selected goals: {selectedGoalsForGenerator.length}</div>
                                     </div>
                                 </div>
-                                <DialogFooter className="pt-4 flex-shrink-0 sticky bottom-0 bg-background py-4">
+                                </ScrollArea>
+                                <DialogFooter className="pt-4 flex-shrink-0">
                                     <Button type="submit" disabled={isGeneratingSchedule} className="w-full sm:w-auto">
                                         {isGeneratingSchedule ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                         Generate Schedule
@@ -316,7 +319,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     </TabsContent>
 
                     {/* --- TEMPLATES TAB --- */}
-                    <TabsContent value="templates">
+                    <TabsContent value="templates" className="flex-grow flex flex-col overflow-hidden">
                        <Card className="h-full flex flex-col">
                            <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
                                <div>
@@ -325,36 +328,40 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                </div>
                                 <Dialog open={isCreateTemplateOpen} onOpenChange={(isOpen) => { setIsCreateTemplateOpen(isOpen); if (!isOpen) { templateForm.reset(); setSelectedGoalsForTemplate([]); }}}>
                                     <DialogTrigger asChild><Button size="sm"><Plus className="mr-2 h-4 w-4" /> New</Button></DialogTrigger>
-                                    <DialogContent className="sm:max-w-2xl">
-                                        <DialogHeader>
+                                    <DialogContent className="sm:max-w-2xl max-h-[90vh] h-auto flex flex-col">
+                                        <DialogHeader className="flex-shrink-0">
                                             <DialogTitle className="font-headline flex items-center gap-2"><Wand2 /> Create AI Schedule Template</DialogTitle>
                                             <DialogDescription>Describe the kind of schedule you want, select goals, and the AI will generate a template.</DialogDescription>
                                         </DialogHeader>
                                         <Form {...templateForm}>
-                                            <form onSubmit={templateForm.handleSubmit(handleCreateTemplate)} className="space-y-4 py-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <form onSubmit={templateForm.handleSubmit(handleCreateTemplate)} className="flex-grow flex flex-col overflow-hidden">
+                                                <ScrollArea className="flex-grow">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-1">
                                                     <div className="space-y-4">
                                                         <FormField control={templateForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Template Name</FormLabel><FormControl><Input placeholder="e.g., My Productive Week" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                                         <FormField control={templateForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="e.g., A 9-5 work schedule with morning workouts..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                                                         <FormField control={templateForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>Template Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="week">Full Week</SelectItem><SelectItem value="day">Single Day</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                                     </div>
-                                                    <div className="flex flex-col">
+                                                    <div className="flex flex-col overflow-hidden">
                                                          <FormLabel>Attach Goals (Optional)</FormLabel>
                                                          <p className="text-xs text-muted-foreground mb-2">Select goals to include in the generation.</p>
-                                                         <ScrollArea className="h-64 mt-2 border rounded-md">
-                                                            <div className="p-2 space-y-1">
-                                                                {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals to attach.</div>)}
-                                                                {allGoals.map(goal => (
-                                                                    <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
-                                                                        <Checkbox id={`temp-goal-${goal.id}`} checked={selectedGoalsForTemplate.includes(goal.id)} onCheckedChange={() => handleGoalToggleForTemplate(goal.id)} />
-                                                                        <label htmlFor={`temp-goal-${goal.id}`} className="text-sm font-medium leading-none flex-grow">{goal.title}</label>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                         </ScrollArea>
+                                                         <div className="flex-1 min-h-0 border rounded-md">
+                                                            <ScrollArea className="h-full">
+                                                                <div className="p-2 space-y-1">
+                                                                    {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals to attach.</div>)}
+                                                                    {allGoals.map(goal => (
+                                                                        <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
+                                                                            <Checkbox id={`temp-goal-${goal.id}`} checked={selectedGoalsForTemplate.includes(goal.id)} onCheckedChange={() => handleGoalToggleForTemplate(goal.id)} />
+                                                                            <label htmlFor={`temp-goal-${goal.id}`} className="text-sm font-medium leading-none flex-grow">{goal.title}</label>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </ScrollArea>
+                                                         </div>
                                                     </div>
                                                 </div>
-                                                <DialogFooter>
+                                                </ScrollArea>
+                                                <DialogFooter className="flex-shrink-0 pt-4">
                                                     <Button type="submit" disabled={isGeneratingTemplate}>
                                                         {isGeneratingTemplate ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                                         Generate & Save
@@ -365,7 +372,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                     </DialogContent>
                                 </Dialog>
                            </CardHeader>
-                            <CardContent className="flex-grow">
+                            <CardContent className="flex-grow overflow-auto">
                                 {isLoadingTemplates ? (
                                      <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
                                 ) : (
@@ -395,8 +402,6 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                        </Card>
                     </TabsContent>
                 </Tabs>
-                </div>
-                </ScrollArea>
             </DialogContent>
         </Dialog>
     );
