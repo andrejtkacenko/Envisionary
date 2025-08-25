@@ -77,6 +77,16 @@ export default function TasksPage() {
     
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
     
+    const daysWithTasks = useMemo(() => {
+      const dates = new Set<string>();
+      tasks.forEach(task => {
+        if (task.dueDate) {
+          dates.add(format(new Date(task.dueDate), 'yyyy-MM-dd'));
+        }
+      });
+      return Array.from(dates).map(dateStr => new Date(dateStr));
+    }, [tasks]);
+    
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
     const handleDragStart = (event: any) => {
@@ -154,6 +164,8 @@ export default function TasksPage() {
                                     selected={selectedDate}
                                     onSelect={(date) => date && setSelectedDate(date)}
                                     className="w-full"
+                                    modifiers={{ hasTasks: daysWithTasks }}
+                                    modifiersClassNames={{ hasTasks: 'has-tasks' }}
                                 />
                             </CardContent>
                         </Card>
