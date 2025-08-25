@@ -3,6 +3,7 @@
 
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, WeeklySchedule, GoalTemplate, GoalStatus, AppUser, Notification, DailySchedule, Task, ScheduleTemplate } from "@/types";
@@ -96,7 +97,7 @@ const goalConverter = {
 const subTaskToFirestore = (task: Task) => {
     const data: any = { ...task };
     if (task.dueDate) {
-        data.dueDate = Timestamp.fromDate(task.dueDate);
+        data.dueDate = Timestamp.fromDate(task.dueDate as Date);
     } else {
         delete data.dueDate
     }
@@ -105,6 +106,12 @@ const subTaskToFirestore = (task: Task) => {
     }
     if (data.subTasks) {
         data.subTasks = data.subTasks.map(subTaskToFirestore);
+    }
+     // Handle `time` field
+    if (task.time === undefined || task.time === null) {
+        delete data.time;
+    } else {
+        data.time = task.time;
     }
     return data;
 }
@@ -126,7 +133,7 @@ const taskConverter = {
     toFirestore: (task: Omit<Task, 'id'>) => {
         const data: any = { ...task };
         if (task.dueDate) {
-            data.dueDate = Timestamp.fromDate(task.dueDate);
+            data.dueDate = Timestamp.fromDate(task.dueDate as Date);
         } else {
             delete data.dueDate
         }
@@ -135,6 +142,12 @@ const taskConverter = {
         }
         if (task.subTasks) {
             data.subTasks = task.subTasks.map(subTaskToFirestore);
+        }
+        // Handle `time` field
+        if (task.time === undefined || task.time === null) {
+            delete data.time;
+        } else {
+            data.time = task.time;
         }
         return data;
     },
