@@ -264,49 +264,49 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                         <Form {...generatorForm}>
                             <form onSubmit={generatorForm.handleSubmit(handleGenerateSchedule)} className="flex-grow flex flex-col overflow-hidden">
                                 <ScrollArea className="flex-grow">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4 px-1">
-                                    <div className="space-y-6">
-                                        <FormField
-                                            control={generatorForm.control} name="priorities"
-                                            render={({ field }) => ( <FormItem><FormLabel>Priorities</FormLabel><FormControl><Textarea placeholder="e.g., Focus on work, with evenings for learning." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={generatorForm.control} name="workHours"
-                                            render={({ field }) => ( <FormItem><FormLabel>Work/Study Hours</FormLabel><FormControl><Input placeholder="e.g., 9 AM to 5 PM, Mon-Fri" {...field} /></FormControl><div className="flex flex-wrap gap-2 pt-1"><SuggestionButton onClick={() => generatorForm.setValue('workHours', '9 AM to 5 PM, Mon-Fri')}>9-5 Full-time</SuggestionButton><SuggestionButton onClick={() => generatorForm.setValue('workHours', 'Flexible, about 8 hours a day')}>Flexible Hours</SuggestionButton></div><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={generatorForm.control} name="habits"
-                                            render={({ field }) => ( <FormItem><FormLabel>Habits</FormLabel><FormControl><Input placeholder="e.g., Gym 3x a week, read 30 mins daily" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={generatorForm.control} name="commitments"
-                                            render={({ field }) => ( <FormItem><FormLabel>Fixed Commitments</FormLabel><FormControl><Input placeholder="e.g., Team meeting Mon 10am" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={generatorForm.control} name="sleepHours"
-                                            render={({ field }) => ( <FormItem><FormLabel>Desired Sleep Hours</FormLabel><FormControl><Input placeholder="e.g., 11 PM to 7 AM" {...field} /></FormControl><div className="flex flex-wrap gap-2 pt-1"><SuggestionButton onClick={() => generatorForm.setValue('sleepHours', '10 PM to 6 AM')}>10 PM - 6 AM</SuggestionButton><SuggestionButton onClick={() => generatorForm.setValue('sleepHours', '11 PM to 7 AM')}>11 PM - 7 AM</SuggestionButton></div><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={generatorForm.control} name="mealHours"
-                                            render={({ field }) => ( <FormItem><FormLabel>Meal Times</FormLabel><FormControl><Input placeholder="e.g., Lunch at 1pm, dinner at 7pm" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={generatorForm.control} name="restHours"
-                                            render={({ field }) => ( <FormItem><FormLabel>Rest & Leisure</FormLabel><FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4 px-1">
+                                        <div className="space-y-6">
+                                            <FormField
+                                                control={generatorForm.control} name="priorities"
+                                                render={({ field }) => ( <FormItem><FormLabel>Priorities</FormLabel><FormControl><Textarea placeholder="e.g., Focus on work, with evenings for learning." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField
+                                                control={generatorForm.control} name="workHours"
+                                                render={({ field }) => ( <FormItem><FormLabel>Work/Study Hours</FormLabel><FormControl><Input placeholder="e.g., 9 AM to 5 PM, Mon-Fri" {...field} /></FormControl><div className="flex flex-wrap gap-2 pt-1"><SuggestionButton onClick={() => generatorForm.setValue('workHours', '9 AM to 5 PM, Mon-Fri')}>9-5 Full-time</SuggestionButton><SuggestionButton onClick={() => generatorForm.setValue('workHours', 'Flexible, about 8 hours a day')}>Flexible Hours</SuggestionButton></div><FormMessage /></FormItem>)} />
+                                            <FormField
+                                                control={generatorForm.control} name="habits"
+                                                render={({ field }) => ( <FormItem><FormLabel>Habits</FormLabel><FormControl><Input placeholder="e.g., Gym 3x a week, read 30 mins daily" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField
+                                                control={generatorForm.control} name="commitments"
+                                                render={({ field }) => ( <FormItem><FormLabel>Fixed Commitments</FormLabel><FormControl><Input placeholder="e.g., Team meeting Mon 10am" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField
+                                                control={generatorForm.control} name="sleepHours"
+                                                render={({ field }) => ( <FormItem><FormLabel>Desired Sleep Hours</FormLabel><FormControl><Input placeholder="e.g., 11 PM to 7 AM" {...field} /></FormControl><div className="flex flex-wrap gap-2 pt-1"><SuggestionButton onClick={() => generatorForm.setValue('sleepHours', '10 PM to 6 AM')}>10 PM - 6 AM</SuggestionButton><SuggestionButton onClick={() => generatorForm.setValue('sleepHours', '11 PM to 7 AM')}>11 PM - 7 AM</SuggestionButton></div><FormMessage /></FormItem>)} />
+                                            <FormField
+                                                control={generatorForm.control} name="mealHours"
+                                                render={({ field }) => ( <FormItem><FormLabel>Meal Times</FormLabel><FormControl><Input placeholder="e.g., Lunch at 1pm, dinner at 7pm" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField
+                                                control={generatorForm.control} name="restHours"
+                                                render={({ field }) => ( <FormItem><FormLabel>Rest & Leisure</FormLabel><FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        </div>
+                                        <div className="flex flex-col overflow-hidden">
+                                             <FormLabel>Goals to Include (Optional)</FormLabel>
+                                             <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
+                                             <div className="flex-1 min-h-0 border rounded-md">
+                                                <ScrollArea className="h-full">
+                                                    <div className="p-2 space-y-1">
+                                                        {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals found.</div>)}
+                                                        {allGoals.map(goal => (
+                                                            <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
+                                                                <Checkbox id={`gen-goal-${goal.id}`} checked={selectedGoalsForGenerator.includes(goal.id)} onCheckedChange={() => handleGoalToggleForGenerator(goal.id)} />
+                                                                <label htmlFor={`gen-goal-${goal.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow">{goal.title}</label>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </ScrollArea>
+                                             </div>
+                                             <div className="text-xs text-muted-foreground mt-2 flex-shrink-0">Selected goals: {selectedGoalsForGenerator.length}</div>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col overflow-hidden">
-                                         <FormLabel>Goals to Include (Optional)</FormLabel>
-                                         <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
-                                         <div className="flex-1 min-h-0 border rounded-md">
-                                            <ScrollArea className="h-full">
-                                                <div className="p-2 space-y-1">
-                                                    {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals found.</div>)}
-                                                    {allGoals.map(goal => (
-                                                        <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
-                                                            <Checkbox id={`gen-goal-${goal.id}`} checked={selectedGoalsForGenerator.includes(goal.id)} onCheckedChange={() => handleGoalToggleForGenerator(goal.id)} />
-                                                            <label htmlFor={`gen-goal-${goal.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow">{goal.title}</label>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </ScrollArea>
-                                         </div>
-                                         <div className="text-xs text-muted-foreground mt-2 flex-shrink-0">Selected goals: {selectedGoalsForGenerator.length}</div>
-                                    </div>
-                                </div>
                                 </ScrollArea>
                                 <DialogFooter className="pt-4 flex-shrink-0">
                                     <Button type="submit" disabled={isGeneratingSchedule} className="w-full sm:w-auto">
