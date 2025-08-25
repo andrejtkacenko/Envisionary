@@ -18,6 +18,23 @@ const oauth2Client = new google.auth.OAuth2(
   `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`
 );
 
+
+// TODO: Implement these functions to interact with your database (e.g., Firestore).
+/**
+ * Retrieves the stored OAuth2 tokens for a given user from the database.
+ * @param userId The ID of the user.
+ * @returns The stored tokens, or null if not found.
+ */
+async function getUserTokensFromDb(userId: string): Promise<any | null> {
+  console.log(`[getUserTokensFromDb] Pretending to fetch tokens for user ${userId}. In a real app, this would be a database call.`);
+  // Example Firestore implementation:
+  // const userDocRef = doc(db, 'users', userId);
+  // const userDoc = await getDoc(userDocRef);
+  // return userDoc.exists() ? userDoc.data().googleTokens : null;
+  return null; // Return null to simulate a user who hasn't authenticated yet.
+}
+
+
 /**
  * A placeholder function to represent getting an authenticated API client.
  * In a real application, this would involve retrieving stored tokens for the user.
@@ -25,18 +42,11 @@ const oauth2Client = new google.auth.OAuth2(
  * @returns An authenticated Google Calendar API client instance.
  */
 const getCalendarClient = async (userId: string) => {
-  // TODO: This is the critical part that needs to be implemented.
-  // You must fetch the user's stored OAuth tokens (access_token, refresh_token)
-  // from your database (e.g., Firestore) and set them on the oauth2Client.
-  //
-  // Example:
-  // const tokens = await getUserTokensFromDb(userId);
-  // if (!tokens) {
-  //   throw new Error("User has not authenticated with Google Calendar.");
-  // }
-  // oauth2Client.setCredentials(tokens);
-  
-  console.warn(`[Google Calendar Service] TODO: Implement proper token retrieval for user ${userId}. API calls will fail without it.`);
+  const tokens = await getUserTokensFromDb(userId);
+  if (!tokens) {
+    throw new Error("User has not authenticated with Google Calendar.");
+  }
+  oauth2Client.setCredentials(tokens);
   
   return google.calendar({ version: 'v3', auth: oauth2Client });
 };
@@ -53,7 +63,6 @@ export const getGoogleCalendarEvents = async (userId: string, timeMin: string, t
     try {
         const calendar = await getCalendarClient(userId);
         
-        // This API call will fail if the oauth2Client does not have credentials.
         const response = await calendar.events.list({
             calendarId: 'primary',
             timeMin,
@@ -63,9 +72,8 @@ export const getGoogleCalendarEvents = async (userId: string, timeMin: string, t
         });
         return response.data.items || [];
     } catch (error) {
-        console.error('Error fetching Google Calendar events. This is expected if tokens are not configured.', error);
-        // Return empty array to allow the sync tool to continue without crashing.
-        return [];
+        console.error('Error fetching Google Calendar events:', error);
+        throw error;
     }
 };
 
@@ -105,7 +113,8 @@ export const createTaskInGoogleCalendar = async (userId: string, task: Task) => 
         console.log(`[Google Calendar Service] Successfully created event for task: "${task.title}"`);
 
     } catch (error) {
-         console.error(`Error creating Google Calendar event for task "${task.title}". This is expected if tokens are not configured.`, error);
+         console.error(`Error creating Google Calendar event for task "${task.title}".`);
+         throw error;
     }
 };
 

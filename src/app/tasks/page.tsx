@@ -137,28 +137,24 @@ export default function TasksPage() {
         }
         setIsSyncing(true);
         try {
-            // First, try to run the sync tool. It will fail if tokens are not present,
-            // and the `google-calendar-service` will throw an error.
-            // We can catch this specific error to trigger the auth flow.
-            // For now, we'll assume a simple check.
+            // First, try to run the sync tool. It will fail if tokens are not present.
+            const result = await syncWithGoogleCalendar({ userId: user.uid });
+            toast({ title: "Sync Complete", description: result.message });
             
-            // TODO: A real implementation would check for stored tokens first.
-            // const hasTokens = await checkForUserTokens(user.uid);
-            // if (!hasTokens) {
+        } catch (error: any) {
+             // If the error message indicates a need for authentication, redirect the user.
+             if (error.message.includes("User has not authenticated")) {
+                toast({ title: "Redirecting to Google", description: "Please authorize access to your calendar." });
                 const authUrl = await getGoogleAuthUrl();
                 window.location.href = authUrl;
-            // } else {
-            //     const result = await syncWithGoogleCalendar({ userId: user.uid });
-            //     toast({ title: "Sync Complete", description: result.message });
-            // }
-
-        } catch (error: any) {
-            console.error(error);
-            toast({
-                variant: 'destructive',
-                title: 'Sync Failed',
-                description: error.message || 'Could not initiate sync with Google. Please try again.',
-            });
+             } else {
+                console.error(error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Sync Failed',
+                    description: error.message || 'Could not initiate sync with Google. Please try again.',
+                });
+             }
         } finally {
             // Only set to false if we didn't redirect
             if (!window.location.href.includes('google.com')) {

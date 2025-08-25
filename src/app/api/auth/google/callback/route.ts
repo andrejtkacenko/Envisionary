@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/lib/google-calendar-service';
 
 // TODO: In a real app, you would have a service to save and retrieve tokens for a user.
-// e.g., import { saveUserTokens } from '@/lib/user-token-service';
+// e.g., import { saveUserTokensToDb } from '@/lib/google-calendar-service';
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -20,13 +20,17 @@ export async function GET(req: NextRequest) {
         
         // TODO: At this point, you MUST associate these tokens with the logged-in user.
         // 1. Get the user's ID (e.g., from the session or by decoding the 'state' parameter).
-        // const userId = getUserIdFromState(state);
+        //    This requires a robust session management system. For now, we assume you have a way to get the userId.
+        //    const userId = getUserIdFromSession(req); 
+        //
         // 2. Securely store the `tokens` (access_token, refresh_token, expiry_date) in your database (e.g., Firestore)
         //    linked to the `userId`. The refresh_token is especially important as it allows
         //    your app to get new access_tokens without asking the user to log in again.
-        // await saveUserTokens(userId, tokens);
+        //
+        //    await saveUserTokensToDb(userId, tokens);
 
         console.log('Received tokens:', tokens);
+        console.log("TODO: Save these tokens to the database, associated with the current user.");
         
         // Redirect the user back to a page in your app, e.g., the settings or tasks page.
         const redirectUrl = new URL('/tasks', req.url);
