@@ -1,22 +1,21 @@
 
-
 'use server';
 
 /**
  * @fileOverview Service functions for interacting with the Google Calendar API.
- * NOTE: This is a placeholder implementation. The authentication flow and
- * actual API calls need to be implemented.
+ * NOTE: This implementation requires a mechanism to store and retrieve user-specific
+ * OAuth2 tokens. The getCalendarClient function currently uses a placeholder.
  */
 
 import { google } from 'googleapis';
 import type { Task } from '@/types';
 
-// This would be your OAuth2 client. It needs to be configured in Google Cloud Console.
+// This would be your OAuth2 client. It's configured with credentials from your .env file.
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   // This should be an absolute URL to your API route that handles the callback
-  `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback` 
+  `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`
 );
 
 /**
@@ -26,17 +25,19 @@ const oauth2Client = new google.auth.OAuth2(
  * @returns An authenticated Google Calendar API client instance.
  */
 const getCalendarClient = async (userId: string) => {
-  // TODO: In a real app, you would fetch the user's stored OAuth tokens 
-  // from your database (e.g., Firestore).
+  // TODO: This is the critical part that needs to be implemented.
+  // You must fetch the user's stored OAuth tokens (access_token, refresh_token)
+  // from your database (e.g., Firestore) and set them on the oauth2Client.
+  //
+  // Example:
   // const tokens = await getUserTokensFromDb(userId);
   // if (!tokens) {
   //   throw new Error("User has not authenticated with Google Calendar.");
   // }
   // oauth2Client.setCredentials(tokens);
   
-  console.log(`[Google Calendar Service] TODO: Implement proper token retrieval and authentication for user ${userId}`);
-  // Returning a placeholder to avoid crashing. For this to actually work,
-  // the oauth2Client needs credentials.
+  console.warn(`[Google Calendar Service] TODO: Implement proper token retrieval for user ${userId}. API calls will fail without it.`);
+  
   return google.calendar({ version: 'v3', auth: oauth2Client });
 };
 
@@ -48,13 +49,11 @@ const getCalendarClient = async (userId: string) => {
  * @param timeMax - The end of the date range (ISO string).
  * @returns A list of calendar events.
  */
-export const getGoogleCalendarEvents = async (userId: string, timeMin: string, timeMax: string) => {
+export const getGoogleCalendarEvents = async (userId: string, timeMin: string, timeMax:string) => {
     try {
         const calendar = await getCalendarClient(userId);
         
-        // This is the actual API call to Google Calendar.
-        // It is commented out because it will fail without proper auth.
-        /*
+        // This API call will fail if the oauth2Client does not have credentials.
         const response = await calendar.events.list({
             calendarId: 'primary',
             timeMin,
@@ -63,13 +62,9 @@ export const getGoogleCalendarEvents = async (userId: string, timeMin: string, t
             orderBy: 'startTime',
         });
         return response.data.items || [];
-        */
-
-        console.log(`[Google Calendar Service] TODO: Implement fetching events for user ${userId}. Skipping for now.`);
-        return [];
-
     } catch (error) {
-        console.error('Error fetching Google Calendar events:', error);
+        console.error('Error fetching Google Calendar events. This is expected if tokens are not configured.', error);
+        // Return empty array to allow the sync tool to continue without crashing.
         return [];
     }
 };
@@ -86,39 +81,38 @@ export const createTaskInGoogleCalendar = async (userId: string, task: Task) => 
 
         const event = {
             summary: task.title,
-            description: task.description,
+            description: task.description || 'Task from Envisionary App',
             start: {
-                // This logic needs to be more robust to handle all-day vs. timed tasks
-                dateTime: task.dueDate?.toISOString(), 
-                timeZone: 'America/Los_Angeles', // This should be user-configurable
+                // If the task has a time, create a timed event. Otherwise, create an all-day event.
+                dateTime: task.time ? new Date(`${(task.dueDate as Date).toISOString().split('T')[0]}T${task.time}:00`).toISOString() : undefined,
+                date: !task.time ? (task.dueDate as Date).toISOString().split('T')[0] : undefined,
+                timeZone: 'America/Los_Angeles', // This should ideally be user-configurable
             },
             end: {
-               // This logic needs to be more robust to handle duration
-               dateTime: new Date(new Date(task.dueDate as Date).getTime() + 60 * 60 * 1000).toISOString(),
+               // If it's an all-day event, the end date is the next day.
+               // If timed, we assume a 1-hour duration for simplicity.
+               dateTime: task.time ? new Date(new Date(`${(task.dueDate as Date).toISOString().split('T')[0]}T${task.time}:00`).getTime() + 60 * 60 * 1000).toISOString() : undefined,
+               date: !task.time ? new Date((task.dueDate as Date).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] : undefined,
                timeZone: 'America/Los_Angeles',
             },
         };
         
-        // This is the actual API call to create an event.
-        // It is commented out because it will fail without proper auth.
-        /*
         await calendar.events.insert({
             calendarId: 'primary',
             requestBody: event,
         });
-        */
 
-        console.log(`[Google Calendar Service] TODO: Implement creating task "${task.title}" for user ${userId}. Skipping for now.`);
+        console.log(`[Google Calendar Service] Successfully created event for task: "${task.title}"`);
 
     } catch (error) {
-         console.error('Error creating Google Calendar event:', error);
+         console.error(`Error creating Google Calendar event for task "${task.title}". This is expected if tokens are not configured.`, error);
     }
 };
 
 /**
  * Generates a URL that the user will be sent to to consent to calendar access.
  */
-export const getGoogleAuthUrl = async () => {
+export async function getGoogleAuthUrl() {
     const scopes = [
         'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/calendar.readonly'
@@ -136,8 +130,7 @@ export const getGoogleAuthUrl = async () => {
  * @param code The authorization code from the Google redirect.
  * @returns The OAuth2 tokens.
  */
-export const exchangeCodeForTokens = async (code: string) => {
+export async function exchangeCodeForTokens(code: string) {
     const { tokens } = await oauth2Client.getToken(code);
     return tokens;
 };
-

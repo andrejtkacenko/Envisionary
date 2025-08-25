@@ -24,6 +24,7 @@ import { TaskActions } from '@/components/task-actions';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { getGoogleAuthUrl } from '@/lib/google-calendar-service';
+import { syncWithGoogleCalendar } from '@/ai/tools/calendar-actions';
 
 
 const UnscheduledTasks = ({ tasks }: { tasks: Task[] }) => {
@@ -136,11 +137,20 @@ export default function TasksPage() {
         }
         setIsSyncing(true);
         try {
-            // TODO: First, check if the user has already authenticated and has tokens.
-            // If not, redirect to auth URL. If yes, call the syncTool.
-
-            const authUrl = await getGoogleAuthUrl();
-            window.location.href = authUrl;
+            // First, try to run the sync tool. It will fail if tokens are not present,
+            // and the `google-calendar-service` will throw an error.
+            // We can catch this specific error to trigger the auth flow.
+            // For now, we'll assume a simple check.
+            
+            // TODO: A real implementation would check for stored tokens first.
+            // const hasTokens = await checkForUserTokens(user.uid);
+            // if (!hasTokens) {
+                const authUrl = await getGoogleAuthUrl();
+                window.location.href = authUrl;
+            // } else {
+            //     const result = await syncWithGoogleCalendar({ userId: user.uid });
+            //     toast({ title: "Sync Complete", description: result.message });
+            // }
 
         } catch (error: any) {
             console.error(error);
@@ -149,9 +159,12 @@ export default function TasksPage() {
                 title: 'Sync Failed',
                 description: error.message || 'Could not initiate sync with Google. Please try again.',
             });
-             setIsSyncing(false);
+        } finally {
+            // Only set to false if we didn't redirect
+            if (!window.location.href.includes('google.com')) {
+                 setIsSyncing(false);
+            }
         }
-        // Don't set isSyncing to false here, because the page will redirect.
     };
 
 
@@ -217,4 +230,3 @@ export default function TasksPage() {
         </DndContext>
     );
 }
-

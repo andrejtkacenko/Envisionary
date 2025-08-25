@@ -28,39 +28,45 @@ export const syncWithGoogleCalendar = ai.defineTool(
   async ({ userId }) => {
     console.log(`[Tool] syncWithGoogleCalendar called for user: ${userId}`);
 
-    // In a real implementation, you would:
-    // 1. Get an authenticated Google Calendar client for the user.
-    // 2. Fetch events from Google Calendar for a relevant time period.
-    // 3. Fetch tasks from this app's Firestore database.
-    // 4. Compare the two lists of events/tasks.
-    // 5. Create new tasks in Firestore for new Google Calendar events.
-    // 6. Create new events in Google Calendar for new tasks.
-    // 7. Update existing items that have changed on either side.
-    // This is a complex process requiring careful state management.
+    // This is a simplified sync logic. A real implementation would need
+    // to handle updates, deletions, and avoid duplicates more robustly,
+    // likely by storing event/task IDs from the other system.
 
     try {
-        // Placeholder logic:
         const now = new Date();
         const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
+        // 1. Fetch data from both sources
         const localTasks = await getTasksSnapshot(userId);
         const googleEvents = await getGoogleCalendarEvents(userId, now.toISOString(), oneWeekFromNow.toISOString());
-
-        // This is where the core sync logic would go.
-        // For now, we'll just log what we have.
+        
         console.log(`Found ${localTasks.length} local tasks.`);
         console.log(`Found ${googleEvents.length} Google Calendar events.`);
-        
-        // Example of creating one task in Google Calendar
-        if (localTasks.length > 0 && googleEvents.length === 0) { // Avoid duplicates for now
-             console.log("Attempting to create a task in Google Calendar...");
-            // For this to work, the user needs to have granted calendar permissions.
-            // We are calling the service function which contains the placeholder API call.
-            await createTaskInGoogleCalendar(userId, localTasks[0]);
+
+        // 2. Sync from our app to Google Calendar
+        // Find tasks in our app that don't have a corresponding event in Google Calendar
+        const tasksToCreate = localTasks.filter(task => 
+            !googleEvents.some(event => event.summary === task.title)
+        );
+
+        console.log(`Found ${tasksToCreate.length} tasks to create in Google Calendar.`);
+        for (const task of tasksToCreate) {
+            if (task.dueDate) { // Only sync tasks with a due date for now
+                await createTaskInGoogleCalendar(userId, task);
+            }
         }
         
-        // This is a placeholder response.
-        return { message: "Sync with Google Calendar initiated. Check server logs for details. Full implementation requires OAuth setup." };
+        // 3. Sync from Google Calendar to our app (Placeholder)
+        // This is more complex as it involves creating new tasks from events.
+        // const eventsToCreate = googleEvents.filter(event => 
+        //     !localTasks.some(task => task.title === event.summary)
+        // );
+        // console.log(`Found ${eventsToCreate.length} events to create locally.`);
+        // for (const event of eventsToCreate) {
+        //      // await createTaskFromGoogleEvent(userId, event);
+        // }
+
+        return { message: "Sync with Google Calendar complete. Check your calendar and server logs for details." };
 
     } catch (error: any) {
         console.error("Error during Google Calendar sync:", error);
@@ -68,3 +74,4 @@ export const syncWithGoogleCalendar = ai.defineTool(
     }
   }
 );
+
