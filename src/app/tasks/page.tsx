@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ListTodo, Plus } from 'lucide-react';
+import { ListTodo, Plus, RefreshCw } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TaskActions } from '@/components/task-actions';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { syncWithGoogleCalendar } from '@/ai/tools/calendar-actions';
 
 
 const UnscheduledTasks = ({ tasks }: { tasks: Task[] }) => {
@@ -63,6 +64,7 @@ export default function TasksPage() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [allGoals, setAllGoals] = useState<any[]>([]);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -126,6 +128,31 @@ export default function TasksPage() {
         toast({ title: 'Schedule Applied!', description: 'AI-generated schedule has been processed.' });
     };
 
+    const handleSync = async () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Not authenticated' });
+            return;
+        }
+        setIsSyncing(true);
+        try {
+            const result = await syncWithGoogleCalendar({ userId: user.uid });
+            toast({
+                title: 'Sync Result',
+                description: result.message,
+            });
+        } catch (error: any) {
+            console.error(error);
+            toast({
+                variant: 'destructive',
+                title: 'Sync Failed',
+                description: error.message || 'An unexpected error occurred.',
+            });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+
     return (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 h-screen flex flex-col">
@@ -139,6 +166,10 @@ export default function TasksPage() {
                         </p>
                     </div>
                      <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
+                            <RefreshCw className={cn("mr-2 h-4 w-4", isSyncing && "animate-spin")} />
+                            Sync with Google
+                        </Button>
                         <TaskActions allGoals={allGoals} onScheduleApplied={handleScheduleApplied} />
                         <TaskDialog onSave={handleAddTask}>
                             <Button>
@@ -148,28 +179,28 @@ export default function TasksPage() {
                     </div>
                 </div>
 
-                <div className="flex-grow grid grid-cols-1 lg:grid-cols-4 gap-8 items-start overflow-hidden">
-                    <div className="lg:col-span-1 h-full flex flex-col gap-6">
+                <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-8 items-start overflow-hidden">
+                    <div className="md:col-span-1 h-full flex flex-col gap-6">
                         <Card>
                             <CardContent className="p-0">
                                 <Calendar
                                     mode="single"
                                     selected={selectedDate}
                                     onSelect={(date) => date && setSelectedDate(date)}
-                                    className="w-full"
+                                    className="p-0"
                                     modifiers={{ hasTasks: daysWithTasks }}
                                     modifiersClassNames={{ hasTasks: 'has-tasks' }}
                                 />
                             </CardContent>
                         </Card>
                         
-                        <div className="hidden lg:flex flex-col flex-1 h-0">
+                        <div className="hidden md:flex flex-col flex-1 h-0">
                           <UnscheduledTasks tasks={unscheduledTasks} />
                         </div>
                         
                     </div>
 
-                    <div className="lg:col-span-3 h-full">
+                    <div className="md:col-span-3 h-full">
                         <Planner
                             date={selectedDate}
                             tasks={tasksForSelectedDay}
