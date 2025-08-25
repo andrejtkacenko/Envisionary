@@ -83,6 +83,26 @@ const TimeSlot = ({ time, children }: { time: string; children: React.ReactNode 
     );
 };
 
+// All Day Tasks Slot
+const AllDaySlot = ({ children }: { children: React.ReactNode }) => {
+    const { setNodeRef, isOver } = useDroppable({ id: 'all-day', data: { type: 'allDaySlot' } });
+
+    return (
+        <div ref={setNodeRef} className={cn("relative p-2 border-b", isOver && "bg-primary/10")}>
+             <div className="w-16 text-center text-xs font-semibold text-muted-foreground absolute left-0 top-2 -translate-x-full pr-2">
+                All-day
+            </div>
+            <SortableContext items={React.Children.toArray(children).map((child: any) => child.key)}>
+                {children}
+            </SortableContext>
+             {React.Children.count(children) === 0 && (
+                <div className="text-center text-xs text-muted-foreground py-2">Drop tasks here</div>
+            )}
+        </div>
+    );
+};
+
+
 // --- Main Planner Component ---
 interface PlannerProps {
     date: Date;
@@ -91,9 +111,15 @@ interface PlannerProps {
 }
 
 export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
-    const scheduledTasks = useMemo(() => tasks.filter(t => !!t.time), [tasks]);
     const timelineRef = useRef<HTMLDivElement>(null);
     const [nowIndicatorTop, setNowIndicatorTop] = useState(0);
+
+    const { scheduledTasks, allDayTasks } = useMemo(() => {
+        const scheduled = tasks.filter(t => !!t.time);
+        const allDay = tasks.filter(t => !t.time);
+        return { scheduledTasks: scheduled, allDayTasks: allDay };
+    }, [tasks]);
+
 
     const tasksByTime = useMemo(() => {
         const map = new Map<string, Task[]>();
@@ -114,10 +140,14 @@ export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
         const pixels = (currentHour + currentMinute / 60) * HOUR_HEIGHT;
 
         if (timelineRef.current) {
-            timelineRef.current.scrollTo({
-                top: pixels - timelineRef.current.offsetHeight / 2,
-                behavior: 'smooth',
-            });
+            // Find the viewport element within the ScrollArea
+            const viewport = timelineRef.current.querySelector('[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                viewport.scrollTo({
+                    top: pixels - viewport.clientHeight / 2,
+                    behavior: 'smooth',
+                });
+            }
         }
     };
 
@@ -162,30 +192,39 @@ export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
                         <Loader2 className="h-8 w-8 animate-spin" />
                     </div>
                 ) : (
-                    <ScrollArea className="h-full" ref={timelineRef}>
-                        <div className="relative" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
-                             {isToday(date) && (
-                                <div className="absolute left-16 right-0 h-px bg-red-500 z-20 flex items-center" style={{ top: `${nowIndicatorTop}px` }}>
-                                    <div className="h-2 w-2 rounded-full bg-red-500 absolute -left-1"></div>
-                                </div>
-                            )}
-                            {Array.from({ length: TOTAL_HOURS }).map((_, i) => {
-                                const timeKey = format(setHours(new Date(), i), 'HH:00');
-                                const tasksForSlot = tasksByTime.get(timeKey) || [];
-                                return (
-                                <div key={i} className="h-[60px] flex border-b">
-                                    <div className="w-16 text-right text-xs text-muted-foreground pr-2 pt-[-2px] relative top-[-6px]">
-                                        {format(setHours(new Date(), i), 'ha')}
-                                    </div>
-                                    <TimeSlot time={timeKey}>
-                                        {tasksForSlot.map(task => (
-                                            <DraggableTask key={task.id} task={task} />
-                                        ))}
-                                    </TimeSlot>
-                                </div>
-                            )})}
+                    <div className="h-full flex flex-col">
+                        <div className="pl-16 pr-2">
+                            <AllDaySlot>
+                                {allDayTasks.map(task => (
+                                     <DraggableTask key={task.id} task={task} />
+                                ))}
+                            </AllDaySlot>
                         </div>
-                    </ScrollArea>
+                        <ScrollArea className="flex-grow" ref={timelineRef}>
+                            <div className="relative pl-16 pr-2" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT}px` }}>
+                                {isToday(date) && (
+                                    <div className="absolute left-16 right-0 h-px bg-red-500 z-20 flex items-center" style={{ top: `${nowIndicatorTop}px` }}>
+                                        <div className="h-2 w-2 rounded-full bg-red-500 absolute -left-1"></div>
+                                    </div>
+                                )}
+                                {Array.from({ length: TOTAL_HOURS }).map((_, i) => {
+                                    const timeKey = format(setHours(new Date(), i), 'HH:00');
+                                    const tasksForSlot = tasksByTime.get(timeKey) || [];
+                                    return (
+                                    <div key={i} className="h-[60px] flex border-b">
+                                        <div className="w-16 text-right text-xs text-muted-foreground pr-2 pt-[-2px] relative top-[-6px] -translate-x-16">
+                                            {format(setHours(new Date(), i), 'ha')}
+                                        </div>
+                                        <TimeSlot time={timeKey}>
+                                            {tasksForSlot.map(task => (
+                                                <DraggableTask key={task.id} task={task} />
+                                            ))}
+                                        </TimeSlot>
+                                    </div>
+                                )})}
+                            </div>
+                        </ScrollArea>
+                    </div>
                 )}
             </CardContent>
         </Card>
