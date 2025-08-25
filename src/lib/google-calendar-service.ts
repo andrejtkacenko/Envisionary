@@ -113,3 +113,29 @@ export const createTaskInGoogleCalendar = async (userId: string, task: Task) => 
          console.error('Error creating Google Calendar event:', error);
     }
 };
+
+/**
+ * Generates a URL that the user will be sent to to consent to calendar access.
+ */
+export const getGoogleAuthUrl = () => {
+    const scopes = [
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/calendar.readonly'
+    ];
+
+    return oauth2Client.generateAuthUrl({
+        access_type: 'offline', // Important to get a refresh token
+        scope: scopes,
+        prompt: 'consent', // Force consent screen to get refresh token every time
+    });
+};
+
+/**
+ * Exchanges an authorization code for access and refresh tokens.
+ * @param code The authorization code from the Google redirect.
+ * @returns The OAuth2 tokens.
+ */
+export const exchangeCodeForTokens = async (code: string) => {
+    const { tokens } = await oauth2Client.getToken(code);
+    return tokens;
+};
