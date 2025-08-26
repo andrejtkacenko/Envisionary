@@ -6,10 +6,10 @@ import { Button } from './ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Add Telegram to the window interface for TypeScript
+// Add onTelegramAuth to the window interface for TypeScript
 declare global {
     interface Window {
-        Telegram: any;
+        onTelegramAuth: (user: any) => void;
     }
 }
 
@@ -38,6 +38,11 @@ export const TelegramLoginButton = ({ onAuth, isLoading }: TelegramLoginButtonPr
         if (ref.current === null) {
             return;
         }
+        
+        // Assign the callback function to the window object
+        window.onTelegramAuth = (user: any) => {
+            onAuth(user);
+        };
 
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
@@ -46,20 +51,16 @@ export const TelegramLoginButton = ({ onAuth, isLoading }: TelegramLoginButtonPr
         script.setAttribute('data-size', 'large');
         script.setAttribute('data-radius', '6');
         script.setAttribute('data-request-access', 'write');
-
-        // The key part: define a global function that Telegram will call
-        window.Telegram = window.Telegram || {};
-        window.Telegram.Login = {
-            auth: (data: any) => onAuth(data)
-        };
-        script.setAttribute('data-onauth', 'Telegram.Login.auth(user)');
+        script.setAttribute('data-onauth', 'onTelegramAuth(user)');
         
+        // Clear any previous scripts before appending
+        ref.current.innerHTML = '';
         ref.current.appendChild(script);
 
         return () => {
-            // Clean up the script when the component unmounts
-            if (ref.current && ref.current.contains(script)) {
-                ref.current.removeChild(script);
+            // Clean up the global function when the component unmounts
+            if (window.onTelegramAuth) {
+                delete (window as any).onTelegramAuth;
             }
         };
     }, [botName, onAuth, toast]);
