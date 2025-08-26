@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -85,7 +86,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
         title: task?.title ?? "",
         description: task?.description ?? "",
         priority: task?.priority ?? "p4",
-        dueDate: task?.dueDate,
+        dueDate: task?.dueDate ? new Date(task.dueDate) : undefined,
       });
       setSubTasks(task?.subTasks || []);
     }
@@ -124,7 +125,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
         priority: 'p4',
         createdAt: new Date(),
     }));
-    setSubTasks(prev => [...prev, ...tasks]);
+    setSubTasks(prev => [...prev, ...newTasks]);
   };
   
   const handleToggleSubTask = (subTaskId: string) => {
@@ -142,7 +143,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{children}</DialogTrigger>
+      <DialogTrigger asChild onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen(true); }}>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="font-headline">{isEditMode ? "Edit Task" : "Add a new Task"}</DialogTitle>
@@ -288,7 +289,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
             
 
             <div className={cn("flex", isEditMode ? "justify-between" : "justify-end")}>
-                {isEditMode && onDelete && (
+                {isEditMode && onDelete && task.id && (
                     <Button type="button" variant="destructive" onClick={() => {onDelete(task.id); setOpen(false);}}>
                         <Trash2 className="h-4 w-4" />
                     </Button>

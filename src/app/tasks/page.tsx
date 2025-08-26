@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ListTodo, Plus, RefreshCw } from 'lucide-react';
+import { ListTodo, Plus, RefreshCw, Inbox, Calendar as CalendarIconLucide } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -25,9 +25,10 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { getGoogleAuthUrl } from '@/lib/google-calendar-service';
 import { syncWithGoogleCalendar } from '@/ai/tools/calendar-actions';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
-const UnscheduledTasks = ({ tasks }: { tasks: Task[] }) => {
+const UnscheduledTasks = ({ tasks, onTaskUpdate }: { tasks: Task[], onTaskUpdate: (task: Task) => void }) => {
     const { setNodeRef, isOver } = useDroppable({
         id: 'unscheduled-drop-area',
         data: { type: 'unscheduledArea' }
@@ -45,7 +46,11 @@ const UnscheduledTasks = ({ tasks }: { tasks: Task[] }) => {
                         <div className="space-y-2">
                         {tasks.length > 0 ? (
                             tasks.map(task => (
-                                <DraggableTask key={task.id} task={task} />
+                                 <TaskDialog key={task.id} task={task} onSave={onTaskUpdate}>
+                                    <div>
+                                        <DraggableTask task={task} />
+                                    </div>
+                                 </TaskDialog>
                             ))
                         ) : (
                             <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
@@ -190,7 +195,41 @@ export default function TasksPage() {
                     </div>
                 </div>
 
-                <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-8 items-start overflow-hidden">
+                 <Tabs defaultValue="planner" className="md:hidden flex-grow flex flex-col overflow-hidden">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="planner"><CalendarIconLucide className="mr-2 h-4 w-4"/> Planner</TabsTrigger>
+                        <TabsTrigger value="inbox"><Inbox className="mr-2 h-4 w-4"/> Inbox ({unscheduledTasks.length})</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="planner" className="flex-grow mt-4 overflow-y-auto">
+                        <div className="h-full flex flex-col gap-6">
+                            <Card>
+                                <CardContent className="p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={selectedDate}
+                                        onSelect={(date) => date && setSelectedDate(date)}
+                                        className="p-0"
+                                        modifiers={{ hasTasks: daysWithTasks }}
+                                        modifiersClassNames={{ hasTasks: 'has-tasks' }}
+                                    />
+                                </CardContent>
+                            </Card>
+                            <Planner
+                                date={selectedDate}
+                                tasks={tasksForSelectedDay}
+                                isLoading={isLoading}
+                                onTaskUpdate={handleUpdateTask}
+                                onTaskDelete={handleDeleteTask}
+                            />
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="inbox" className="flex-grow mt-4 overflow-y-auto">
+                        <UnscheduledTasks tasks={unscheduledTasks} onTaskUpdate={handleUpdateTask} />
+                    </TabsContent>
+                </Tabs>
+
+
+                <div className="hidden md:grid flex-grow grid-cols-1 md:grid-cols-4 gap-8 items-start overflow-hidden">
                     <div className="md:col-span-1 h-full flex flex-col gap-6">
                         <Card>
                             <CardContent className="p-0">
@@ -206,7 +245,7 @@ export default function TasksPage() {
                         </Card>
                         
                         <div className="hidden md:flex flex-col flex-1 h-0">
-                          <UnscheduledTasks tasks={unscheduledTasks} />
+                          <UnscheduledTasks tasks={unscheduledTasks} onTaskUpdate={handleUpdateTask} />
                         </div>
                         
                     </div>
@@ -216,6 +255,8 @@ export default function TasksPage() {
                             date={selectedDate}
                             tasks={tasksForSelectedDay}
                             isLoading={isLoading}
+                            onTaskUpdate={handleUpdateTask}
+                            onTaskDelete={handleDeleteTask}
                         />
                     </div>
                 </div>

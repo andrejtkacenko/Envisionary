@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
@@ -41,19 +42,17 @@ export const DraggableTask = ({ task, isOverlay }: { task: Task; isOverlay?: boo
     };
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <div ref={setNodeRef} style={style} {...attributes}>
             <Card className={cn("mb-2 bg-card/80 backdrop-blur-sm relative group border-l-4", priorityColors[task.priority], isOverlay && "shadow-lg")}>
-                <TaskDialog task={task} onSave={() => {}} onDelete={() => {}}>
-                    <div className="p-3 pl-2 flex items-center cursor-pointer">
-                        <div className="flex-grow">
-                            <p className="font-semibold text-sm">{task.title}</p>
-                            {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
-                        </div>
-                        <div className="p-2 opacity-0 group-hover:opacity-100 cursor-grab touch-none">
-                            <GripVertical className="h-5 w-5" />
-                        </div>
+                <div className="p-3 pl-2 flex items-center">
+                    <div className="flex-grow">
+                        <p className="font-semibold text-sm">{task.title}</p>
+                        {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
                     </div>
-                </TaskDialog>
+                    <div {...listeners} className="p-2 opacity-0 group-hover:opacity-100 cursor-grab touch-none">
+                        <GripVertical className="h-5 w-5" />
+                    </div>
+                </div>
             </Card>
         </div>
     );
@@ -100,9 +99,11 @@ interface PlannerProps {
     date: Date;
     tasks: Task[];
     isLoading: boolean;
+    onTaskUpdate: (task: Task) => void;
+    onTaskDelete: (taskId: string) => void;
 }
 
-export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
+export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: PlannerProps) => {
     const timelineRef = useRef<HTMLDivElement>(null);
     const [nowIndicatorTop, setNowIndicatorTop] = useState(0);
 
@@ -186,7 +187,11 @@ export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
                         <div className="pl-16 pr-2">
                             <AllDaySlot>
                                 {allDayTasks.map(task => (
-                                     <DraggableTask key={task.id} task={task} />
+                                     <TaskDialog key={task.id} task={task} onSave={onTaskUpdate} onDelete={onTaskDelete}>
+                                        <div className="cursor-pointer">
+                                           <DraggableTask task={task} />
+                                        </div>
+                                     </TaskDialog>
                                 ))}
                             </AllDaySlot>
                         </div>
@@ -207,7 +212,11 @@ export const Planner = ({ date, tasks, isLoading }: PlannerProps) => {
                                         </div>
                                         <TimeSlot time={timeKey}>
                                             {tasksForSlot.map(task => (
-                                                <DraggableTask key={task.id} task={task} />
+                                                <TaskDialog key={task.id} task={task} onSave={onTaskUpdate} onDelete={onTaskDelete}>
+                                                    <div className="cursor-pointer">
+                                                        <DraggableTask task={task} />
+                                                    </div>
+                                                </TaskDialog>
                                             ))}
                                         </TimeSlot>
                                     </div>
