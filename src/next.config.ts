@@ -27,9 +27,8 @@ const nextConfig: NextConfig = {
     ]
   },
   env: {
-    NEXT_PUBLIC_APP_URL: process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000',
+    // Hardcode the production URL to avoid Vercel's preview-specific URLs
+    NEXT_PUBLIC_APP_URL: 'https://envisionary-beta.vercel.app',
   },
 };
 
