@@ -23,8 +23,7 @@ export const TelegramLoginButton = ({ onAuth, isLoading }: TelegramLoginButtonPr
     const { toast } = useToast();
     const [isBotNameMissing, setIsBotNameMissing] = useState(false);
     
-    // Use the environment variable, but have a hardcoded fallback to prevent errors.
-    const botName = process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME || "Envisionarybot";
+    const botName = process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME;
 
     useEffect(() => {
         if (!botName) {
