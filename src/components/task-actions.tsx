@@ -219,7 +219,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     <Sparkles className="mr-2 h-4 w-4" /> AI Scheduler
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] h-auto flex flex-col">
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
                 
                 {generatedSchedule ? (
                     <ScheduleViewer 
