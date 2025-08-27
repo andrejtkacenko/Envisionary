@@ -1,5 +1,3 @@
-
-'use server';
 /**
  * @fileOverview Defines a custom error class for Google authentication issues.
  */
