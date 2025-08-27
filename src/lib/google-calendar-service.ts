@@ -9,6 +9,8 @@ import { google } from 'googleapis';
 import type { Task } from '@/types';
 import { getUserTokens, saveUserTokens } from './google-auth-service';
 import type { Credentials } from 'google-auth-library';
+import { GoogleAuthError } from './google-auth-error';
+
 
 // This would be your OAuth2 client. It's configured with credentials from your .env file.
 const oauth2Client = new google.auth.OAuth2(
@@ -28,7 +30,7 @@ const oauth2Client = new google.auth.OAuth2(
 const getCalendarClient = async (userId: string) => {
   const tokens = await getUserTokens(userId);
   if (!tokens) {
-    throw new Error("User has not authenticated with Google Calendar.");
+    throw new GoogleAuthError("User has not authenticated with Google Calendar.");
   }
   oauth2Client.setCredentials(tokens);
 
