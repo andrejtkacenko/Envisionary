@@ -65,7 +65,7 @@ const coachChatFlow = ai.defineFlow(
     });
 
     const response = await ai.generate({
-        model: 'googleai/gemini-2.0-flash',
+        model: 'googleai/gemini-1.5-flash-latest',
         tools: [createGoal, updateGoal, findGoals, getScheduleTool],
         toolConfig: {
             // By default, the model will decide when to call tools.
