@@ -72,22 +72,24 @@ const ScheduleViewer = ({ schedule, onApply, onSave, onBack }: { schedule: Daily
                 <DialogTitle>Generated Schedule</DialogTitle>
                 <DialogDescription>Review the schedule below or go back to regenerate.</DialogDescription>
             </DialogHeader>
-            <ScrollArea className="my-4 flex-grow border rounded-md">
-                <div className="p-4 space-y-4">
-                    {schedule.map(day => (
-                        <div key={day.day}>
-                            <h3 className="font-semibold text-lg mb-2">{day.day}</h3>
-                            <div className="space-y-2">
-                                {day.schedule.length > 0 ? day.schedule.map(item => (
-                                    <div key={item.id} className="p-2 bg-muted/50 rounded-md text-sm">
-                                        <span className="font-medium">{item.time}:</span> {item.task}
-                                    </div>
-                                )) : <p className="text-sm text-muted-foreground">No items scheduled.</p>}
+            <div className="my-4 flex-grow min-h-0">
+                <ScrollArea className="h-full border rounded-md">
+                    <div className="p-4 space-y-4">
+                        {schedule.map(day => (
+                            <div key={day.day}>
+                                <h3 className="font-semibold text-lg mb-2">{day.day}</h3>
+                                <div className="space-y-2">
+                                    {day.schedule.length > 0 ? day.schedule.map(item => (
+                                        <div key={item.id} className="p-2 bg-muted/50 rounded-md text-sm">
+                                            <span className="font-medium">{item.time}:</span> {item.task}
+                                        </div>
+                                    )) : <p className="text-sm text-muted-foreground">No items scheduled.</p>}
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </ScrollArea>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </div>
              <DialogFooter className="flex-shrink-0">
                 <Button variant="outline" onClick={onBack}>Back to Generator</Button>
                 <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
