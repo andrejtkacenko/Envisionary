@@ -3,12 +3,12 @@
 
 /**
  * @fileOverview Service functions for interacting with the Google Calendar API.
- * NOTE: This implementation requires a mechanism to store and retrieve user-specific
- * OAuth2 tokens. The getCalendarClient function currently uses a placeholder.
  */
 
 import { google } from 'googleapis';
 import type { Task } from '@/types';
+import { getUserTokens, saveUserTokens } from './google-auth-service';
+import type { Credentials } from 'google-auth-library';
 
 // This would be your OAuth2 client. It's configured with credentials from your .env file.
 const oauth2Client = new google.auth.OAuth2(
@@ -18,35 +18,28 @@ const oauth2Client = new google.auth.OAuth2(
   `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`
 );
 
-
-// TODO: Implement these functions to interact with your database (e.g., Firestore).
 /**
- * Retrieves the stored OAuth2 tokens for a given user from the database.
- * @param userId The ID of the user.
- * @returns The stored tokens, or null if not found.
- */
-async function getUserTokensFromDb(userId: string): Promise<any | null> {
-  console.log(`[getUserTokensFromDb] Pretending to fetch tokens for user ${userId}. In a real app, this would be a database call.`);
-  // Example Firestore implementation:
-  // const userDocRef = doc(db, 'users', userId);
-  // const userDoc = await getDoc(userDocRef);
-  // return userDoc.exists() ? userDoc.data().googleTokens : null;
-  return null; // Return null to simulate a user who hasn't authenticated yet.
-}
-
-
-/**
- * A placeholder function to represent getting an authenticated API client.
- * In a real application, this would involve retrieving stored tokens for the user.
+ * Gets an authenticated Google Calendar API client.
+ * It retrieves stored tokens, and if they are expired, it uses the refresh token
+ * to get new ones and saves them.
  * @param userId - The ID of the user.
  * @returns An authenticated Google Calendar API client instance.
  */
 const getCalendarClient = async (userId: string) => {
-  const tokens = await getUserTokensFromDb(userId);
+  const tokens = await getUserTokens(userId);
   if (!tokens) {
     throw new Error("User has not authenticated with Google Calendar.");
   }
   oauth2Client.setCredentials(tokens);
+
+  // Handle token refresh if necessary
+  if (tokens.expiry_date && tokens.expiry_date < Date.now()) {
+      console.log('Tokens expired, refreshing...');
+      const { credentials } = await oauth2Client.refreshAccessToken();
+      oauth2Client.setCredentials(credentials);
+      await saveUserTokens(userId, credentials);
+      console.log('Tokens refreshed and saved.');
+  }
   
   return google.calendar({ version: 'v3', auth: oauth2Client });
 };
@@ -120,8 +113,10 @@ export const createTaskInGoogleCalendar = async (userId: string, task: Task) => 
 
 /**
  * Generates a URL that the user will be sent to to consent to calendar access.
+ * We include the userId in the `state` parameter to identify the user upon callback.
+ * @param userId The ID of the user initiating the auth flow.
  */
-export async function getGoogleAuthUrl() {
+export async function getGoogleAuthUrl(userId: string) {
     const scopes = [
         'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/calendar.readonly'
@@ -131,6 +126,7 @@ export async function getGoogleAuthUrl() {
         access_type: 'offline', // Important to get a refresh token
         scope: scopes,
         prompt: 'consent', // Force consent screen to get refresh token every time
+        state: userId, // Pass the user ID here
     });
 };
 
@@ -139,7 +135,7 @@ export async function getGoogleAuthUrl() {
  * @param code The authorization code from the Google redirect.
  * @returns The OAuth2 tokens.
  */
-export async function exchangeCodeForTokens(code: string) {
+export async function exchangeCodeForTokens(code: string): Promise<Credentials> {
     const { tokens } = await oauth2Client.getToken(code);
     return tokens;
 };

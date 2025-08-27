@@ -150,7 +150,7 @@ export default function TasksPage() {
              // If the error message indicates a need for authentication, redirect the user.
              if (error.message.includes("User has not authenticated")) {
                 toast({ title: "Redirecting to Google", description: "Please authorize access to your calendar." });
-                const authUrl = await getGoogleAuthUrl();
+                const authUrl = await getGoogleAuthUrl(user.uid);
                 window.location.href = authUrl;
              } else {
                 console.error(error);
@@ -162,7 +162,7 @@ export default function TasksPage() {
              }
         } finally {
             // Only set to false if we didn't redirect
-            if (!window.location.href.includes('google.com')) {
+             if (!window.location.href.includes('google.com')) {
                  setIsSyncing(false);
             }
         }

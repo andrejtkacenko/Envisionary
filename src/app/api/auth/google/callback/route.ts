@@ -1,42 +1,38 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/lib/google-calendar-service';
-
-// TODO: In a real app, you would have a service to save and retrieve tokens for a user.
-// e.g., import { saveUserTokensToDb } from '@/lib/google-calendar-service';
+import { saveUserTokens } from '@/lib/google-auth-service';
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
-    const state = searchParams.get('state'); // Optional: for security
+    const state = searchParams.get('state'); // The userId we passed earlier
 
     if (!code) {
         return NextResponse.json({ error: 'Authorization code not found.' }, { status: 400 });
     }
+    
+    if (!state) {
+        return NextResponse.json({ error: 'User ID (state) not found in callback.' }, { status: 400 });
+    }
+    
+    const userId = state;
 
     try {
         // Exchange the authorization code for tokens
         const tokens = await exchangeCodeForTokens(code);
         
-        // TODO: At this point, you MUST associate these tokens with the logged-in user.
-        // 1. Get the user's ID (e.g., from the session or by decoding the 'state' parameter).
-        //    This requires a robust session management system. For now, we assume you have a way to get the userId.
-        //    const userId = getUserIdFromSession(req); 
-        //
-        // 2. Securely store the `tokens` (access_token, refresh_token, expiry_date) in your database (e.g., Firestore)
-        //    linked to the `userId`. The refresh_token is especially important as it allows
-        //    your app to get new access_tokens without asking the user to log in again.
-        //
-        //    await saveUserTokensToDb(userId, tokens);
+        // Securely store the tokens in Firestore, linked to the userId.
+        // The refresh_token is especially important.
+        await saveUserTokens(userId, tokens);
 
-        console.log('Received tokens:', tokens);
-        console.log("TODO: Save these tokens to the database, associated with the current user.");
+        console.log(`Successfully received and stored tokens for user: ${userId}`);
         
-        // Redirect the user back to a page in your app, e.g., the settings or tasks page.
+        // Redirect the user back to the tasks page.
         const redirectUrl = new URL('/tasks', req.url);
         return NextResponse.redirect(redirectUrl);
 
-    } catch (error) {
+    } catch (error) => {
         console.error('Error exchanging code for tokens:', error);
         return NextResponse.json({ error: 'Failed to authenticate with Google.' }, { status: 500 });
     }
