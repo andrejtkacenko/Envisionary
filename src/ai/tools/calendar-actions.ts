@@ -22,7 +22,7 @@ export async function syncWithGoogleCalendar(input: z.infer<typeof SyncSchema>):
     // Attempt to run the sync tool.
     return await syncTool(input);
   } catch (error: any) {
-    // If we catch our custom auth error, it means we need to re-authenticate.
+    // If we catch our custom auth error (or a wrapped version of it), it means we need to re-authenticate.
     if (error instanceof GoogleAuthError || (error.cause instanceof GoogleAuthError)) {
       console.log("[Auth Action] Authentication required. Generating auth URL.");
       const authUrl = await getGoogleAuthUrl(input.userId);
@@ -34,3 +34,4 @@ export async function syncWithGoogleCalendar(input: z.infer<typeof SyncSchema>):
     throw new Error("An unexpected error occurred during Google Calendar synchronization.");
   }
 }
+
