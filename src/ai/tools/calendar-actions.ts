@@ -6,11 +6,29 @@
  */
 import { z } from 'genkit';
 import { syncWithGoogleCalendar as syncTool } from './calendar-tools';
+import { getGoogleAuthUrl } from '@/lib/google-calendar-service';
 
 const SyncSchema = z.object({
   userId: z.string().describe("The ID of the user to sync for."),
 });
 
-export async function syncWithGoogleCalendar(input: z.infer<typeof SyncSchema>): Promise<{ message: string }> {
-  return syncTool(input);
+/**
+ * A server action that handles the Google Calendar sync process, including the auth flow.
+ * This function is safe to call from client components.
+ */
+export async function syncWithGoogleCalendar(input: z.infer<typeof SyncSchema>): Promise<{ message: string; authUrl?: string; }> {
+  try {
+    // Attempt to run the sync tool.
+    return await syncTool(input);
+  } catch (error: any) {
+    // If the error indicates a need for authentication, get the auth URL.
+    if (error.message.includes("User has not authenticated")) {
+      const authUrl = await getGoogleAuthUrl(input.userId);
+      // Return the URL to the client so it can redirect the user.
+      return { message: "Authentication required.", authUrl: authUrl };
+    }
+    // Re-throw other errors.
+    console.error("Unhandled error during sync process:", error);
+    throw new Error("An unexpected error occurred during Google Calendar synchronization.");
+  }
 }
