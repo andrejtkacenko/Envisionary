@@ -17,9 +17,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { generateSchedule } from '@/ai/flows/generate-schedule';
 import { addScheduleTemplate } from '@/lib/goals-service';
-import type { DailySchedule, Goal } from '@/types';
+import type { DailySchedule, Goal, ScheduleTemplate } from '@/types';
 import { Checkbox } from './ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { ScheduleTemplates } from './schedule-templates';
 
 // --- PROPS ---
 interface TaskActionsProps {
@@ -174,14 +176,19 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
             setIsGeneratingSchedule(false);
         }
     };
-
-    const handleApplySchedule = () => {
+    
+    const handleApplyScheduleFromGenerator = () => {
         if (generatedSchedule) {
             onScheduleApplied(generatedSchedule);
             setIsDialogOpen(false);
         }
     };
     
+    const handleApplyScheduleFromTemplate = (template: ScheduleTemplate) => {
+        onScheduleApplied(template.data);
+        setIsDialogOpen(false);
+    };
+
     const handleSaveTemplate = async (name: string) => {
         if (!user || !generatedSchedule) return;
         try {
@@ -206,6 +213,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
     const handleOpenChange = (isOpen: boolean) => {
         setIsDialogOpen(isOpen);
         if (!isOpen) {
+            // Reset state when closing the dialog
             form.reset();
             setGeneratedSchedule(null);
             setSelectedGoals([]);
@@ -220,11 +228,10 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
-                
                 {generatedSchedule ? (
                     <ScheduleViewer 
                         schedule={generatedSchedule}
-                        onApply={handleApplySchedule}
+                        onApply={handleApplyScheduleFromGenerator}
                         onSave={handleSaveTemplate}
                         onBack={() => setGeneratedSchedule(null)}
                     />
@@ -233,65 +240,75 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     <DialogHeader>
                         <DialogTitle className="font-headline">AI Schedule Generator</DialogTitle>
                         <DialogDescription>
-                            Describe your ideal week, select goals to include, and let AI create a personalized plan for you.
+                           Use AI to generate a new schedule or apply one of your saved templates.
                         </DialogDescription>
                     </DialogHeader>
-
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handleGenerateSchedule)} className="flex-grow flex flex-col overflow-hidden">
-                            <ScrollArea className="flex-grow -mx-6 px-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4 px-1">
-                                    <div className="space-y-6">
-                                        <FormField
-                                            control={form.control} name="priorities"
-                                            render={({ field }) => ( <FormItem><FormLabel>Priorities</FormLabel><FormControl><Textarea placeholder="e.g., Focus on work, with evenings for learning." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={form.control} name="workHours"
-                                            render={({ field }) => ( <FormItem><FormLabel>Work/Study Hours</FormLabel><FormControl><Input placeholder="e.g., 9 AM to 5 PM, Mon-Fri" {...field} /></FormControl><div className="flex flex-wrap gap-2 pt-1"><SuggestionButton onClick={() => form.setValue('workHours', '9 AM to 5 PM, Mon-Fri')}>9-5 Full-time</SuggestionButton><SuggestionButton onClick={() => form.setValue('workHours', 'Flexible, about 8 hours a day')}>Flexible Hours</SuggestionButton></div><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={form.control} name="habits"
-                                            render={({ field }) => ( <FormItem><FormLabel>Habits</FormLabel><FormControl><Input placeholder="e.g., Gym 3x a week, read 30 mins daily" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={form.control} name="commitments"
-                                            render={({ field }) => ( <FormItem><FormLabel>Fixed Commitments</FormLabel><FormControl><Input placeholder="e.g., Team meeting Mon 10am" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={form.control} name="sleepHours"
-                                            render={({ field }) => ( <FormItem><FormLabel>Desired Sleep Hours</FormLabel><FormControl><Input placeholder="e.g., 11 PM to 7 AM" {...field} /></FormControl><div className="flex flex-wrap gap-2 pt-1"><SuggestionButton onClick={() => form.setValue('sleepHours', '10 PM to 6 AM')}>10 PM - 6 AM</SuggestionButton><SuggestionButton onClick={() => form.setValue('sleepHours', '11 PM to 7 AM')}>11 PM - 7 AM</SuggestionButton></div><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={form.control} name="mealHours"
-                                            render={({ field }) => ( <FormItem><FormLabel>Meal Times</FormLabel><FormControl><Input placeholder="e.g., Lunch at 1pm, dinner at 7pm" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField
-                                            control={form.control} name="restHours"
-                                            render={({ field }) => ( <FormItem><FormLabel>Rest & Leisure</FormLabel><FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    </div>
-                                    <div className="flex flex-col overflow-hidden">
-                                         <FormLabel>Goals to Include (Optional)</FormLabel>
-                                         <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
-                                         <div className="flex-1 min-h-0 border rounded-md">
-                                            <ScrollArea className="h-full">
-                                                <div className="p-2 space-y-1">
-                                                    {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals found.</div>)}
-                                                    {allGoals.map(goal => (
-                                                        <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
-                                                            <Checkbox id={`gen-goal-${goal.id}`} checked={selectedGoals.includes(goal.id)} onCheckedChange={() => handleGoalToggle(goal.id)} />
-                                                            <label htmlFor={`gen-goal-${goal.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow">{goal.title}</label>
+                    <Tabs defaultValue="generator" className="flex-grow flex flex-col overflow-hidden">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="generator"><Wand2 className="mr-2 h-4 w-4" /> Generator</TabsTrigger>
+                            <TabsTrigger value="templates"><FileText className="mr-2 h-4 w-4" /> Templates</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="generator" className="flex-grow mt-4 overflow-y-auto -mx-6 px-6">
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(handleGenerateSchedule)} className="flex-grow flex flex-col overflow-hidden">
+                                    <ScrollArea className="flex-grow -mx-6 px-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 py-4 px-1">
+                                            <div className="space-y-6">
+                                                <FormField
+                                                    control={form.control} name="priorities"
+                                                    render={({ field }) => ( <FormItem><FormLabel>Priorities</FormLabel><FormControl><Textarea placeholder="e.g., Focus on work, with evenings for learning." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField
+                                                    control={form.control} name="workHours"
+                                                    render={({ field }) => ( <FormItem><FormLabel>Work/Study Hours</FormLabel><FormControl><Input placeholder="e.g., 9 AM to 5 PM, Mon-Fri" {...field} /></FormControl><div className="flex flex-wrap gap-2 pt-1"><SuggestionButton onClick={() => form.setValue('workHours', '9 AM to 5 PM, Mon-Fri')}>9-5 Full-time</SuggestionButton><SuggestionButton onClick={() => form.setValue('workHours', 'Flexible, about 8 hours a day')}>Flexible Hours</SuggestionButton></div><FormMessage /></FormItem>)} />
+                                                <FormField
+                                                    control={form.control} name="habits"
+                                                    render={({ field }) => ( <FormItem><FormLabel>Habits</FormLabel><FormControl><Input placeholder="e.g., Gym 3x a week, read 30 mins daily" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField
+                                                    control={form.control} name="commitments"
+                                                    render={({ field }) => ( <FormItem><FormLabel>Fixed Commitments</FormLabel><FormControl><Input placeholder="e.g., Team meeting Mon 10am" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField
+                                                    control={form.control} name="sleepHours"
+                                                    render={({ field }) => ( <FormItem><FormLabel>Desired Sleep Hours</FormLabel><FormControl><Input placeholder="e.g., 11 PM to 7 AM" {...field} /></FormControl><div className="flex flex-wrap gap-2 pt-1"><SuggestionButton onClick={() => form.setValue('sleepHours', '10 PM to 6 AM')}>10 PM - 6 AM</SuggestionButton><SuggestionButton onClick={() => form.setValue('sleepHours', '11 PM to 7 AM')}>11 PM - 7 AM</SuggestionButton></div><FormMessage /></FormItem>)} />
+                                                <FormField
+                                                    control={form.control} name="mealHours"
+                                                    render={({ field }) => ( <FormItem><FormLabel>Meal Times</FormLabel><FormControl><Input placeholder="e.g., Lunch at 1pm, dinner at 7pm" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField
+                                                    control={form.control} name="restHours"
+                                                    render={({ field }) => ( <FormItem><FormLabel>Rest & Leisure</FormLabel><FormControl><Input placeholder="e.g., Short breaks during work, weekends free" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            </div>
+                                            <div className="flex flex-col overflow-hidden">
+                                                 <FormLabel>Goals to Include (Optional)</FormLabel>
+                                                 <p className="text-xs text-muted-foreground mb-2">Select goals to include in the schedule generation.</p>
+                                                 <div className="flex-1 min-h-0 border rounded-md">
+                                                    <ScrollArea className="h-full">
+                                                        <div className="p-2 space-y-1">
+                                                            {allGoals.length === 0 && (<div className="text-center text-muted-foreground p-4 text-sm">No goals found.</div>)}
+                                                            {allGoals.map(goal => (
+                                                                <div key={goal.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-muted/50">
+                                                                    <Checkbox id={`gen-goal-${goal.id}`} checked={selectedGoals.includes(goal.id)} onCheckedChange={() => handleGoalToggle(goal.id)} />
+                                                                    <label htmlFor={`gen-goal-${goal.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex-grow">{goal.title}</label>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </ScrollArea>
-                                         </div>
-                                         <div className="text-xs text-muted-foreground mt-2 flex-shrink-0">Selected goals: {selectedGoals.length}</div>
-                                    </div>
-                                </div>
-                            </ScrollArea>
-                            <DialogFooter className="pt-4 flex-shrink-0 border-t -mx-6 px-6">
-                                <Button type="submit" disabled={isGeneratingSchedule} className="w-full sm:w-auto">
-                                    {isGeneratingSchedule ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                    Generate Schedule
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
+                                                    </ScrollArea>
+                                                 </div>
+                                                 <div className="text-xs text-muted-foreground mt-2 flex-shrink-0">Selected goals: {selectedGoals.length}</div>
+                                            </div>
+                                        </div>
+                                    </ScrollArea>
+                                    <DialogFooter className="pt-4 flex-shrink-0 border-t -mx-6 px-6">
+                                        <Button type="submit" disabled={isGeneratingSchedule} className="w-full sm:w-auto">
+                                            {isGeneratingSchedule ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                            Generate Schedule
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </Form>
+                        </TabsContent>
+                        <TabsContent value="templates" className="flex-grow mt-4 overflow-y-auto -mx-6 px-6">
+                           <ScheduleTemplates onApplyTemplate={handleApplyScheduleFromTemplate} />
+                        </TabsContent>
+                    </Tabs>
                 </>
                 )}
             </DialogContent>
