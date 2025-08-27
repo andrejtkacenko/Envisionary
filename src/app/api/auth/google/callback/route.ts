@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
         const redirectUrl = new URL('/tasks', req.url);
         return NextResponse.redirect(redirectUrl);
 
-    } catch (error) => {
+    } catch (error) {
         console.error('Error exchanging code for tokens:', error);
         return NextResponse.json({ error: 'Failed to authenticate with Google.' }, { status: 500 });
     }
