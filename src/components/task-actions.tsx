@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from 'react';
-import { Loader2, Wand2, Calendar, FileText, X, AlertTriangle } from 'lucide-react';
+import { Loader2, Wand2, Calendar, FileText, X } from 'lucide-react';
 import type { Goal, DailySchedule, ScheduleTemplate } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -186,8 +186,8 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                 data: generatedSchedule,
             });
             toast({ title: "Template saved successfully!" });
-            fetchTemplates(); // Refresh templates list
-            setActiveTab("templates"); // Switch to templates tab
+            fetchTemplates();
+            setActiveTab("templates");
         } catch(e) {
             console.error(e);
             toast({ variant: 'destructive', title: 'Failed to save template.' });
@@ -205,7 +205,6 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
-        // Reset state when closing
         setGeneratedSchedule(null);
         setSelectedGoals([]);
         setIsLoading(false);
@@ -220,7 +219,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
           <Wand2 className="mr-2 h-4 w-4" /> AI Scheduler
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl h-auto md:h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
 
         {generatedSchedule ? (
             <ScheduleViewer 
@@ -245,10 +244,9 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                 </TabsList>
                 <TabsContent value="generator" className="flex-grow mt-2 overflow-hidden">
                     <div className="grid md:grid-cols-2 gap-6 h-full">
-                        {/* Left: Preferences */}
                         <Card className="flex flex-col">
                             <CardHeader><CardTitle>1. Preferences</CardTitle></CardHeader>
-                            <CardContent className="flex-grow overflow-y-auto space-y-4">
+                            <CardContent className="flex-grow space-y-4 overflow-y-auto">
                                 <div>
                                     <Label>Main Priorities for the week?</Label>
                                     <Textarea value={preferences.priorities} onChange={e => setPreferences(p => ({...p, priorities: e.target.value}))}/>
@@ -271,19 +269,18 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                                 </div>
                             </CardContent>
                         </Card>
-                         {/* Right: Goals & Generate */}
                         <Card className="flex flex-col">
                              <CardHeader><CardTitle>2. Select Goals</CardTitle></CardHeader>
                              <CardContent className="flex-grow overflow-y-auto space-y-2">
-                                <ScrollArea className="h-full">
+                                <ScrollArea className="h-full pr-2">
                                 {allGoals.length > 0 ? allGoals.map(goal => (
                                     <div key={goal.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted">
                                         <Checkbox 
-                                            id={goal.id} 
+                                            id={`goal-${goal.id}`}
                                             checked={selectedGoals.some(g => g.id === goal.id)}
                                             onCheckedChange={() => handleGoalSelection(goal)}
                                         />
-                                        <label htmlFor={goal.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        <label htmlFor={`goal-${goal.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                             {goal.title}
                                         </label>
                                     </div>
@@ -300,7 +297,9 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                     </div>
                 </TabsContent>
                 <TabsContent value="templates" className="flex-grow mt-2 overflow-hidden">
-                   <ScheduleTemplates onApplyTemplate={handleApplySchedule} templates={templates} fetchTemplates={fetchTemplates}/>
+                   <div className="h-full">
+                     <ScheduleTemplates onApplyTemplate={handleApplySchedule} templates={templates} fetchTemplates={fetchTemplates}/>
+                   </div>
                 </TabsContent>
             </Tabs>
         )}
@@ -308,3 +307,5 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
     </Dialog>
   );
 }
+
+    
