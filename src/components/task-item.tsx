@@ -24,9 +24,10 @@ interface TaskItemProps {
     onDelete?: (taskId: string) => void;
     variant?: 'list' | 'planner';
     isOverlay?: boolean;
+    style?: React.CSSProperties;
 }
 
-export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay = false }: TaskItemProps) => {
+export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay = false, style: propStyle }: TaskItemProps) => {
     
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     
@@ -47,6 +48,7 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
     });
 
     const style = {
+        ...propStyle,
         transition,
         transform: CSS.Transform.toString(transform),
     };
@@ -99,7 +101,9 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
         </div>
     );
 
-    if (isOverlay) return content;
+    if (isOverlay) {
+        return <div style={style}>{content}</div>
+    };
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>

@@ -145,8 +145,8 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                                 {timedTasks.map(task => {
                                     const { top, height } = getTaskPosition(task);
                                     return (
-                                        <div key={task.id} className="absolute left-14 right-2 z-10" style={{ top, height }}>
-                                            <TaskItem task={task} onUpdate={onTaskUpdate} onDelete={onTaskDelete} variant="planner" />
+                                        <div key={task.id} className="absolute left-14 right-2 z-10" style={{ top }}>
+                                            <TaskItem task={task} onUpdate={onTaskUpdate} onDelete={onTaskDelete} variant="planner" style={{height}} />
                                         </div>
                                     )
                                 })}

@@ -195,7 +195,15 @@ export default function TasksPage() {
                  </div>
             </div>
              <DragOverlay>
-                {activeTask ? <TaskItem task={activeTask} isOverlay /> : null}
+                {activeTask ? (
+                    <TaskItem 
+                        task={activeTask}
+                        isOverlay 
+                        style={{
+                           height: activeTask.duration ? (activeTask.duration / 60) * 64 : 64,
+                        }}
+                    />
+                ) : null}
             </DragOverlay>
         </DndContext>
     );
