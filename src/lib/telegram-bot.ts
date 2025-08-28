@@ -40,7 +40,7 @@ const setupBot = () => {
 
     const getWebAppKeyboard = (isLinked: boolean) => {
         // Use the environment variable, but have a hardcoded fallback to prevent errors.
-        const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://envisionary-topaz.vercel.app/';
+        const WEB_APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://envisionary-beta.vercel.app';
         
         const buttons = [];
         // Ensure the URL doesn't have a trailing slash before appending our path
