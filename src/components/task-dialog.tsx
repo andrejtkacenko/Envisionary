@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, Flag, Circle, Plus, Trash2, Wand2, Clock } from "lucide-react";
+import { CalendarIcon, Flag, Plus, Trash2, Wand2, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { nanoid } from "nanoid";
 
@@ -25,7 +25,6 @@ import {
   FormField,
   FormItem,
   FormMessage,
-  FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -47,6 +46,7 @@ import { Separator } from "./ui/separator";
 import { Checkbox } from "./ui/checkbox";
 import { ScrollArea } from "./ui/scroll-area";
 import { BreakDownTaskDialog, type SubTask as GeneratedSubTask } from "./break-down-task-dialog";
+import { Label } from "./ui/label";
 
 const priorityMap: Record<TaskPriority, { label: string; color: string; icon: React.ReactNode }> = {
     p1: { label: "Priority 1", color: "text-red-500", icon: <Flag className="h-4 w-4" /> },
@@ -102,9 +102,11 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
     const taskToSave: Omit<Task, 'id' | 'createdAt'> | Task = {
         ...task,
         ...data,
+        id: task?.id || nanoid(),
         time: data.time || null, // Ensure it's null if empty
         subTasks: subTasks,
-        isCompleted: task?.isCompleted || false
+        isCompleted: task?.isCompleted || false,
+        createdAt: task?.createdAt || new Date(),
     };
     onSave(taskToSave);
     setOpen(false);
@@ -147,7 +149,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen(true); }}>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg" onPointerDownOutside={(e) => e.preventDefault()}>
+      <DialogContent className="sm:max-w-lg" onPointerDownOutside={(e) => {if (e.target instanceof HTMLElement && e.target.closest('[data-radix-popper-content-wrapper]')) { e.preventDefault(); }}}>
         <DialogHeader>
           <DialogTitle className="font-headline">{isEditMode ? "Edit Task" : "Add a new Task"}</DialogTitle>
         </DialogHeader>
@@ -252,8 +254,9 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                       name="time"
                       render={({ field }) => (
                         <FormItem className="flex-grow">
+                           <Label htmlFor="time" className="sr-only">Time</Label>
                           <FormControl>
-                            <Input type="time" {...field} />
+                            <Input id="time" type="time" {...field} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -281,12 +284,13 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                             {subTasks.map(st => (
                                 <div key={st.id} className="flex items-center gap-2 group p-1 rounded-md hover:bg-muted/50">
                                     <Checkbox
+                                        id={`subtask-${st.id}`}
                                         checked={st.isCompleted}
                                         onCheckedChange={() => handleToggleSubTask(st.id)}
                                     />
-                                    <span className={cn("text-sm flex-grow", st.isCompleted && "line-through text-muted-foreground")}>
+                                    <Label htmlFor={`subtask-${st.id}`} className={cn("text-sm flex-grow cursor-pointer", st.isCompleted && "line-through text-muted-foreground")}>
                                         {st.title}
-                                    </span>
+                                    </Label>
                                     <Button 
                                         type="button" 
                                         variant="ghost" 
