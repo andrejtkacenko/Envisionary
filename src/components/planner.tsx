@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { format, isToday, startOfDay, addHours, getHours, getMinutes } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, Calendar } from 'lucide-react';
