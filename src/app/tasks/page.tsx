@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { ListTodo, Plus, Inbox, Calendar as CalendarIconLucide, Loader2 } from 'lucide-react';
-import { isSameDay, startOfToday, isBefore, setHours, setMinutes, format } from 'date-fns';
+import { isSameDay, startOfDay, isBefore, setHours, setMinutes, format } from 'date-fns';
 import {
   DndContext,
   closestCenter,
@@ -34,23 +34,25 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
     });
 
     return (
-        <Card className="flex-grow flex flex-col overflow-hidden">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Inbox/> Inbox</CardTitle>
-                 <CardDescription>Unscheduled tasks</CardDescription>
-            </CardHeader>
-            <CardContent ref={setNodeRef} className="flex-grow overflow-y-auto p-2">
-                 <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                    {tasks.length > 0 ? (
-                        tasks.map(task => (
-                            <TaskItem key={task.id} task={task} onUpdate={onUpdate} onDelete={onDelete} variant="list"/>
-                        ))
-                    ) : (
-                        <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
-                    )}
-                </SortableContext>
-            </CardContent>
-        </Card>
+        <div className="flex-grow flex flex-col overflow-hidden">
+            <Card className="flex-grow flex flex-col overflow-hidden">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Inbox/> Inbox</CardTitle>
+                     <CardDescription>Unscheduled tasks</CardDescription>
+                </CardHeader>
+                <CardContent ref={setNodeRef} className="flex-grow overflow-y-auto p-2">
+                     <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                        {tasks.length > 0 ? (
+                            tasks.map(task => (
+                                <TaskItem key={task.id} task={task} onUpdate={onUpdate} onDelete={onDelete} variant="list"/>
+                            ))
+                        ) : (
+                            <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
+                        )}
+                    </SortableContext>
+                </CardContent>
+            </Card>
+        </div>
     )
 }
 
@@ -110,14 +112,14 @@ export default function TasksPage() {
         // Dragging over an hour slot
         if (overIsHourSlot && selectedDate) {
             const hour = over.data.current?.hour as number;
-            const newDate = setHours(startOfToday(selectedDate), hour);
+            const newDate = setHours(startOfDay(selectedDate), hour);
             const newTime = format(newDate, 'HH:mm');
             
             const currentDueDate = activeTask.dueDate ? new Date(activeTask.dueDate) : null;
             const isSameDate = currentDueDate ? isSameDay(currentDueDate, newDate) : false;
 
             if (!isSameDate || newTime !== activeTask.time) {
-                handleUpdateTask({ ...activeTask, dueDate: newDate.toISOString(), time: newTime });
+                handleUpdateTask({ ...activeTask, dueDate: newDate, time: newTime });
             }
         }
     };
@@ -125,7 +127,6 @@ export default function TasksPage() {
     const handleDragEnd = (event: DragEndEvent) => {
         setActiveTask(null);
     };
-
 
     return (
         <DndContext
@@ -157,7 +158,6 @@ export default function TasksPage() {
                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-grow overflow-hidden">
                     {/* Left Column: Inbox & Calendar */}
                     <div className="md:col-span-1 h-full flex flex-col gap-6">
-                        <div className="flex-grow flex flex-col overflow-hidden">
                         {isLoading ? (
                             <div className="flex items-center justify-center h-full">
                                 <Loader2 className="h-6 w-6 animate-spin"/>
@@ -165,7 +165,6 @@ export default function TasksPage() {
                         ) : (
                            <UnscheduledTasks tasks={unscheduledTasks} onUpdate={handleUpdateTask} onDelete={handleDeleteTask} />
                         )}
-                        </div>
                         <Card>
                             <CardContent className="p-0">
                                  <Calendar
@@ -175,7 +174,7 @@ export default function TasksPage() {
                                     className="p-0"
                                     modifiers={{ 
                                         hasTasks: daysWithTasks,
-                                        disabled: (date) => isBefore(date, startOfToday()) 
+                                        disabled: (date) => isBefore(date, startOfDay()) 
                                     }}
                                     modifiersClassNames={{ 
                                         hasTasks: 'has-tasks',

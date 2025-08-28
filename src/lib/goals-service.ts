@@ -9,6 +9,7 @@
 
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task } from "@/types";
@@ -102,7 +103,9 @@ const goalConverter = {
 const subTaskToFirestore = (task: Task) => {
     const data: any = { ...task };
     if (task.dueDate) {
-        data.dueDate = Timestamp.fromDate(task.dueDate as Date);
+        // Ensure dueDate is a Date object before converting
+        const date = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate;
+        data.dueDate = Timestamp.fromDate(date as Date);
     } else {
         delete data.dueDate
     }
@@ -138,7 +141,9 @@ const taskConverter = {
     toFirestore: (task: Omit<Task, 'id'>) => {
         const data: any = { ...task };
         if (task.dueDate) {
-            data.dueDate = Timestamp.fromDate(task.dueDate as Date);
+             // Ensure dueDate is a Date object before converting
+            const date = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate;
+            data.dueDate = Timestamp.fromDate(date as Date);
         } else {
             delete data.dueDate
         }
