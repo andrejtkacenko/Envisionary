@@ -160,7 +160,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                              <div className="relative">
                                 {date && isToday(date) && <TimeIndicator hourHeight={hourHeight} />}
                                 
-                                <div className="relative">
+                                <div className="relative mt-4">
                                     {hours.map(hour => <HourSlot key={hour} hour={hour} />)}
                                     {timedTasks.map(task => {
                                         const { top, height } = getTaskPosition(task);
