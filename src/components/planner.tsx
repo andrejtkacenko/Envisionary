@@ -134,7 +134,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
             </CardHeader>
             <CardContent 
                 ref={plannerRef}
-                className="flex-grow overflow-hidden p-2" 
+                className="flex-grow flex flex-col overflow-hidden p-2" 
                 style={{ '--hour-height': `${HOUR_HEIGHT_DEFAULT}px` } as React.CSSProperties}
             >
                 {isLoading ? (
@@ -143,14 +143,14 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                         <p>Loading tasks...</p>
                     </div>
                 ) : (
-                    <div className="h-full flex flex-col">
+                    <>
                         {allDayTasks.length > 0 && (
                             <div className="p-2 border-b">
                                 <div className="grid grid-cols-[3rem,1fr]">
                                      <div className="text-xs text-right pr-2 text-muted-foreground pt-1">all-day</div>
                                      <div className="col-span-1 space-y-1" ref={setPlannerRef}>
                                         {allDayTasks.map(task => (
-                                             <TaskItem key={task.id} task={task} onUpdate={onTaskUpdate} onDelete={onDelete} variant="planner"/>
+                                             <TaskItem key={task.id} task={task} onUpdate={onTaskUpdate} onDelete={onTaskDelete} variant="planner"/>
                                         ))}
                                      </div>
                                 </div>
@@ -166,14 +166,14 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                                         const { top, height } = getTaskPosition(task);
                                         return (
                                             <div key={task.id} className="absolute left-14 right-2 z-10" style={{ top }}>
-                                                <TaskItem task={task} onUpdate={onTaskUpdate} onDelete={onDelete} variant="planner" style={{height}} />
+                                                <TaskItem task={task} onUpdate={onTaskUpdate} onDelete={onTaskDelete} variant="planner" style={{height}} />
                                             </div>
                                         )
                                     })}
                                 </div>
                              </div>
                         </ScrollArea>
-                    </div>
+                    </>
                 )}
             </CardContent>
         </Card>
