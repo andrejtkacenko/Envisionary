@@ -83,7 +83,7 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
     );
     
     const listContent = (
-        <div className="w-full">
+        <div className="w-full p-2 rounded-md hover:bg-muted">
             <p className={cn("font-medium text-sm", task.isCompleted && "line-through text-muted-foreground")}>{task.title}</p>
         </div>
     )
@@ -91,7 +91,7 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
     const content = (
          <div 
             className={cn(
-                "group w-full h-full cursor-pointer transition-shadow hover:shadow-lg",
+                "group w-full h-full cursor-pointer transition-shadow",
                 isDragging && "opacity-50",
                 isOverlay && "shadow-xl scale-105",
                 task.isCompleted && "opacity-60"
@@ -101,11 +101,7 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
         </div>
     );
 
-    if (isOverlay) {
-        return <div style={style}>{content}</div>
-    };
-
-    return (
+    const FinalTaskItem = (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
             {onUpdate && onDelete ? (
                 <TaskDialog task={task} onSave={onUpdate} onDelete={onDelete}>
@@ -116,5 +112,14 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
             )}
         </div>
     );
+
+    if (isOverlay) {
+        // We calculate style for the overlay separately, as we don't have access to the --hour-height var easily here
+        const DUMMY_HOUR_HEIGHT = 80;
+        const height = (task.duration || 60) / 60 * DUMMY_HOUR_HEIGHT;
+        return <div style={{ height }}>{content}</div>
+    }
+
+    return FinalTaskItem;
 
 };

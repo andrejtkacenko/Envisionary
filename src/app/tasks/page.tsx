@@ -60,8 +60,8 @@ export default function TasksPage() {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-    const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
-    const scheduledTasks = useMemo(() => tasks.filter(t => t.dueDate), [tasks]);
+    const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate || !t.time), [tasks]);
+    const scheduledTasks = useMemo(() => tasks.filter(t => t.dueDate && t.time), [tasks]);
     
     const tasksForSelectedDay = useMemo(() => {
         if (!selectedDate) return [];
@@ -103,7 +103,7 @@ export default function TasksPage() {
         const overIsHourSlot = typeof over.data.current?.hour === 'number';
 
         // Dragging over Inbox
-        if (overIsInbox && activeTask.dueDate) {
+        if (overIsInbox && (activeTask.dueDate || activeTask.time)) {
             handleUpdateTask({ ...activeTask, dueDate: undefined, time: null });
         }
 
@@ -112,8 +112,11 @@ export default function TasksPage() {
             const hour = over.data.current?.hour as number;
             const newDate = setHours(startOfToday(selectedDate), hour);
             const newTime = format(newDate, 'HH:mm');
+            
+            const currentDueDate = activeTask.dueDate ? new Date(activeTask.dueDate) : null;
+            const isSameDate = currentDueDate ? isSameDay(currentDueDate, newDate) : false;
 
-            if (newDate.toISOString() !== activeTask.dueDate || newTime !== activeTask.time) {
+            if (!isSameDate || newTime !== activeTask.time) {
                 handleUpdateTask({ ...activeTask, dueDate: newDate.toISOString(), time: newTime });
             }
         }
@@ -198,10 +201,7 @@ export default function TasksPage() {
                 {activeTask ? (
                     <TaskItem 
                         task={activeTask}
-                        isOverlay 
-                        style={{
-                           height: activeTask.duration ? (activeTask.duration / 60) * 64 : 64,
-                        }}
+                        isOverlay
                     />
                 ) : null}
             </DragOverlay>
