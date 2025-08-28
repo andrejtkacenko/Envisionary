@@ -20,7 +20,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getGoals } from '@/lib/goals-service';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { TaskActions } from '@/components/task-actions';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -127,12 +126,6 @@ export default function TasksPage() {
         }
     };
 
-     const handleScheduleApplied = async (schedule: any[]) => {
-        if (!user) return;
-        // This is a placeholder for a more complex implementation
-        toast({ title: 'Schedule Applied!', description: 'AI-generated schedule has been processed.' });
-    };
-
     return (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 h-screen flex flex-col">
@@ -146,7 +139,6 @@ export default function TasksPage() {
                         </p>
                     </div>
                      <div className="flex items-center gap-2">
-                        <TaskActions allGoals={allGoals} onScheduleApplied={handleScheduleApplied} />
                         <TaskDialog onSave={handleAddTask}>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" /> New Task
