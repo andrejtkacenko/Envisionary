@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -18,6 +17,7 @@ import {
   KanbanSquare,
   Library,
   ListTodo,
+  CalendarCog,
 } from "lucide-react";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,7 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/", label: "Goals Board", icon: KanbanSquare },
     { href: "/tasks", label: "Tasks", icon: ListTodo },
+    { href: "/schedule", label: "Ideal Schedule", icon: CalendarCog },
     { href: "/coach", label: "AI Coach", icon: Zap },
     { href: "/library", label: "Library", icon: Library },
   ];
