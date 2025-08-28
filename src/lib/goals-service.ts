@@ -8,6 +8,7 @@
 
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task } from "@/types";
@@ -153,6 +154,9 @@ const taskConverter = {
         } else {
             data.time = task.time;
         }
+        // Handle duration, setting a default if not present
+        data.duration = task.duration || 60;
+        
         return data;
     },
     fromFirestore: (snapshot: any, options: any): Task => {
@@ -162,6 +166,7 @@ const taskConverter = {
             ...data,
             dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : undefined,
             createdAt: data.createdAt,
+            duration: data.duration || 60, // Default to 60 if not present
         };
         if (data.subTasks) {
             task.subTasks = data.subTasks.map(subTaskFromFirestore);

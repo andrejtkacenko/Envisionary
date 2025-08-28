@@ -58,7 +58,7 @@ const HourSlot = ({ hour, children }: { hour: number; children?: React.ReactNode
 
     return (
         <div ref={setNodeRef} className="flex h-16 border-b relative">
-            <div className="w-12 text-xs text-right pr-2 text-muted-foreground pt-1">
+            <div className="w-12 text-xs text-right pr-2 text-muted-foreground -translate-y-2">
                 {format(addHours(startOfDay(new Date()), hour), 'ha')}
             </div>
             <div className="flex-grow border-l">
@@ -92,6 +92,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
 
     useEffect(() => {
         if(scrollRef.current) {
+            // Scroll to 8 AM
             scrollRef.current.scrollTop = 8 * 64; 
         }
     }, [date]);
@@ -101,8 +102,9 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
         if (!task.time) return { top: 0, height: 0 };
         const [hour, minute] = task.time.split(':').map(Number);
         const top = (hour + minute / 60) * 64;
-        const height = 60; // default 1 hour
-        return { top, height: (height / 60) * 64 };
+        const durationInMinutes = task.duration || 60; // Default to 60 minutes if not set
+        const height = (durationInMinutes / 60) * 64;
+        return { top, height };
     }
 
     return (
@@ -123,7 +125,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                     <div className="h-full flex flex-col">
                         {allDayTasks.length > 0 && (
                             <div className="p-2 border-b">
-                                <div className="grid grid-cols-[3rem,1fr] gap-2">
+                                <div className="grid grid-cols-[3rem,1fr]">
                                      <div className="text-xs text-right pr-2 text-muted-foreground pt-1">all-day</div>
                                      <div className="col-span-1 space-y-1">
                                         {allDayTasks.map(task => (
@@ -143,7 +145,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                                 {timedTasks.map(task => {
                                     const { top, height } = getTaskPosition(task);
                                     return (
-                                        <div key={task.id} className="absolute left-14 right-0 z-10" style={{ top, height }}>
+                                        <div key={task.id} className="absolute left-14 right-2 z-10" style={{ top, height }}>
                                             <TaskItem task={task} onUpdate={onTaskUpdate} onDelete={onTaskDelete} variant="planner" />
                                         </div>
                                     )

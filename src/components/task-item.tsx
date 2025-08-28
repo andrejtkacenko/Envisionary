@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Flag, ListTree } from 'lucide-react';
+import { Flag, ListTree, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Task, TaskPriority } from '@/types';
 import { TaskDialog } from './task-dialog';
@@ -65,11 +65,18 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
                     {task.description}
                 </p>
             )}
-            {totalSubTasks > 0 && (
-                <div className="text-xs text-white/80 mt-1 flex items-center gap-1">
-                   <ListTree className="h-3 w-3" /> {completedSubTasks}/{totalSubTasks}
-                </div>
-            )}
+            <div className="flex items-center gap-4 mt-1 text-xs text-white/80">
+              {totalSubTasks > 0 && (
+                  <div className="flex items-center gap-1">
+                     <ListTree className="h-3 w-3" /> {completedSubTasks}/{totalSubTasks}
+                  </div>
+              )}
+               {task.duration && (
+                  <div className="flex items-center gap-1">
+                     <Clock className="h-3 w-3" /> {task.duration}m
+                  </div>
+              )}
+            </div>
         </div>
     );
     

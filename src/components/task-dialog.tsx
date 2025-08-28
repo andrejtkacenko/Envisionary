@@ -61,6 +61,7 @@ const taskSchema = z.object({
   priority: z.custom<TaskPriority>(),
   dueDate: z.date().optional(),
   time: z.string().optional(),
+  duration: z.coerce.number().min(0).optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -89,6 +90,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
         priority: task?.priority ?? "p4",
         dueDate: task?.dueDate ? new Date(task.dueDate) : undefined,
         time: task?.time || "",
+        duration: task?.duration || 60,
       });
       setSubTasks(task?.subTasks || []);
     }
@@ -104,6 +106,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
         ...data,
         id: task?.id || nanoid(),
         time: data.time || null, // Ensure it's null if empty
+        duration: data.duration || 60,
         subTasks: subTasks,
         isCompleted: task?.isCompleted || false,
         createdAt: task?.createdAt || new Date(),
@@ -257,6 +260,21 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                            <Label htmlFor="time" className="sr-only">Time</Label>
                           <FormControl>
                             <Input id="time" type="time" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <FormField
+                      control={form.control}
+                      name="duration"
+                      render={({ field }) => (
+                        <FormItem className="flex-grow">
+                           <Label htmlFor="duration" className="sr-only">Duration (minutes)</Label>
+                          <FormControl>
+                            <Input id="duration" type="number" placeholder="Duration (min)" {...field} />
                           </FormControl>
                         </FormItem>
                       )}

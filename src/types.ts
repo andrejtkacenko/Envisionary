@@ -39,6 +39,7 @@ export type Task = {
     createdAt: any;
     subTasks?: Task[];
     time?: string | null; // e.g., "09:00"
+    duration?: number; // in minutes
 };
 
 
