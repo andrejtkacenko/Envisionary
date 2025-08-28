@@ -15,4 +15,3 @@ import '@/ai/flows/generate-schedule-template';
 // Import tools so they are registered with Genkit and available to models
 import '@/ai/tools/goal-tools';
 import '@/ai/tools/schedule-tools';
-import '@/ai/tools/calendar-tools';

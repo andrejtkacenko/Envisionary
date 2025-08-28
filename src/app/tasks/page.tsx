@@ -23,8 +23,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TaskActions } from '@/components/task-actions';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { getGoogleAuthUrl } from '@/lib/google-calendar-service';
-import { syncWithGoogleCalendar } from '@/ai/tools/calendar-actions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
@@ -135,40 +133,6 @@ export default function TasksPage() {
         toast({ title: 'Schedule Applied!', description: 'AI-generated schedule has been processed.' });
     };
 
-    const handleSync = async () => {
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Not authenticated' });
-            return;
-        }
-        setIsSyncing(true);
-        try {
-            // First, try to run the sync tool. It will fail if tokens are not present.
-            const result = await syncWithGoogleCalendar({ userId: user.uid });
-            toast({ title: "Sync Complete", description: result.message });
-            
-        } catch (error: any) {
-             // If the error message indicates a need for authentication, redirect the user.
-             if (error.message.includes("User has not authenticated")) {
-                toast({ title: "Redirecting to Google", description: "Please authorize access to your calendar." });
-                const authUrl = await getGoogleAuthUrl(user.uid);
-                window.location.href = authUrl;
-             } else {
-                console.error(error);
-                toast({
-                    variant: 'destructive',
-                    title: 'Sync Failed',
-                    description: error.message || 'Could not initiate sync with Google. Please try again.',
-                });
-             }
-        } finally {
-            // Only set to false if we didn't redirect
-             if (!window.location.href.includes('google.com')) {
-                 setIsSyncing(false);
-            }
-        }
-    };
-
-
     return (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 h-screen flex flex-col">
@@ -182,10 +146,6 @@ export default function TasksPage() {
                         </p>
                     </div>
                      <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
-                            <RefreshCw className={cn("mr-2 h-4 w-4", isSyncing && "animate-spin")} />
-                            Sync with Google
-                        </Button>
                         <TaskActions allGoals={allGoals} onScheduleApplied={handleScheduleApplied} />
                         <TaskDialog onSave={handleAddTask}>
                             <Button>
