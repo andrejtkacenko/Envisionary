@@ -10,11 +10,8 @@ import '@/ai/flows/coach-chat';
 import '@/ai/flows/recommend-goals';
 import '@/ai/flows/break-down-task';
 import '@/ai/flows/generate-schedule';
-import '@/ai/flows/generate-ideal-schedule';
 
 
 // Import tools so they are registered with Genkit and available to models
 import '@/ai/tools/goal-tools';
 import '@/ai/tools/schedule-tools';
-
-

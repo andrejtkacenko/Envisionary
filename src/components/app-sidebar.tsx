@@ -53,11 +53,6 @@ export function AppSidebar() {
         icon: ListTodo,
     },
     {
-        href: "/schedule",
-        label: "Ideal Schedule",
-        icon: CalendarCog,
-    },
-    {
         href: "/coach",
         label: "AI Coach",
         icon: Zap,

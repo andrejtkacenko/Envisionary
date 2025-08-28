@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Wand2, Loader2, Sparkles, Plus, Clock, ListFilter } from 'lucide-react';
+import { Wand2, Loader2, Sparkles, Plus, Clock, ListFilter, ArrowRight, ArrowLeft } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,12 +21,24 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { format, setHours, setMinutes } from 'date-fns';
+import { format, setHours, setMinutes, startOfWeek, addDays, endOfWeek } from 'date-fns';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Textarea } from './ui/textarea';
+import { Separator } from './ui/separator';
 
 interface TaskActionsProps {
   unscheduledTasks: Task[];
   onSchedule: (updatedTasks: Task[]) => void;
 }
+
+const goals = [
+    { id: 'career', label: 'Career Growth' },
+    { id: 'learning', label: 'Learn a New Skill' },
+    { id: 'health', label: 'Improve Health & Fitness' },
+    { id: 'finance', label: 'Financial Planning' },
+    { id: 'personal', label: 'Personal Projects' },
+];
+
 
 const DaySchedule = ({ day, allTasks }: { day: DailySchedule, allTasks: Task[] }) => {
     return (
@@ -48,6 +60,12 @@ const DaySchedule = ({ day, allTasks }: { day: DailySchedule, allTasks: Task[] }
                         </div>
                     )
                 })}
+                 {day.items.length === 0 && (
+                    <div className="text-center text-sm text-muted-foreground py-10">
+                        <Clock className="mx-auto h-8 w-8 mb-2" />
+                        No tasks scheduled for this day.
+                    </div>
+                 )}
             </div>
         </div>
     )
@@ -57,12 +75,18 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
-  const [schedule, setSchedule] = useState<DailySchedule | null>(null);
+  const [step, setStep] = useState(1);
 
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("17:00");
-  const [forDate, setForDate] = useState(new Date());
+  // --- Step 1 state ---
+  const [mainGoals, setMainGoals] = useState<string[]>([]);
+  const [energyPeak, setEnergyPeak] = useState<'morning' | 'afternoon' | 'evening'>();
+  const [preferences, setPreferences] = useState('');
+  
+  // --- Step 2 state ---
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  
+  // --- Step 3 state ---
+  const [schedule, setSchedule] = useState<DailySchedule[] | null>(null);
 
   const handleGenerate = async () => {
     if (selectedTasks.length === 0) {
@@ -72,15 +96,27 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
     setIsLoading(true);
     setSchedule(null);
     try {
-      const tasksToSchedule = unscheduledTasks.filter(t => selectedTasks.includes(t.id));
-      const result = await generateSchedule({
-        tasks: tasksToSchedule.map(t => ({ id: t.id, title: t.title, description: t.description, priority: t.priority })),
-        scheduleStartDate: forDate.toISOString(),
-        scheduleEndDate: forDate.toISOString(),
-        startTime,
-        endTime,
-      });
-      setSchedule(result.schedule[0]); // For now, we only support single-day schedule
+        const tasksToSchedule = unscheduledTasks.filter(t => selectedTasks.includes(t.id));
+        const today = new Date();
+        const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+        const end = endOfWeek(today, { weekStartsOn: 1 });
+
+        const preferenceString = `
+            Main goals: ${mainGoals.join(', ')}.
+            Energy peak: ${energyPeak}.
+            Other preferences: ${preferences}
+        `;
+
+        const result = await generateSchedule({
+            tasks: tasksToSchedule.map(t => ({ id: t.id, title: t.title, description: t.description, priority: t.priority })),
+            scheduleStartDate: start.toISOString(),
+            scheduleEndDate: end.toISOString(),
+            startTime: '08:00', // Default start time
+            endTime: '22:00',   // Default end time
+            preferences: preferenceString,
+        });
+      setSchedule(result.schedule);
+      setStep(3); // Move to preview
     } catch (error) {
       console.error(error);
       toast({
@@ -96,24 +132,25 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
   const handleApplySchedule = () => {
     if (!schedule) return;
     
-    const scheduledDate = new Date(schedule.date);
-    
-    const updatedTasks = schedule.items.map(item => {
-        const originalTask = unscheduledTasks.find(t => t.id === item.taskId);
-        if (!originalTask) return null;
+    const allUpdatedTasks = schedule.flatMap(day => {
+        const scheduledDate = new Date(day.date);
+        return day.items.map(item => {
+             const originalTask = unscheduledTasks.find(t => t.id === item.taskId);
+            if (!originalTask) return null;
 
-        const [hours, minutes] = item.startTime.split(':').map(Number);
-        const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
+            const [hours, minutes] = item.startTime.split(':').map(Number);
+            const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
 
-        return {
-            ...originalTask,
-            dueDate: taskDate,
-            time: item.startTime,
-            duration: item.duration,
-        };
+            return {
+                ...originalTask,
+                dueDate: taskDate,
+                time: item.startTime,
+                duration: item.duration,
+            };
+        })
     }).filter((t): t is Task => t !== null);
 
-    onSchedule(updatedTasks);
+    onSchedule(allUpdatedTasks);
     setOpen(false);
   };
   
@@ -122,8 +159,12 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
     if (!isOpen) {
         // Reset state on close
         setIsLoading(false);
+        setStep(1);
         setSchedule(null);
         setSelectedTasks([]);
+        setMainGoals([]);
+        setEnergyPeak(undefined);
+        setPreferences('');
     }
   }
 
@@ -149,23 +190,78 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
             <Wand2 /> AI Schedule Generator
           </DialogTitle>
           <DialogDescription>
-            Select tasks from your inbox and let AI create the ideal schedule for your day.
+            Answer a few questions and select tasks to generate your ideal weekly schedule.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow overflow-hidden">
-            {/* Left: Task Selection & Options */}
-            <div className="flex flex-col gap-4">
-                <h3 className="text-lg font-semibold">1. Select Tasks</h3>
-                <div className="flex items-center space-x-2">
+        {step === 1 && (
+            <div className="flex-grow overflow-y-auto p-1">
+                <h3 className="text-lg font-semibold mb-4">Step 1: Your Productivity Profile</h3>
+                <div className="space-y-6">
+                    <div>
+                        <Label className="font-semibold">What are your main goals for the week?</Label>
+                        <div className="mt-2 space-y-2">
+                        {goals.map((item) => (
+                            <div key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                <Checkbox
+                                    id={`goal-${item.id}`}
+                                    checked={mainGoals.includes(item.label)}
+                                    onCheckedChange={(checked) => {
+                                        return checked
+                                            ? setMainGoals([...mainGoals, item.label])
+                                            : setMainGoals(mainGoals.filter((value) => value !== item.label));
+                                    }}
+                                />
+                                <Label htmlFor={`goal-${item.id}`} className="font-normal">{item.label}</Label>
+                            </div>
+                        ))}
+                        </div>
+                    </div>
+                     <Separator/>
+                     <div>
+                        <Label className="font-semibold">When are your energy levels at their peak?</Label>
+                         <RadioGroup onValueChange={(v) => setEnergyPeak(v as any)} value={energyPeak} className="mt-2">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="morning" id="morning" />
+                                <Label htmlFor="morning">Morning (8 AM - 12 PM)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="afternoon" id="afternoon" />
+                                <Label htmlFor="afternoon">Afternoon (1 PM - 5 PM)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="evening" id="evening" />
+                                <Label htmlFor="evening">Evening (6 PM - 10 PM)</Label>
+                            </div>
+                        </RadioGroup>
+                     </div>
+                     <Separator/>
+                      <div>
+                        <Label className="font-semibold" htmlFor="preferences">Any other preferences?</Label>
+                        <Textarea 
+                            id="preferences"
+                            placeholder="e.g., I prefer creative work in the morning, No meetings on Fridays..." 
+                            value={preferences}
+                            onChange={(e) => setPreferences(e.target.value)}
+                            className="mt-2"
+                        />
+                    </div>
+                </div>
+            </div>
+        )}
+        
+        {step === 2 && (
+             <div className="flex-grow overflow-y-auto p-1">
+                <h3 className="text-lg font-semibold">Step 2: Select Tasks to Schedule</h3>
+                <div className="flex items-center space-x-2 my-4">
                     <Checkbox
                         id="select-all"
                         onCheckedChange={handleSelectAll}
                         checked={selectedTasks.length > 0 && selectedTasks.length === unscheduledTasks.length}
                     />
-                    <Label htmlFor="select-all">Select All</Label>
+                    <Label htmlFor="select-all">Select All ({unscheduledTasks.length} tasks)</Label>
                 </div>
-                <ScrollArea className="h-64 border rounded-md p-2">
+                <ScrollArea className="h-96 border rounded-md p-2">
                     {unscheduledTasks.length > 0 ? (
                         unscheduledTasks.map(task => (
                             <div key={task.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
@@ -185,35 +281,20 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
                         <p className="text-sm text-muted-foreground text-center py-10">Your inbox is empty!</p>
                     )}
                 </ScrollArea>
-
-                <h3 className="text-lg font-semibold">2. Set Schedule Time</h3>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <Label htmlFor="start-time">Start Time</Label>
-                        <Input id="start-time" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
-                    </div>
-                    <div>
-                        <Label htmlFor="end-time">End Time</Label>
-                        <Input id="end-time" type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
-                    </div>
-                 </div>
-
-                <Button onClick={handleGenerate} disabled={isLoading || selectedTasks.length === 0} className="mt-4">
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Generate Schedule
-                </Button>
             </div>
-            {/* Right: Schedule Preview */}
-            <div className="flex flex-col gap-4">
-                <h3 className="text-lg font-semibold">3. Preview</h3>
-                 <ScrollArea className="h-full border rounded-md p-4 bg-muted/20">
+        )}
+        
+        {step === 3 && (
+            <div className="flex-grow overflow-y-auto p-1">
+                <h3 className="text-lg font-semibold mb-4">Step 3: Preview Your Ideal Week</h3>
+                <ScrollArea className="h-[500px] border rounded-md p-4 bg-muted/20">
                      {isLoading ? (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                             <Loader2 className="h-8 w-8 animate-spin" />
                             <p>AI is planning your day...</p>
                         </div>
                      ) : schedule ? (
-                        <DaySchedule day={schedule} allTasks={unscheduledTasks} />
+                        schedule.map(day => <DaySchedule key={day.date} day={day} allTasks={unscheduledTasks} />)
                      ) : (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                            <Clock className="h-8 w-8" />
@@ -222,16 +303,34 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
                      )}
                  </ScrollArea>
             </div>
-        </div>
-
-        {schedule && (
-            <DialogFooter>
-                <Button onClick={handleApplySchedule}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Apply Schedule
-                </Button>
-            </DialogFooter>
         )}
+
+        <DialogFooter>
+            <div className="w-full flex justify-between">
+                <div>
+                  {step > 1 && (
+                    <Button variant="ghost" onClick={() => setStep(s => s - 1)}>
+                       <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                    </Button>
+                   )}
+                </div>
+                <div className="flex gap-2">
+                    {step === 1 && <Button onClick={() => setStep(2)} disabled={!energyPeak || mainGoals.length === 0}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
+                    {step === 2 && (
+                        <Button onClick={handleGenerate} disabled={isLoading || selectedTasks.length === 0}>
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                            Generate Schedule
+                        </Button>
+                    )}
+                    {step === 3 && schedule && (
+                        <Button onClick={handleApplySchedule}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Apply Schedule
+                        </Button>
+                    )}
+                </div>
+            </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

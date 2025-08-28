@@ -20,7 +20,7 @@ const GenerateScheduleInputSchema = z.object({
   scheduleEndDate: z.string().describe("The end date for the schedule in ISO 8601 format."),
   startTime: z.string().describe("The start time of the workday (e.g., '09:00')."),
   endTime: z.string().describe("The end time of the workday (e.g., '17:00')."),
-  preferences: z.string().optional().describe("User preferences, e.g., 'I prefer to do creative work in the morning.'"),
+  preferences: z.string().optional().describe("User preferences, e.g., 'Main Goals: Career Growth. Energy Peak: morning. I prefer creative work in the morning.'"),
 });
 export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
 
@@ -40,7 +40,7 @@ const DailyScheduleSchema = z.object({
 
 
 const GenerateScheduleOutputSchema = z.object({
-  schedule: z.array(DailyScheduleSchema).describe('The generated schedule, with one entry per day.'),
+  schedule: z.array(DailyScheduleSchema).describe('The generated weekly schedule, with one entry per day.'),
 });
 export type GenerateScheduleOutput = z.infer<typeof GenerateScheduleOutputSchema>;
 
@@ -53,30 +53,22 @@ const prompt = ai.definePrompt({
   name: 'generateSchedulePrompt',
   input: { schema: GenerateScheduleInputSchema },
   output: { schema: GenerateScheduleOutputSchema },
-  prompt: `You are a productivity expert and AI assistant. Your task is to create an optimal, realistic, and productive daily schedule based on a list of tasks provided by the user.
+  prompt: `You are a world-class productivity coach and AI assistant. Your task is to create an optimal, realistic, and productive weekly schedule based on a list of tasks and user preferences.
 
 **Instructions:**
-1.  **Analyze the Tasks**: Review the list of tasks, paying close attention to their titles, descriptions, and priorities.
-2.  **Estimate Duration**: For each task, estimate a realistic duration in minutes. Be reasonable; simple tasks might take 15-30 minutes, while complex ones could take 60-90 minutes or more.
-3.  **Prioritize**: Schedule higher priority tasks (p1) earlier in the day to ensure they get done.
-4.  **Create the Schedule**: Arrange the tasks within the user's specified workday (from startTime to endTime).
-5.  **Add Breaks**: Automatically insert 10-15 minute breaks between tasks to prevent burnout. Also, include a longer break (45-60 minutes) for lunch around noon.
-6.  **Format the Output**: Structure the response according to the provided JSON schema. Ensure all times are in HH:MM format. Calculate the duration for each task.
+1.  **Analyze Tasks & Preferences**: Review the list of tasks, their priorities, and the user's preferences (goals, energy peaks).
+2.  **Prioritize & Theme Days**: Schedule higher priority tasks first. If possible, group similar tasks together on certain days (e.g., "Deep Work Wednesday").
+3.  **Energy Management**: If the user specified an energy peak (e.g., 'morning'), schedule the most demanding tasks (p1/p2) during that time.
+4.  **Create the Schedule**: Arrange the tasks within the user's specified timeframe (from scheduleStartDate to scheduleEndDate) and workday (startTime to endTime).
+5.  **Estimate Duration**: For each task, estimate a realistic duration in minutes. Simple tasks might take 15-30 minutes, complex ones 60-90+.
+6.  **Add Breaks**: Automatically insert 10-15 minute breaks between tasks. Include a longer break (45-60 minutes) for lunch around noon each day.
+7.  **Fill the Gaps**: If there are empty slots, you can suggest activities based on the user's stated goals (e.g., "Review progress on [Goal]", "Read for 30 minutes"). These should be generic and not have a taskId.
+8.  **Format the Output**: Structure the response according to the JSON schema. Ensure all times are in HH:MM format and dates are in YYYY-MM-DD.
 
-**User's Working Hours:**
-- Start of day: {{{startTime}}}
-- End of day: {{{endTime}}}
-
-**Date to Schedule For:**
-- From: {{{scheduleStartDate}}}
-- To: {{{scheduleEndDate}}}
-
-**User Preferences (if any):**
-{{#if preferences}}
-- {{{preferences}}}
-{{else}}
-- None provided.
-{{/if}}
+**User Profile & Constraints:**
+- **Schedule for**: From {{{scheduleStartDate}}} to {{{scheduleEndDate}}}
+- **Working Hours**: From {{{startTime}}} to {{{endTime}}} daily.
+- **User Preferences**: {{{preferences}}}
 
 **Tasks to Schedule:**
 {{#each tasks}}
@@ -86,7 +78,7 @@ const prompt = ai.definePrompt({
   - **Priority**: {{priority}}
 {{/each}}
 
-Now, generate the ideal schedule.
+Now, generate the ideal weekly schedule.
 `,
 });
 
