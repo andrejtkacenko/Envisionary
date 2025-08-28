@@ -43,7 +43,7 @@ const TimeIndicator = ({ hourHeight }: { hourHeight: number }) => {
 
     return (
         <div 
-            className="absolute left-12 right-0 h-0.5 bg-red-500 z-20 flex items-center"
+            className="absolute left-12 right-0 h-0.5 bg-red-500 z-10 flex items-center"
             style={{ top: `${top}px` }}
         >
             <div className="h-2 w-2 rounded-full bg-red-500 -ml-1"></div>
@@ -157,15 +157,15 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                             </div>
                         )}
                         <ScrollArea className="flex-grow" ref={scrollRef}>
-                             <div className="relative">
+                             <div className="relative mt-4">
                                 {date && isToday(date) && <TimeIndicator hourHeight={hourHeight} />}
                                 
-                                <div className="relative mt-4">
+                                <div className="relative">
                                     {hours.map(hour => <HourSlot key={hour} hour={hour} />)}
                                     {timedTasks.map(task => {
                                         const { top, height } = getTaskPosition(task);
                                         return (
-                                            <div key={task.id} className="absolute left-14 right-2 z-10" style={{ top }}>
+                                            <div key={task.id} className="absolute left-14 right-2 z-20" style={{ top }}>
                                                 <TaskItem task={task} onUpdate={onTaskUpdate} onDelete={onTaskDelete} variant="planner" style={{height}} />
                                             </div>
                                         )
