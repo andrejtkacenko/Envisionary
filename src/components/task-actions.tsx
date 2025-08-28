@@ -43,7 +43,7 @@ const goals = [
 const DaySchedule = ({ day, allTasks }: { day: DailySchedule, allTasks: Task[] }) => {
     return (
         <div className="mb-4">
-            <h3 className="font-bold text-lg mb-2 border-b pb-1">{format(new Date(day.date), "eeee, MMMM do")}</h3>
+            <h3 className="font-bold text-lg mb-2 border-b pb-1">{format(new Date(day.date + 'T00:00:00'), "eeee, MMMM do")}</h3>
             <div className="space-y-2">
                 {day.items.map((item, index) => {
                     const task = item.taskId ? allTasks.find(t => t.id === item.taskId) : null;
@@ -117,8 +117,8 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
 
         const result = await generateSchedule({
             tasks: tasksToSchedule.map(t => ({ id: t.id, title: t.title, description: t.description, priority: t.priority })),
-            scheduleStartDate: start.toISOString(),
-            scheduleEndDate: end.toISOString(),
+            scheduleStartDate: start.toISOString().split('T')[0],
+            scheduleEndDate: end.toISOString().split('T')[0],
             preferences: preferenceString,
         });
       setSchedule(result.schedule);
@@ -139,10 +139,9 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
     if (!schedule) return;
     
     const allUpdatedTasks = schedule.flatMap(day => {
-        // Add a buffer to the date to avoid timezone issues
         const scheduledDate = new Date(day.date + 'T12:00:00Z');
         return day.items.map(item => {
-             if (!item.taskId) return null; // Skip non-task items like "Lunch"
+             if (!item.taskId) return null;
              const originalTask = unscheduledTasks.find(t => t.id === item.taskId);
             if (!originalTask) return null;
 

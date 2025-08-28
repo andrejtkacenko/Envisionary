@@ -63,6 +63,7 @@ const prompt = ai.definePrompt({
 7.  **Add Breaks**: Automatically insert short 10-15 minute breaks between tasks to prevent burnout. Ensure a longer lunch break is present.
 8.  **Fill the Gaps**: If there are empty slots, suggest and schedule beneficial activities based on the user's stated goals (e.g., "Review progress on [Goal]", "Read for 30 minutes", "Tidy workspace", "Plan tomorrow"). These should be generic and not have a taskId.
 9.  **Format the Output**: Structure the response according to the JSON schema. Ensure all times are in HH:MM format and dates are in YYYY-MM-DD. Every day from the start date to the end date should have a schedule, even if it's just sleep and meals on a weekend.
+10. **Task IDs**: When you include a task from the input list, you MUST use its original \`taskId\`. For generic, self-generated items like "Lunch" or "Workout", do NOT include a \`taskId\`.
 
 **User Profile & Constraints:**
 - **Schedule for**: From {{{scheduleStartDate}}} to {{{scheduleEndDate}}}
