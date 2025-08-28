@@ -7,7 +7,7 @@ import type { Goal, DailySchedule, ScheduleTemplate } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { generateSchedule } from '@/ai/flows/generate-schedule';
-import { saveSchedule, addScheduleTemplate, getScheduleTemplates } from '@/lib/goals-service';
+import { saveSchedule, addScheduleTemplate } from '@/lib/goals-service';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -82,7 +82,7 @@ const ScheduleViewer = ({
                     </div>
                 </ScrollArea>
             </div>
-             <DialogFooter className="flex-shrink-0 gap-2">
+             <DialogFooter className="flex-shrink-0 gap-2 pt-4 border-t">
                 <Button variant="ghost" onClick={onGoBack}>Back to Generator</Button>
                 {showSaveInput ? (
                      <div className="flex gap-2">
@@ -113,6 +113,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("generator");
+  const [refreshTemplates, setRefreshTemplates] = useState(false);
 
   // Generator State
   const [preferences, setPreferences] = useState({
@@ -126,25 +127,6 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
   });
   const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
   const [generatedSchedule, setGeneratedSchedule] = useState<DailySchedule[] | null>(null);
-
-  // Template State
-  const [templates, setTemplates] = useState<ScheduleTemplate[]>([]);
-  const fetchTemplates = useCallback(async () => {
-        if (!user) return;
-        try {
-            const fetchedTemplates = await getScheduleTemplates(user.uid);
-            setTemplates(fetchedTemplates);
-        } catch (error) {
-            console.error(error);
-        }
-  }, [user]);
-
-  useEffect(() => {
-    if (activeTab === "templates" && user) {
-        fetchTemplates();
-    }
-  }, [activeTab, user, fetchTemplates]);
-
 
   const handleGenerateSchedule = async () => {
     if (!user) return;
@@ -186,7 +168,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                 data: generatedSchedule,
             });
             toast({ title: "Template saved successfully!" });
-            fetchTemplates();
+            setRefreshTemplates(true); // Trigger a refresh
             setActiveTab("templates");
         } catch(e) {
             console.error(e);
@@ -219,7 +201,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
           <Wand2 className="mr-2 h-4 w-4" /> AI Scheduler
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
 
         {generatedSchedule ? (
             <ScheduleViewer 
@@ -247,31 +229,35 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                         <Card className="flex flex-col">
                             <CardHeader><CardTitle>1. Preferences</CardTitle></CardHeader>
                             <CardContent className="flex-grow space-y-4 overflow-y-auto">
-                                <div>
-                                    <Label>Main Priorities for the week?</Label>
-                                    <Textarea value={preferences.priorities} onChange={e => setPreferences(p => ({...p, priorities: e.target.value}))}/>
+                                <ScrollArea className="h-full pr-4">
+                                <div className="space-y-4">
+                                    <div>
+                                        <Label>Main Priorities for the week?</Label>
+                                        <Textarea value={preferences.priorities} onChange={e => setPreferences(p => ({...p, priorities: e.target.value}))}/>
+                                    </div>
+                                    <div>
+                                        <Label>Regular Habits to include?</Label>
+                                        <Input value={preferences.habits} onChange={e => setPreferences(p => ({...p, habits: e.target.value}))}/>
+                                    </div>
+                                    <div>
+                                        <Label>Fixed Commitments?</Label>
+                                        <Input value={preferences.commitments} onChange={e => setPreferences(p => ({...p, commitments: e.target.value}))}/>
+                                    </div>
+                                    <div>
+                                        <Label>Work/Study Hours?</Label>
+                                        <Input value={preferences.workHours} onChange={e => setPreferences(p => ({...p, workHours: e.target.value}))}/>
+                                    </div>
+                                     <div>
+                                        <Label>Sleep Hours?</Label>
+                                        <Input value={preferences.sleepHours} onChange={e => setPreferences(p => ({...p, sleepHours: e.target.value}))}/>
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label>Regular Habits to include?</Label>
-                                    <Input value={preferences.habits} onChange={e => setPreferences(p => ({...p, habits: e.target.value}))}/>
-                                </div>
-                                <div>
-                                    <Label>Fixed Commitments?</Label>
-                                    <Input value={preferences.commitments} onChange={e => setPreferences(p => ({...p, commitments: e.target.value}))}/>
-                                </div>
-                                <div>
-                                    <Label>Work/Study Hours?</Label>
-                                    <Input value={preferences.workHours} onChange={e => setPreferences(p => ({...p, workHours: e.target.value}))}/>
-                                </div>
-                                 <div>
-                                    <Label>Sleep Hours?</Label>
-                                    <Input value={preferences.sleepHours} onChange={e => setPreferences(p => ({...p, sleepHours: e.target.value}))}/>
-                                </div>
+                                </ScrollArea>
                             </CardContent>
                         </Card>
                         <Card className="flex flex-col">
                              <CardHeader><CardTitle>2. Select Goals</CardTitle></CardHeader>
-                             <CardContent className="flex-grow overflow-y-auto space-y-2">
+                             <CardContent className="flex-grow overflow-y-auto min-h-0">
                                 <ScrollArea className="h-full pr-2">
                                 {allGoals.length > 0 ? allGoals.map(goal => (
                                     <div key={goal.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted">
@@ -298,7 +284,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                 </TabsContent>
                 <TabsContent value="templates" className="flex-grow mt-2 overflow-hidden">
                    <div className="h-full">
-                     <ScheduleTemplates onApplyTemplate={handleApplySchedule} templates={templates} fetchTemplates={fetchTemplates}/>
+                     <ScheduleTemplates onApplyTemplate={handleApplySchedule} needsRefresh={refreshTemplates} onRefreshComplete={() => setRefreshTemplates(false)} />
                    </div>
                 </TabsContent>
             </Tabs>
@@ -307,5 +293,3 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
     </Dialog>
   );
 }
-
-    
