@@ -102,9 +102,18 @@ export default function TasksPage() {
         const overIsInbox = overId === 'inbox';
         const overIsHourSlot = typeof over.data.current?.hour === 'number';
 
-        // Dragging over Inbox
-        if (overIsInbox && (activeTask.dueDate || activeTask.time)) {
-            handleUpdateTask({ ...activeTask, dueDate: undefined, time: null });
+        // When a task is dragged over the Inbox, unschedule it.
+        if (overIsInbox) {
+            // Check if the task is currently scheduled to avoid unnecessary updates
+            if (activeTask.dueDate || activeTask.time) {
+                setActiveTask(currentActiveTask => {
+                    if (!currentActiveTask) return null;
+                    const updatedTask = { ...currentActiveTask, dueDate: undefined, time: null };
+                    // We only update the local activeTask state here.
+                    // The final update will be committed in onDragEnd.
+                    return updatedTask;
+                });
+            }
         }
 
         // Dragging over an hour slot
@@ -117,12 +126,19 @@ export default function TasksPage() {
             const isSameDate = currentDueDate ? isSameDay(currentDueDate, newDate) : false;
 
             if (!isSameDate || newTime !== activeTask.time) {
-                handleUpdateTask({ ...activeTask, dueDate: newDate, time: newTime });
+                 setActiveTask(currentActiveTask => {
+                    if (!currentActiveTask) return null;
+                    return { ...currentActiveTask, dueDate: newDate, time: newTime };
+                });
             }
         }
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
+        if (activeTask) {
+            // Persist the changes from onDragOver
+            handleUpdateTask(activeTask);
+        }
         setActiveTask(null);
     };
 
