@@ -39,11 +39,10 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const { signIn, signInWithGoogle, signInWithToken } = useAuth();
+  const { signIn, signInWithToken } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isTelegramLoading, setIsTelegramLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
@@ -66,22 +65,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-  
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    try {
-      await signInWithGoogle();
-      router.push("/");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Google Sign-In Failed",
-        description: error.message,
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  }
   
   const handleTelegramLogin = async (telegramData: any) => {
       setIsTelegramLoading(true);
@@ -154,7 +137,7 @@ export default function LoginPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading || isTelegramLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || isTelegramLoading}>
                   {isLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </form>
@@ -166,9 +149,6 @@ export default function LoginPage() {
             </div>
           </div>
            <div className="space-y-2">
-              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading || isTelegramLoading}>
-                {isGoogleLoading ? 'Redirecting...' : 'Sign in with Google'}
-              </Button>
                <TelegramLoginButton onAuth={handleTelegramLogin} isLoading={isTelegramLoading} />
            </div>
         </CardContent>

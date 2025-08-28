@@ -47,11 +47,10 @@ const signupSchema = z
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
-  const { signUp, signInWithGoogle, signInWithToken } = useAuth();
+  const { signUp, signInWithToken } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isTelegramLoading, setIsTelegramLoading] = useState(false);
 
   const form = useForm<SignupFormValues>({
@@ -74,22 +73,6 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   };
-
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    try {
-      await signInWithGoogle();
-      router.push("/");
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Google Sign-In Failed",
-        description: error.message,
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  }
 
   const handleTelegramLogin = async (telegramData: any) => {
     setIsTelegramLoading(true);
@@ -174,7 +157,7 @@ export default function SignupPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading || isTelegramLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || isTelegramLoading}>
                   {isLoading ? 'Creating Account...' : 'Create Account'}
                 </Button>
               </form>
@@ -186,9 +169,6 @@ export default function SignupPage() {
             </div>
           </div>
            <div className="space-y-2">
-              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading || isTelegramLoading}>
-                 {isGoogleLoading ? 'Redirecting...' : 'Sign up with Google'}
-              </Button>
               <TelegramLoginButton onAuth={handleTelegramLogin} isLoading={isTelegramLoading} />
            </div>
         </CardContent>
