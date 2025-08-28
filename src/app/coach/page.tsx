@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { coachChat, createGoal, updateGoal, findGoals, summarizeProgress } from '@/ai/tools/goal-actions';
-import { getSchedule } from '@/ai/tools/schedule-actions';
 import { getGoalsSnapshot } from '@/lib/goals-service';
 import type { Goal } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -36,7 +35,7 @@ type ChatMessage = {
 
 const initialMessage: ChatMessage = {
     role: 'assistant',
-    content: "Hello! I'm your AI Coach. I can help you manage your goals and schedule. Try asking me to create a new goal or to find time for an existing one. How can I support you today?"
+    content: "Hello! I'm your AI Coach. I can help you manage your goals. Try asking me to create a new goal. How can I support you today?"
 };
 
 const callTool = async (toolRequest: any, userId: string): Promise<any> => {
@@ -51,8 +50,6 @@ const callTool = async (toolRequest: any, userId: string): Promise<any> => {
             return await updateGoal(args);
         case 'findGoals':
             return await findGoals(args);
-        case 'getSchedule':
-            return await getSchedule({ userId });
         default:
             throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -73,7 +70,6 @@ export default function CoachPage() {
 
     const suggestions = [
         "Create a new goal to learn Next.js",
-        "When can I work on my 'read more' goal?",
         "What are my current goals?",
     ];
 
@@ -251,11 +247,7 @@ export default function CoachPage() {
                                     <div key={index} className="text-xs text-center text-muted-foreground flex items-center gap-2 justify-center">
                                         <Wand2 className="h-4 w-4" />
                                         <span>Tool action: `{msg.toolResult?.name}` executed.</span>
-                                        {msg.toolResult?.name === 'getSchedule' ? (
-                                        <a href="/planner" className="text-xs p-0 h-auto underline">View Schedule</a>
-                                        ) : (
                                         <Button variant="link" size="sm" onClick={fetchGoals} className="text-xs p-0 h-auto">Refresh Board</Button>
-                                        )}
                                     </div>
                                     );
                                 }

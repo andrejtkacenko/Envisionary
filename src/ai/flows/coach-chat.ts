@@ -11,7 +11,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { createGoal, updateGoal, findGoals } from '@/ai/tools/goal-tools';
-import { getScheduleTool } from '@/ai/tools/schedule-tools';
 import type { Goal } from '@/types';
 
 const ChatMessageSchema = z.object({
@@ -66,17 +65,16 @@ const coachChatFlow = ai.defineFlow(
 
     const response = await ai.generate({
         model: 'googleai/gemini-1.5-flash-latest',
-        tools: [createGoal, updateGoal, findGoals, getScheduleTool],
+        tools: [createGoal, updateGoal, findGoals],
         toolConfig: {
             // By default, the model will decide when to call tools.
             // You can also force it to call a specific tool or none at all.
         },
         system: `You are an AI coach named Zenith Flow. Your goal is to help users achieve their goals by providing supportive, insightful, and actionable advice. Keep your responses concise and encouraging.
 
-You have access to tools to help the user manage their goals and schedule.
+You have access to tools to help the user manage their goals.
 - When a user asks you to create a goal, use the createGoalTool.
 - When a user asks you to improve or modify a goal, first find the goal using the findGoalsTool to get the goal's ID, then use the updateGoalTool to make the changes. Always confirm with the user before updating a goal.
-- You can access the user's weekly schedule using the getScheduleTool to provide better recommendations on when to work on tasks.
 - You must have the user's ID to use any tool.
 - You can only see the user's goals by using the findGoalsTool.
 - The user's ID is: ${userId}`,
