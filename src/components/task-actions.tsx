@@ -59,13 +59,13 @@ const ScheduleViewer = ({
     }
     
     return (
-        <div className="flex flex-col h-full">
-            <DialogHeader className="flex-shrink-0">
+        <div>
+            <DialogHeader>
                 <DialogTitle>Generated Schedule</DialogTitle>
                 <DialogDescription>Review the schedule below or go back to regenerate.</DialogDescription>
             </DialogHeader>
-            <div className="flex-grow my-4 min-h-0">
-                <ScrollArea className="h-full pr-4">
+            <div className="my-4">
+                <ScrollArea className="h-[60vh] pr-4">
                     <div className="space-y-4">
                         {schedule.map(day => (
                             <div key={day.day}>
@@ -82,7 +82,7 @@ const ScheduleViewer = ({
                     </div>
                 </ScrollArea>
             </div>
-             <DialogFooter className="flex-shrink-0 gap-2 pt-4 border-t">
+             <DialogFooter className="gap-2 pt-4 border-t">
                 <Button variant="ghost" onClick={onGoBack}>Back to Generator</Button>
                 {showSaveInput ? (
                      <div className="flex gap-2">
@@ -201,8 +201,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
           <Wand2 className="mr-2 h-4 w-4" /> AI Scheduler
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-
+      <DialogContent className="max-w-4xl h-[90vh]">
         {generatedSchedule ? (
             <ScheduleViewer 
                 schedule={generatedSchedule} 
@@ -211,8 +210,8 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                 onSaveTemplate={handleSaveTemplate}
             />
         ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-grow flex flex-col min-h-0">
-                <DialogHeader className="flex-shrink-0">
+            <Tabs defaultValue="generator" className="h-full flex flex-col">
+                <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Wand2 className="h-6 w-6 text-primary" /> AI Schedule Generator
                     </DialogTitle>
@@ -220,7 +219,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                         Plan your week with AI assistance. Fill in your preferences, select your goals, and let the AI build your schedule.
                     </DialogDescription>
                 </DialogHeader>
-                 <TabsList className="grid w-full grid-cols-2 mt-4 flex-shrink-0">
+                 <TabsList className="grid w-full grid-cols-2 mt-4">
                     <TabsTrigger value="generator"><Calendar className="mr-2 h-4 w-4" />Generator</TabsTrigger>
                     <TabsTrigger value="templates"><FileText className="mr-2 h-4 w-4" />Templates</TabsTrigger>
                 </TabsList>
@@ -229,7 +228,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                         <Card className="flex flex-col">
                             <CardHeader><CardTitle>1. Preferences</CardTitle></CardHeader>
                             <CardContent className="flex-grow space-y-4 overflow-y-auto">
-                                <ScrollArea className="h-full pr-4">
+                                <ScrollArea className="h-[45vh] pr-4">
                                 <div className="space-y-4">
                                     <div>
                                         <Label>Main Priorities for the week?</Label>
@@ -258,7 +257,7 @@ export function TaskActions({ allGoals, onScheduleApplied }: TaskActionsProps) {
                         <Card className="flex flex-col">
                              <CardHeader><CardTitle>2. Select Goals</CardTitle></CardHeader>
                              <CardContent className="flex-grow overflow-y-auto min-h-0">
-                                <ScrollArea className="h-full pr-2">
+                                <ScrollArea className="h-[55vh] pr-2">
                                 {allGoals.length > 0 ? allGoals.map(goal => (
                                     <div key={goal.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-muted">
                                         <Checkbox 
