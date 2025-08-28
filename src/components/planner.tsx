@@ -108,8 +108,8 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
     const [nowIndicatorTop, setNowIndicatorTop] = useState(0);
 
     const { scheduledTasks, allDayTasks } = useMemo(() => {
-        const scheduled = tasks.filter(t => !!t.time);
-        const allDay = tasks.filter(t => !t.time);
+        const scheduled = tasks.filter(t => t.time); // Tasks with a specific time
+        const allDay = tasks.filter(t => !t.time); // Tasks without a specific time
         return { scheduledTasks: scheduled, allDayTasks: allDay };
     }, [tasks]);
 
@@ -117,7 +117,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
     const tasksByTime = useMemo(() => {
         const map = new Map<string, Task[]>();
         scheduledTasks.forEach(task => {
-            if (task.time) {
+            if (task.time) { // This check is now slightly redundant but safe
                 const list = map.get(task.time) || [];
                 list.push(task);
                 map.set(task.time, list);

@@ -111,15 +111,15 @@ export default function TasksPage() {
         const overId = over.id as string;
 
         const overIsTimeSlot = over.data.current?.type === 'timeSlot';
-        const overIsAllDaySlot = overId === 'all-day';
-        const overIsUnscheduledArea = overId === 'unscheduled-drop-area';
+        const overIsAllDaySlot = over.id === 'all-day';
+        const overIsUnscheduledArea = over.id === 'unscheduled-drop-area';
 
 
         if (overIsTimeSlot) {
             const newTime = overId;
             handleUpdateTask({ ...task, time: newTime, dueDate: selectedDate });
         } else if (overIsAllDaySlot) {
-            handleUpdateTask({ ...task, time: null, dueDate: selectedDate });
+            handleUpdateTask({ ...task, time: undefined, dueDate: selectedDate });
         } else if (overIsUnscheduledArea) {
              if (task.time || task.dueDate) {
                 handleUpdateTask({ ...task, time: undefined, dueDate: undefined });
