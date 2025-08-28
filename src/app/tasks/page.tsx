@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -12,15 +11,10 @@ import { Planner } from '@/components/planner';
 import { useTasks } from '@/hooks/use-tasks';
 import type { Task } from '@/types';
 import { TaskDialog } from '@/components/task-dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
-import { TaskActions } from '@/components/task-actions';
-
 
 export default function TasksPage() {
-    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks } = useTasks();
+    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
@@ -49,11 +43,10 @@ export default function TasksPage() {
                         <ListTodo /> My Tasks
                     </h1>
                     <p className="text-muted-foreground">
-                        Plan and visualize your day.
+                        Plan and visualize your day, inspired by Apple Calendar.
                     </p>
                 </div>
                  <div className="flex items-center gap-2">
-                    <TaskActions unscheduledTasks={unscheduledTasks} onSchedule={handleBulkUpdateTasks} />
                     <TaskDialog onSave={handleAddTask}>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" /> New Task
@@ -62,26 +55,9 @@ export default function TasksPage() {
                 </div>
             </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow overflow-hidden">
-                {/* Left Column: Calendar & Inbox */}
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-grow overflow-hidden">
+                {/* Left Column: Inbox & Calendar */}
                 <div className="md:col-span-1 h-full flex flex-col gap-6">
-                    <Card>
-                        <CardContent className="p-0">
-                             <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                className="p-0"
-                                modifiers={{ 
-                                    hasTasks: daysWithTasks,
-                                    disabled: (date) => isBefore(date, startOfToday()) 
-                                }}
-                                modifiersClassNames={{ 
-                                    hasTasks: 'has-tasks',
-                                }}
-                            />
-                        </CardContent>
-                    </Card>
                     <Card className="flex-grow flex flex-col overflow-hidden">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><Inbox/> Inbox</CardTitle>
@@ -109,10 +85,27 @@ export default function TasksPage() {
                             )}
                         </CardContent>
                     </Card>
+                    <Card>
+                        <CardContent className="p-0">
+                             <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={setSelectedDate}
+                                className="p-0"
+                                modifiers={{ 
+                                    hasTasks: daysWithTasks,
+                                    disabled: (date) => isBefore(date, startOfToday()) 
+                                }}
+                                modifiersClassNames={{ 
+                                    hasTasks: 'has-tasks',
+                                }}
+                            />
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Right Column: Planner */}
-                 <div className="md:col-span-2 h-full">
+                 <div className="md:col-span-3 h-full">
                      <Planner
                         date={selectedDate}
                         tasks={tasksForSelectedDay}
@@ -126,4 +119,3 @@ export default function TasksPage() {
         </div>
     );
 }
-

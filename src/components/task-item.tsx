@@ -13,10 +13,10 @@ import { TaskDialog } from './task-dialog';
 import { Progress } from './ui/progress';
 
 const priorityMap: Record<TaskPriority, { color: string; icon: React.ReactNode }> = {
-    p1: { color: "border-red-500", icon: <Flag className="text-red-500" /> },
-    p2: { color: "border-orange-400", icon: <Flag className="text-orange-400" /> },
-    p3: { color: "border-blue-500", icon: <Flag className="text-blue-500" /> },
-    p4: { color: "border-muted", icon: <Flag className="text-muted-foreground" /> },
+    p1: { color: "bg-red-500", icon: <Flag className="text-red-500" /> },
+    p2: { color: "bg-orange-400", icon: <Flag className="text-orange-400" /> },
+    p3: { color: "bg-blue-500", icon: <Flag className="text-blue-500" /> },
+    p4: { color: "bg-gray-400", icon: <Flag className="text-muted-foreground" /> },
 };
 
 
@@ -24,67 +24,65 @@ interface TaskItemProps {
     task: Task;
     onUpdate: (task: Task) => void;
     onDelete: (taskId: string) => void;
+    variant?: 'list' | 'planner';
 }
 
-export const TaskItem = ({ task, onUpdate, onDelete }: TaskItemProps) => {
-
-    const handleToggleComplete = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent dialog from opening
-        onUpdate({ ...task, isCompleted: !task.isCompleted });
-    };
+export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list' }: TaskItemProps) => {
     
     const completedSubTasks = task.subTasks?.filter(st => st.isCompleted).length || 0;
     const totalSubTasks = task.subTasks?.length || 0;
-    const progress = totalSubTasks > 0 ? (completedSubTasks / totalSubTasks) * 100 : (task.isCompleted ? 100 : 0);
 
+    const content = (
+        <div className={cn("h-full w-full p-2 rounded-lg flex flex-col justify-center", priorityMap[task.priority].color)}>
+            <p className={cn("font-semibold text-white", task.isCompleted && "line-through opacity-70")}>
+                {task.title}
+            </p>
+            {task.description && (
+                <p className={cn("text-xs text-white/80", task.isCompleted && "line-through opacity-70")}>
+                    {task.description}
+                </p>
+            )}
+            {totalSubTasks > 0 && (
+                <div className="text-xs text-white/80 mt-1">
+                    {completedSubTasks}/{totalSubTasks} subtasks
+                </div>
+            )}
+        </div>
+    );
+
+    if (variant === 'list') {
+         return (
+            <TaskDialog task={task} onSave={onUpdate} onDelete={onDelete}>
+                <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.2 }}
+                    className="group flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50"
+                >
+                    {/* List item rendering logic here */}
+                </motion.div>
+            </TaskDialog>
+        );
+    }
+    
     return (
         <TaskDialog task={task} onSave={onUpdate} onDelete={onDelete}>
-            <motion.div
+             <motion.div
                 layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
-                className={cn("group flex items-start gap-3 p-3 rounded-lg border-l-4 cursor-pointer hover:bg-muted/50", priorityMap[task.priority].color)}
+                className={cn(
+                    "group w-full h-full cursor-pointer transition-shadow hover:shadow-lg",
+                    task.isCompleted && "opacity-60"
+                )}
             >
-                <div className="flex items-center pt-1" onClick={handleToggleComplete}>
-                    <Checkbox
-                        checked={task.isCompleted}
-                        className={cn(
-                            "transition-colors duration-200 h-5 w-5 rounded-full",
-                             priorityMap[task.priority].color
-                        )}
-                    />
-                </div>
-                <div className="flex-grow">
-                    <p className={cn("text-sm font-medium", task.isCompleted && "line-through text-muted-foreground")}>
-                        {task.title}
-                    </p>
-                    {task.description && (
-                         <p className={cn("text-xs text-muted-foreground", task.isCompleted && "line-through")}>
-                            {task.description}
-                        </p>
-                    )}
-                    <div className="flex items-center gap-4 mt-2">
-                        {task.dueDate && (
-                            <div className={cn("flex items-center gap-1.5 text-xs", task.isCompleted ? "text-muted-foreground" : "text-primary")}>
-                                <Calendar className="h-3 w-3" />
-                                <span>{format(new Date(task.dueDate), "MMM d")}</span>
-                            </div>
-                        )}
-                        {totalSubTasks > 0 && (
-                            <div className={cn("flex items-center gap-1.5 text-xs", task.isCompleted ? "text-muted-foreground" : "text-gray-600")}>
-                                <ListTree className="h-3 w-3" />
-                                <span>{completedSubTasks}/{totalSubTasks}</span>
-                            </div>
-                        )}
-                    </div>
-                    {totalSubTasks > 0 && (
-                        <Progress value={progress} className="h-1 mt-2" />
-                    )}
-                </div>
+                {content}
             </motion.div>
         </TaskDialog>
     );
-};
 
+};

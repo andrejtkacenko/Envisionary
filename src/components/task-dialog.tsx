@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { CalendarIcon, Flag, Circle, Plus, Trash2, Wand2 } from "lucide-react";
+import { CalendarIcon, Flag, Circle, Plus, Trash2, Wand2, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { nanoid } from "nanoid";
 
@@ -25,6 +25,7 @@ import {
   FormField,
   FormItem,
   FormMessage,
+  FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -59,6 +60,7 @@ const taskSchema = z.object({
   description: z.string().optional(),
   priority: z.custom<TaskPriority>(),
   dueDate: z.date().optional(),
+  time: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskSchema>;
@@ -86,6 +88,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
         description: task?.description ?? "",
         priority: task?.priority ?? "p4",
         dueDate: task?.dueDate ? new Date(task.dueDate) : undefined,
+        time: task?.time || "",
       });
       setSubTasks(task?.subTasks || []);
     }
@@ -96,9 +99,10 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
 
 
   const onSubmit = (data: TaskFormValues) => {
-    const taskToSave = {
+    const taskToSave: Omit<Task, 'id' | 'createdAt'> | Task = {
         ...task,
         ...data,
+        time: data.time || null, // Ensure it's null if empty
         subTasks: subTasks,
         isCompleted: task?.isCompleted || false
     };
@@ -239,6 +243,23 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                     )}
                 />
              </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <FormField
+                      control={form.control}
+                      name="time"
+                      render={({ field }) => (
+                        <FormItem className="flex-grow">
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                </div>
+            </div>
              
              <Separator />
 
