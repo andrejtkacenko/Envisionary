@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -15,10 +16,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { TaskActions } from '@/components/task-actions';
 
 
 export default function TasksPage() {
-    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
+    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks } = useTasks();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
@@ -51,6 +53,7 @@ export default function TasksPage() {
                     </p>
                 </div>
                  <div className="flex items-center gap-2">
+                    <TaskActions unscheduledTasks={unscheduledTasks} onSchedule={handleBulkUpdateTasks} />
                     <TaskDialog onSave={handleAddTask}>
                         <Button>
                             <Plus className="mr-2 h-4 w-4" /> New Task
@@ -123,3 +126,4 @@ export default function TasksPage() {
         </div>
     );
 }
+

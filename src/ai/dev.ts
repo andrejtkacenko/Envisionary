@@ -1,3 +1,4 @@
+
 import { config } from 'dotenv';
 config();
 
@@ -8,7 +9,9 @@ import '@/ai/flows/break-down-goal';
 import '@/ai/flows/coach-chat';
 import '@/ai/flows/recommend-goals';
 import '@/ai/flows/break-down-task';
+import '@/ai/flows/generate-schedule';
 
 
 // Import tools so they are registered with Genkit and available to models
 import '@/ai/tools/goal-tools';
+import '@/ai/tools/schedule-tools';

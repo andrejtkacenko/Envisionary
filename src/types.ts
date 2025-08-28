@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from "firebase/firestore";
 
 export type GoalStatus = "todo" | "inprogress" | "done" | "ongoing";
@@ -72,4 +73,18 @@ export type GoalTemplate = {
     authorName: string;
     likes: number;
     createdAt: Timestamp;
+};
+
+// Types for Schedule Generator
+export type ScheduledItem = {
+    taskId: string;
+    title: string;
+    startTime: string; // e.g., "09:00"
+    endTime: string;   // e.g., "10:30"
+    duration: number; // in minutes
+};
+
+export type DailySchedule = {
+    date: string; // YYYY-MM-DD
+    items: ScheduledItem[];
 };

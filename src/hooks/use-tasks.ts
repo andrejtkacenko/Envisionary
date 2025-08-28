@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { getTasks, addTask, updateTask, deleteTask } from '@/lib/goals-service';
+import { getTasks, addTask, updateTask, deleteTask, updateTasks } from '@/lib/goals-service';
 import type { Task } from '@/types';
 
 export const useTasks = () => {
@@ -57,6 +58,24 @@ export const useTasks = () => {
         }
     }, [user, toast]);
 
+    const handleBulkUpdateTasks = useCallback(async (tasksToUpdate: Task[]) => {
+        if (!user) return;
+
+        // Optimistic update
+        setTasks(currentTasks => {
+            const tasksMap = new Map(tasksToUpdate.map(t => [t.id, t]));
+            return currentTasks.map(t => tasksMap.has(t.id) ? tasksMap.get(t.id)! : t);
+        });
+
+        try {
+            await updateTasks(user.uid, tasksToUpdate);
+            toast({ title: `${tasksToUpdate.length} tasks scheduled!` });
+        } catch (error) {
+             console.error(error);
+            toast({ variant: 'destructive', title: "Failed to schedule tasks" });
+        }
+    }, [user, toast]);
+
     const handleDeleteTask = useCallback(async (taskId: string) => {
         if (!user) return;
         
@@ -82,5 +101,6 @@ export const useTasks = () => {
         handleAddTask,
         handleUpdateTask,
         handleDeleteTask,
+        handleBulkUpdateTasks,
     };
 };

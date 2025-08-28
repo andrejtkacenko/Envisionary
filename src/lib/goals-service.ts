@@ -7,6 +7,7 @@
 
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task } from "@/types";
@@ -364,6 +365,18 @@ export const updateTask = async (userId: string, task: Task): Promise<void> => {
     const docRef = doc(tasksCollection, task.id);
     await setDoc(docRef, task, { merge: true });
 };
+
+// Update multiple tasks in a batch
+export const updateTasks = async (userId: string, tasks: Task[]): Promise<void> => {
+    const tasksCollection = getTasksCollection(userId);
+    const batch = writeBatch(db);
+    tasks.forEach(task => {
+        const docRef = doc(tasksCollection, task.id);
+        batch.set(docRef, task, { merge: true });
+    });
+    await batch.commit();
+}
+
 
 // Delete a task
 export const deleteTask = async (userId: string, taskId: string): Promise<void> => {
