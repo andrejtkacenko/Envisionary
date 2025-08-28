@@ -26,7 +26,7 @@ import { useTasks } from '@/hooks/use-tasks';
 import type { Task } from '@/types';
 import { TaskDialog } from '@/components/task-dialog';
 import { TaskItem } from '@/components/task-item';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { TaskActions } from '@/components/task-actions';
 
 const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpdate: (task: Task) => void, onDelete: (taskId: string) => void }) => {
     const { setNodeRef } = useDroppable({
@@ -34,31 +34,29 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
     });
 
     return (
-        <div className="flex-grow flex flex-col overflow-hidden">
-            <Card className="flex-grow flex flex-col overflow-hidden">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Inbox/> Inbox</CardTitle>
-                     <CardDescription>Unscheduled tasks</CardDescription>
-                </CardHeader>
-                <CardContent ref={setNodeRef} className="flex-grow overflow-y-auto p-2">
-                     <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                        {tasks.length > 0 ? (
-                            tasks.map(task => (
-                                <TaskItem key={task.id} task={task} onUpdate={onUpdate} onDelete={onDelete} variant="list"/>
-                            ))
-                        ) : (
-                            <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
-                        )}
-                    </SortableContext>
-                </CardContent>
-            </Card>
-        </div>
+        <Card className="flex-grow flex flex-col overflow-hidden">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Inbox/> Inbox</CardTitle>
+                 <CardDescription>Unscheduled tasks</CardDescription>
+            </CardHeader>
+            <CardContent ref={setNodeRef} className="flex-grow overflow-y-auto p-2">
+                 <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                    {tasks.length > 0 ? (
+                        tasks.map(task => (
+                            <TaskItem key={task.id} task={task} onUpdate={onUpdate} onDelete={onDelete} variant="list"/>
+                        ))
+                    ) : (
+                        <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
+                    )}
+                </SortableContext>
+            </CardContent>
+        </Card>
     )
 }
 
 
 export default function TasksPage() {
-    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask } = useTasks();
+    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks } = useTasks();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -147,6 +145,7 @@ export default function TasksPage() {
                         </p>
                     </div>
                      <div className="flex items-center gap-2">
+                        <TaskActions unscheduledTasks={unscheduledTasks} onSchedule={handleBulkUpdateTasks} />
                         <TaskDialog onSave={handleAddTask}>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" /> New Task
@@ -157,13 +156,15 @@ export default function TasksPage() {
 
                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 flex-grow overflow-hidden">
                     {/* Left Column: Inbox & Calendar */}
-                    <div className="md:col-span-1 h-full flex flex-col gap-6">
+                    <div className="md:col-span-1 h-full flex flex-col gap-6 overflow-hidden">
                         {isLoading ? (
                             <div className="flex items-center justify-center h-full">
                                 <Loader2 className="h-6 w-6 animate-spin"/>
                             </div>
                         ) : (
-                           <UnscheduledTasks tasks={unscheduledTasks} onUpdate={handleUpdateTask} onDelete={handleDeleteTask} />
+                           <div className="flex-grow flex flex-col overflow-hidden">
+                             <UnscheduledTasks tasks={unscheduledTasks} onUpdate={handleUpdateTask} onDelete={handleDeleteTask} />
+                           </div>
                         )}
                         <Card>
                             <CardContent className="p-0">
@@ -174,7 +175,7 @@ export default function TasksPage() {
                                     className="p-0"
                                     modifiers={{ 
                                         hasTasks: daysWithTasks,
-                                        disabled: (date) => isBefore(date, startOfDay()) 
+                                        disabled: (date) => isBefore(date, startOfDay(new Date())) 
                                     }}
                                     modifiersClassNames={{ 
                                         hasTasks: 'has-tasks',

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from 'react';
@@ -108,8 +107,9 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
 
         return {
             ...originalTask,
-            dueDate: taskDate.toISOString(),
+            dueDate: taskDate,
             time: item.startTime,
+            duration: item.duration,
         };
     }).filter((t): t is Task => t !== null);
 
