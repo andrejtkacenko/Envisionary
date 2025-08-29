@@ -46,14 +46,15 @@ export const useTasks = () => {
         if (!user) return;
         
         const originalTasks = tasks;
-        setTasks(currentTasks => currentTasks.map(t => t.id === task.id ? task : t));
-
+        // The UI is already optimistically updated by the drag-and-drop logic.
+        // We just need to save to the database.
+        
         try {
             await updateTask(user.uid, task);
         } catch (error) {
             console.error(error);
-            toast({ variant: 'destructive', title: "Failed to update task" });
-            setTasks(originalTasks);
+            toast({ variant: 'destructive', title: "Failed to update task. Reverting changes." });
+            setTasks(originalTasks); // Revert on failure
         }
     }, [user, toast, tasks]);
 

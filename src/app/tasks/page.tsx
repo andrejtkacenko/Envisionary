@@ -68,6 +68,7 @@ export default function TasksPage() {
     const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks, setTasks } = useTasks();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+    const [initialDraggedTask, setInitialDraggedTask] = useState<Task | null>(null);
 
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.dueDate), [tasks]);
@@ -100,6 +101,7 @@ export default function TasksPage() {
         const task = tasks.find(t => t.id === active.id);
         if (task) {
             setDraggedTask(task);
+            setInitialDraggedTask(JSON.parse(JSON.stringify(task))); // Deep copy for reliable comparison
         }
     };
 
@@ -138,36 +140,17 @@ export default function TasksPage() {
     };
     
     const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-        setDraggedTask(null);
-
-        if (!over) return;
-        
+        const { active } = event;
         const activeId = active.id as string;
-        const initialTask = tasks.find(t => t.id === activeId);
-        
-        let finalTask = { ...initialTask } as Task;
-        const overIsInbox = over.id === 'inbox';
-        const overIsHourSlot = typeof over.data.current?.hour === 'number';
 
-        if (overIsInbox) {
-            finalTask.dueDate = undefined;
-            finalTask.time = null;
-            finalTask.duration = undefined;
-        } else if (overIsHourSlot && selectedDate) {
-            const hour = over.data.current?.hour as number;
-            const newDate = setHours(startOfDay(selectedDate), hour);
-            const newTime = format(newDate, 'HH:mm');
-            finalTask.dueDate = newDate;
-            finalTask.time = newTime;
-        } else {
-            // No valid drop, revert if needed (though onDragOver handles optimistic updates)
-             return;
-        }
+        const finalTask = tasks.find(t => t.id === activeId);
         
-        if (initialTask && !isEqual(initialTask, finalTask)) {
+        if (initialDraggedTask && finalTask && !isEqual(initialDraggedTask, finalTask)) {
             handleUpdateTask(finalTask);
         }
+
+        setDraggedTask(null);
+        setInitialDraggedTask(null);
     };
     
     return (
