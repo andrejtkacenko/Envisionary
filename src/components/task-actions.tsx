@@ -24,7 +24,7 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { format, setHours, setMinutes, startOfWeek, endOfWeek } from 'date-fns';
+import { format, setHours, setMinutes, startOfWeek, endOfWeek, addDays, parse } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
@@ -172,9 +172,11 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
       
       const tasksToUpdate: Task[] = [];
       const tasksToCreate: Omit<Task, 'id' | 'createdAt'>[] = [];
-      const unscheduledTasksCopy = [...unscheduledTasks];
+      let unscheduledTasksCopy = [...unscheduledTasks];
 
-      for (const day of scheduleToApply) {
+      const processedSchedule = preprocessSchedule(scheduleToApply);
+
+      for (const day of processedSchedule) {
           for (const item of day.items) {
               const scheduledDate = new Date(day.date + 'T00:00:00');
               const [hours, minutes] = item.startTime.split(':').map(Number);
@@ -191,8 +193,18 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                           duration: item.duration,
                       });
                   }
-              } else {
-                  // This is a new, AI-generated task to be created
+              } else if (unscheduledTasksCopy.length > 0) {
+                 // This is a generic slot (not AI-created like 'Lunch'). Fill it with a user's task.
+                 const taskToSchedule = unscheduledTasksCopy.shift()!; // Take the next unscheduled task
+                  tasksToUpdate.push({
+                      ...taskToSchedule,
+                      dueDate: taskDate,
+                      time: item.startTime,
+                      duration: item.duration,
+                  });
+              }
+               else {
+                  // This is a new, AI-generated task to be created (like 'Lunch' or 'Sleep')
                   tasksToCreate.push({
                       userId: user.uid,
                       title: item.title,
@@ -227,6 +239,66 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
           toast({ variant: 'destructive', title: 'Failed to apply schedule' });
       }
   };
+
+  // Function to split sleep tasks that cross midnight
+  const preprocessSchedule = (schedule: DailySchedule[]): DailySchedule[] => {
+    const newSchedule: DailySchedule[] = JSON.parse(JSON.stringify(schedule)); // Deep copy
+    const scheduleMap = new Map(newSchedule.map(day => [day.date, day]));
+
+    for (const day of newSchedule) {
+        const itemsToProcess = [...day.items];
+        day.items = []; // Clear original items, we'll repopulate
+
+        for (const item of itemsToProcess) {
+            if (item.title.toLowerCase().includes('sleep')) {
+                const startTime = parse(item.startTime, 'HH:mm', new Date());
+                const endTime = parse(item.endTime, 'HH:mm', new Date());
+
+                if (endTime < startTime) { // This means it crosses midnight
+                    const today = new Date(day.date + 'T00:00:00');
+                    const nextDayDate = addDays(today, 1);
+                    const nextDayStr = format(nextDayDate, 'yyyy-MM-dd');
+                    
+                    const endOfToday = new Date(day.date + 'T23:59:00');
+                    const duration1 = (endOfToday.getTime() - startTime.getTime()) / (1000 * 60);
+
+                    // First part of sleep (today)
+                    day.items.push({
+                        ...item,
+                        endTime: '23:59',
+                        duration: Math.round(duration1),
+                    });
+
+                    // Second part of sleep (tomorrow)
+                    const startOfNextDay = new Date(nextDayStr + 'T00:00:00');
+                    const duration2 = (endTime.getTime() - startOfNextDay.getTime()) / (1000 * 60);
+
+                    if (scheduleMap.has(nextDayStr)) {
+                        scheduleMap.get(nextDayStr)!.items.push({
+                            ...item,
+                            startTime: '00:00',
+                            endTime: item.endTime,
+                            duration: Math.round(duration2),
+                        });
+                    } else {
+                        // If next day doesn't exist in schedule, create it
+                         scheduleMap.set(nextDayStr, { date: nextDayStr, items: [{
+                            ...item,
+                            startTime: '00:00',
+                            endTime: item.endTime,
+                            duration: Math.round(duration2),
+                        }]});
+                    }
+                    continue; // Skip adding the original item
+                }
+            }
+            day.items.push(item); // Add non-sleep items or non-crossing sleep items
+        }
+    }
+    
+    return Array.from(scheduleMap.values()).sort((a,b) => a.date.localeCompare(b.date));
+  }
+
 
   const handleApplySchedule = () => {
       if (!schedule) return;
@@ -364,7 +436,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                     <div>
                       {step > 1 && (
                         <Button variant="ghost" onClick={() => setStep(s => s - 1)}>
-                           <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                           <ArrowLeft className="ml-2 h-4 w-4" /> Back
                         </Button>
                        )}
                     </div>
@@ -397,4 +469,3 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
     </Dialog>
   );
 }
-
