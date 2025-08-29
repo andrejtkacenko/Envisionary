@@ -36,6 +36,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 interface TaskActionsProps {
@@ -51,7 +52,7 @@ const DaySchedule = ({ day, allTasks }: { day: DailySchedule, allTasks: Task[] }
                 {day.items.map((item, index) => {
                     const task = item.taskId ? allTasks.find(t => t.id === item.taskId) : null;
                     return (
-                        <div key={item.taskId || `item-${index}`} className="flex items-center gap-4 p-2 rounded-md bg-muted/50">
+                        <div key={`${item.taskId || 'item'}-${item.startTime}-${index}`} className="flex items-center gap-4 p-2 rounded-md bg-muted/50">
                              <div className="font-mono text-sm bg-background p-1 rounded">
                                 {item.startTime}
                             </div>
@@ -88,28 +89,28 @@ const SaveTemplateDialog = ({ children, onSave }: { children: React.ReactNode, o
     }
     
     return (
-        <AlertDialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Save Schedule as Template</AlertDialogTitle>
-                    <AlertDialogDescription>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Save Schedule as Template</DialogTitle>
+                    <DialogDescription>
                         Give this schedule a name so you can easily reuse it later.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+                    </DialogDescription>
+                </DialogHeader>
                 <div className="py-4">
                     <Label htmlFor="template-name">Template Name</Label>
                     <Input id="template-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., My Productive Week" />
                 </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleSave} disabled={!name || isSaving}>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={!name || isSaving}>
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         Save Template
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 };
 
@@ -183,33 +184,34 @@ export function TaskActions({ allTasks, onSchedule }: TaskActionsProps) {
   const handleApplySchedule = () => {
     if (!schedule) return;
 
-    // Create a map of tasks for easy lookup
-    const taskMap = new Map(allTasks.map(t => [t.id, { ...t }]));
+    // Create a mutable copy of all tasks
+    const updatedTasks = [...allTasks];
+    const scheduledTaskIds = new Set<string>();
 
     // Apply updates from the schedule
-    schedule.flatMap(day => 
+    schedule.forEach(day => 
         day.items.forEach(item => {
             if (!item.taskId) return;
             
-            const taskToUpdate = taskMap.get(item.taskId);
-            if (taskToUpdate) {
+            const taskIndex = updatedTasks.findIndex(t => t.id === item.taskId);
+            if (taskIndex !== -1) {
                 const scheduledDate = new Date(day.date + 'T00:00:00');
                 const [hours, minutes] = item.startTime.split(':').map(Number);
                 const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
-
-                taskToUpdate.dueDate = taskDate;
-                taskToUpdate.time = item.startTime;
-                taskToUpdate.duration = item.duration;
-                taskMap.set(item.taskId, taskToUpdate); // Update the map
+                
+                updatedTasks[taskIndex] = {
+                    ...updatedTasks[taskIndex],
+                    dueDate: taskDate,
+                    time: item.startTime,
+                    duration: item.duration,
+                };
+                scheduledTaskIds.add(item.taskId);
             }
         })
     );
-
-    const updatedTaskList = Array.from(taskMap.values());
-    const scheduledCount = updatedTaskList.filter(t => selectedTasks.includes(t.id)).length;
-
-    onSchedule(updatedTaskList);
-    toast({ title: `${scheduledCount} tasks scheduled!` });
+    
+    onSchedule(updatedTasks);
+    toast({ title: `${scheduledTaskIds.size} tasks scheduled!` });
     setOpen(false);
 };
 
@@ -332,7 +334,7 @@ export function TaskActions({ allTasks, onSchedule }: TaskActionsProps) {
                 <div className="flex items-center space-x-2 my-4">
                     <Checkbox
                         id="select-all"
-                        onCheckedChange={handleSelectAll}
+                        onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
                         checked={selectedTasks.length > 0 && selectedTasks.length === unscheduledTasks.length}
                     />
                     <Label htmlFor="select-all">Select All ({unscheduledTasks.length} tasks)</Label>
