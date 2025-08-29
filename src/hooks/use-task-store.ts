@@ -6,6 +6,7 @@ import {
   addTask as addTaskToDb,
   updateTask as updateTaskInDb,
   deleteTask as deleteTaskFromDb,
+  deleteTasks as deleteTasksFromDb,
   updateTasks as updateTasksInDb,
 } from '@/lib/goals-service';
 import type { Task } from '@/types';
@@ -15,10 +16,11 @@ interface TaskStore {
   isLoading: boolean;
   error: string | null;
   fetchTasks: (userId: string) => Promise<void>;
-  addTask: (userId: string, taskData: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
+  addTask: (userId: string, taskData: Omit<Task, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
   updateTask: (userId: string, task: Task) => Promise<void>;
   deleteTask: (userId: string, taskId: string) => Promise<void>;
   updateTasks: (userId: string, tasksToUpdate: Task[]) => Promise<void>;
+  deleteTasks: (userId: string, taskIds: string[]) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -79,6 +81,19 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     } catch (e) {
       console.error(e);
       set({ error: 'Failed to delete task', tasks: originalTasks });
+    }
+  },
+
+  deleteTasks: async (userId, taskIds) => {
+    const originalTasks = get().tasks;
+    set(state => ({
+        tasks: state.tasks.filter(t => !taskIds.includes(t.id))
+    }));
+     try {
+      await deleteTasksFromDb(taskIds);
+    } catch (e) {
+      console.error(e);
+      set({ error: 'Failed to delete tasks', tasks: originalTasks });
     }
   },
 

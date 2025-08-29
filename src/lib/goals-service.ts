@@ -20,28 +20,6 @@ import {
 } from "firebase/firestore";
 import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task, ScheduleTemplate, DailySchedule } from "@/types";
 
-
-// Firestore data converter for Users
-const userConverter = {
-    toFirestore: (user: AppUser) => {
-        return {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            telegramId: (user as any).telegramId, // Store telegramId if exists
-        };
-    },
-    fromFirestore: (snapshot: any, options: any): AppUser => {
-        const data = snapshot.data(options);
-        return {
-            uid: data.uid,
-            email: data.email,
-            displayName: data.displayName,
-            ...data
-        };
-    }
-};
-
 // Firestore data converter for Goals
 const goalConverter = {
     toFirestore: (goal: Partial<Goal>) => {
@@ -63,8 +41,6 @@ const goalConverter = {
             data.category = 'General';
         }
         
-        delete data.subGoals;
-
         return data;
     },
     fromFirestore: (snapshot: any, options: any): Goal => {
@@ -93,14 +69,12 @@ const taskConverter = {
     toFirestore: (task: Partial<Task>) => {
         const data: any = { ...task };
         delete data.id;
-        delete data.subTasks;
 
-        if (task.dueDate) {
+        if (task.dueDate && !(task.dueDate instanceof Timestamp)) {
             const date = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate;
             data.dueDate = Timestamp.fromDate(date as Date);
-        } else {
-            // Ensure dueDate is deleted if not present, to remove it from Firestore doc
-             data.dueDate = null;
+        } else if (!task.dueDate) {
+            data.dueDate = null;
         }
 
         if (task.time) {
@@ -150,7 +124,7 @@ const goalTemplateConverter = {
 
 // Firestore data converter for Schedule Templates
 const scheduleTemplateConverter = {
-    toFirestore: (template: Omit<ScheduleTemplate, 'id'>) => {
+    toFirestore: (template: Omit<ScheduleTemplate, 'id' | 'createdAt'>) => {
         return {
             ...template,
             schedule: template.schedule || [], // Ensure schedule is at least an empty array
@@ -290,7 +264,7 @@ export const getTasksSnapshot = async (userId: string): Promise<Task[]> => {
     return snapshot.docs.map(doc => doc.data());
 };
 
-export const addTask = async (taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task> => {
+export const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'userId'> & { userId: string }): Promise<Task> => {
     const newDocRef = await addDoc(getTasksCollection(), taskData);
     return { ...taskData, id: newDocRef.id, createdAt: Timestamp.now() };
 };
@@ -319,6 +293,15 @@ export const deleteTask = async (taskId: string): Promise<void> => {
 
     const docRef = doc(getTasksCollection(), taskId);
     batch.delete(docRef);
+    await batch.commit();
+};
+
+export const deleteTasks = async (taskIds: string[]): Promise<void> => {
+    const batch = writeBatch(db);
+    taskIds.forEach(id => {
+        const docRef = doc(getTasksCollection(), id);
+        batch.delete(docRef);
+    });
     await batch.commit();
 };
 

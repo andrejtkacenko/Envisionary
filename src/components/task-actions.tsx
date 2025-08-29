@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Wand2, Loader2, Sparkles, Plus, Clock, ArrowRight, ArrowLeft, Save, Trash2, Play, BookCopy, CalendarDays } from 'lucide-react';
 import {
@@ -24,7 +24,7 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { format, setHours, setMinutes, startOfWeek, endOfWeek, addDays, parse } from 'date-fns';
+import { format, setHours, setMinutes, startOfWeek, endOfWeek, addDays, parse, isToday, isThisWeek } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
@@ -32,6 +32,15 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardFooter, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import { TaskDialog } from './task-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface TaskActionsProps {
   allTasks: Task[];
@@ -109,7 +118,7 @@ const SaveTemplateDialog = ({ children, onSave }: { children: React.ReactNode, o
 
 export function TaskActions({ allTasks }: TaskActionsProps) {
   const { user } = useAuth();
-  const { tasks: allTasksFromStore, addTask, updateTask, updateTasks } = useTaskStore();
+  const { tasks: allTasksFromStore, addTask, updateTasks, deleteTasks } = useTaskStore();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -171,7 +180,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
       }
       
       const tasksToUpdate: Task[] = [];
-      const tasksToCreate: Omit<Task, 'id' | 'createdAt'>[] = [];
+      const tasksToCreate: Omit<Task, 'id' | 'createdAt' | 'userId'>[] = [];
       let unscheduledTasksCopy = [...unscheduledTasks];
 
       const processedSchedule = preprocessSchedule(scheduleToApply);
@@ -182,8 +191,19 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
               const [hours, minutes] = item.startTime.split(':').map(Number);
               const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
 
-              if (item.taskId) {
-                  // This is an existing task that needs to be updated
+              const isGenericSlot = !item.taskId;
+
+              if (isGenericSlot && unscheduledTasksCopy.length > 0) {
+                 // This is a generic slot (not AI-created like 'Lunch'). Fill it with a user's task.
+                 const taskToSchedule = unscheduledTasksCopy.shift()!; // Take the next unscheduled task
+                  tasksToUpdate.push({
+                      ...taskToSchedule,
+                      dueDate: taskDate,
+                      time: item.startTime,
+                      duration: item.duration,
+                  });
+              } else if (item.taskId) {
+                   // This is an existing task that needs to be updated
                   const taskToUpdate = allTasksFromStore.find(t => t.id === item.taskId);
                   if (taskToUpdate) {
                       tasksToUpdate.push({
@@ -193,20 +213,10 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                           duration: item.duration,
                       });
                   }
-              } else if (unscheduledTasksCopy.length > 0) {
-                 // This is a generic slot (not AI-created like 'Lunch'). Fill it with a user's task.
-                 const taskToSchedule = unscheduledTasksCopy.shift()!; // Take the next unscheduled task
-                  tasksToUpdate.push({
-                      ...taskToSchedule,
-                      dueDate: taskDate,
-                      time: item.startTime,
-                      duration: item.duration,
-                  });
               }
                else {
                   // This is a new, AI-generated task to be created (like 'Lunch' or 'Sleep')
                   tasksToCreate.push({
-                      userId: user.uid,
                       title: item.title,
                       priority: 'p4', // Default priority
                       isCompleted: false,
@@ -259,36 +269,29 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                     const nextDayDate = addDays(today, 1);
                     const nextDayStr = format(nextDayDate, 'yyyy-MM-dd');
                     
-                    const endOfToday = new Date(day.date + 'T23:59:00');
-                    const duration1 = (endOfToday.getTime() - startTime.getTime()) / (1000 * 60);
+                    const endOfToday = new Date(day.date + 'T23:59:59'); // Use 23:59:59
+                    const duration1 = Math.round((endOfToday.getTime() - startTime.getTime()) / (1000 * 60));
 
                     // First part of sleep (today)
                     day.items.push({
                         ...item,
                         endTime: '23:59',
-                        duration: Math.round(duration1),
+                        duration: duration1,
                     });
 
                     // Second part of sleep (tomorrow)
                     const startOfNextDay = new Date(nextDayStr + 'T00:00:00');
-                    const duration2 = (endTime.getTime() - startOfNextDay.getTime()) / (1000 * 60);
+                    const duration2 = Math.round((endTime.getTime() - startOfNextDay.getTime()) / (1000 * 60));
 
-                    if (scheduleMap.has(nextDayStr)) {
-                        scheduleMap.get(nextDayStr)!.items.push({
-                            ...item,
-                            startTime: '00:00',
-                            endTime: item.endTime,
-                            duration: Math.round(duration2),
-                        });
-                    } else {
-                        // If next day doesn't exist in schedule, create it
-                         scheduleMap.set(nextDayStr, { date: nextDayStr, items: [{
-                            ...item,
-                            startTime: '00:00',
-                            endTime: item.endTime,
-                            duration: Math.round(duration2),
-                        }]});
-                    }
+                    const nextDayEntry = scheduleMap.get(nextDayStr) || { date: nextDayStr, items: []};
+                    nextDayEntry.items.unshift({ // Add to the beginning of the next day
+                        ...item,
+                        startTime: '00:00',
+                        endTime: item.endTime,
+                        duration: duration2,
+                    });
+                    scheduleMap.set(nextDayStr, nextDayEntry);
+                    
                     continue; // Skip adding the original item
                 }
             }
@@ -313,7 +316,6 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
     try {
         await addScheduleTemplate(user.uid, {
             name,
-            authorId: user.uid,
             schedule,
         });
         toast({ title: "Template Saved!", description: `"${name}" is now available in your library.` });
@@ -335,137 +337,235 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Wand2 className="mr-2 h-4 w-4" />
-          AI Scheduler
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="font-headline flex items-center gap-2">
-            <Wand2 /> AI Schedule Generator
-          </DialogTitle>
-          <DialogDescription>
-             Answer a few questions and AI will generate an ideal weekly schedule for your unscheduled tasks.
-          </DialogDescription>
-        </DialogHeader>
+  const handleDelete = useCallback(async (filter: 'all' | 'today' | 'week') => {
+    if (!user) return;
+    
+    let tasksToDelete: Task[] = [];
+    let confirmationMessage = "";
 
-          <>
-            {step === 1 && (
-                <div className="flex-grow overflow-y-auto p-1">
-                    <h3 className="text-lg font-semibold mb-4">Step 1: Your Productivity Profile</h3>
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <Label className="font-semibold">Typical Work/School Hours</Label>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <Input type="time" value={workStartTime} onChange={(e) => setWorkStartTime(e.target.value)} />
-                                    <span>to</span>
-                                    <Input type="time" value={workEndTime} onChange={(e) => setWorkEndTime(e.target.value)} />
-                                </div>
-                            </div>
-                            <div>
-                                <Label className="font-semibold">Core Needs</Label>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <Input type="number" value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} className="w-24"/>
-                                    <Label>hours of sleep</Label>
-                                    <Input type="number" value={workoutFrequency} onChange={(e) => setWorkoutFrequency(e.target.value)} className="w-24 ml-4"/>
-                                    <Label>workouts/week</Label>
-                                </div>
-                            </div>
-                        </div>
-                         <Separator/>
-                         <div>
-                            <Label className="font-semibold">When are your energy levels at their peak?</Label>
-                             <RadioGroup onValueChange={(v) => setEnergyPeak(v as any)} value={energyPeak} className="mt-2">
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="morning" id="morning" />
-                                    <Label htmlFor="morning">Morning (8 AM - 12 PM)</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="afternoon" id="afternoon" />
-                                    <Label htmlFor="afternoon">Afternoon (1 PM - 5 PM)</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="evening" id="evening" />
-                                    <Label htmlFor="evening">Evening (6 PM - 10 PM)</Label>
-                                </div>
-                            </RadioGroup>
-                         </div>
+    switch(filter) {
+        case 'all':
+            tasksToDelete = allTasks;
+            confirmationMessage = `This will permanently delete all ${tasksToDelete.length} tasks.`;
+            break;
+        case 'today':
+            tasksToDelete = allTasks.filter(t => t.dueDate && isToday(new Date(t.dueDate)));
+             confirmationMessage = `This will permanently delete all ${tasksToDelete.length} of today's tasks.`;
+            break;
+        case 'week':
+            tasksToDelete = allTasks.filter(t => t.dueDate && isThisWeek(new Date(t.dueDate), { weekStartsOn: 1 }));
+            confirmationMessage = `This will permanently delete all ${tasksToDelete.length} tasks for this week.`;
+            break;
+    }
+
+    if (tasksToDelete.length === 0) {
+        toast({ title: "No tasks to delete", description: "There are no tasks matching this filter."});
+        return;
+    }
+    
+    try {
+        await deleteTasks(user.uid, tasksToDelete.map(t => t.id));
+        toast({ title: "Tasks Deleted", description: `${tasksToDelete.length} tasks have been successfully deleted.` });
+    } catch (e) {
+        console.error(e);
+        toast({ variant: "destructive", title: "Deletion Failed", description: "Could not delete the tasks." });
+    }
+  }, [user, allTasks, deleteTasks, toast]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <Button variant="outline">
+            <Wand2 className="mr-2 h-4 w-4" />
+            AI Scheduler
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="font-headline flex items-center gap-2">
+              <Wand2 /> AI Schedule Generator
+            </DialogTitle>
+            <DialogDescription>
+              Answer a few questions and AI will generate an ideal weekly schedule for your unscheduled tasks.
+            </DialogDescription>
+          </DialogHeader>
+
+            <>
+              {step === 1 && (
+                  <div className="flex-grow overflow-y-auto p-1">
+                      <h3 className="text-lg font-semibold mb-4">Step 1: Your Productivity Profile</h3>
+                      <div className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                  <Label className="font-semibold">Typical Work/School Hours</Label>
+                                  <div className="flex items-center gap-2 mt-2">
+                                      <Input type="time" value={workStartTime} onChange={(e) => setWorkStartTime(e.target.value)} />
+                                      <span>to</span>
+                                      <Input type="time" value={workEndTime} onChange={(e) => setWorkEndTime(e.target.value)} />
+                                  </div>
+                              </div>
+                              <div>
+                                  <Label className="font-semibold">Core Needs</Label>
+                                  <div className="flex items-center gap-2 mt-2">
+                                      <Input type="number" value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} className="w-24"/>
+                                      <Label>hours of sleep</Label>
+                                      <Input type="number" value={workoutFrequency} onChange={(e) => setWorkoutFrequency(e.target.value)} className="w-24 ml-4"/>
+                                      <Label>workouts/week</Label>
+                                  </div>
+                              </div>
+                          </div>
                           <Separator/>
                           <div>
-                            <Label className="font-semibold" htmlFor="preferences">Any other goals or preferences?</Label>
-                            <Textarea 
-                                id="preferences"
-                                placeholder="e.g., I want to learn guitar, No meetings on Fridays, I need to walk the dog twice a day..." 
-                                value={preferences}
-                                onChange={(e) => setPreferences(e.target.value)}
-                                className="mt-2"
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-            
-            {step === 2 && (
-                <div className="flex-grow overflow-y-auto p-1">
-                    <h3 className="text-lg font-semibold mb-4">Step 2: Preview Your Ideal Week</h3>
-                    <ScrollArea className="h-[500px] border rounded-md p-4 bg-muted/20">
-                         {isLoading ? (
-                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
-                                <Loader2 className="h-8 w-8 animate-spin" />
-                                <p>AI is planning your ideal week...</p>
-                            </div>
-                         ) : schedule ? (
-                            schedule.map(day => <DaySchedule key={day.date} day={day} allTasks={allTasks} />)
-                         ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
-                               <Clock className="h-8 w-8" />
-                               <p>Your schedule will appear here.</p>
-                            </div>
-                         )}
-                     </ScrollArea>
-                </div>
-            )}
+                              <Label className="font-semibold">When are your energy levels at their peak?</Label>
+                              <RadioGroup onValueChange={(v) => setEnergyPeak(v as any)} value={energyPeak} className="mt-2">
+                                  <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="morning" id="morning" />
+                                      <Label htmlFor="morning">Morning (8 AM - 12 PM)</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="afternoon" id="afternoon" />
+                                      <Label htmlFor="afternoon">Afternoon (1 PM - 5 PM)</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                      <RadioGroupItem value="evening" id="evening" />
+                                      <Label htmlFor="evening">Evening (6 PM - 10 PM)</Label>
+                                  </div>
+                              </RadioGroup>
+                          </div>
+                            <Separator/>
+                            <div>
+                              <Label className="font-semibold" htmlFor="preferences">Any other goals or preferences?</Label>
+                              <Textarea 
+                                  id="preferences"
+                                  placeholder="e.g., I want to learn guitar, No meetings on Fridays, I need to walk the dog twice a day..." 
+                                  value={preferences}
+                                  onChange={(e) => setPreferences(e.target.value)}
+                                  className="mt-2"
+                              />
+                          </div>
+                      </div>
+                  </div>
+              )}
+              
+              {step === 2 && (
+                  <div className="flex-grow overflow-y-auto p-1">
+                      <h3 className="text-lg font-semibold mb-4">Step 2: Preview Your Ideal Week</h3>
+                      <ScrollArea className="h-[500px] border rounded-md p-4 bg-muted/20">
+                          {isLoading ? (
+                              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                                  <Loader2 className="h-8 w-8 animate-spin" />
+                                  <p>AI is planning your ideal week...</p>
+                              </div>
+                          ) : schedule ? (
+                              schedule.map(day => <DaySchedule key={day.date} day={day} allTasks={allTasks} />)
+                          ) : (
+                              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                                <Clock className="h-8 w-8" />
+                                <p>Your schedule will appear here.</p>
+                              </div>
+                          )}
+                      </ScrollArea>
+                  </div>
+              )}
 
-            <DialogFooter>
-                <div className="w-full flex justify-between">
-                    <div>
-                      {step > 1 && (
-                        <Button variant="ghost" onClick={() => setStep(s => s - 1)}>
-                           <ArrowLeft className="ml-2 h-4 w-4" /> Back
-                        </Button>
-                       )}
-                    </div>
-                    <div className="flex gap-2">
-                        {step === 1 && <Button onClick={handleGenerate} disabled={!energyPeak || isLoading}>{isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}Generate Schedule <ArrowRight className="ml-2 h-4 w-4" /></Button>}
-                        {step === 2 && schedule && (
-                             <Button onClick={handleGenerate} variant="outline" disabled={isLoading}>
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                Regenerate
-                            </Button>
+              <DialogFooter>
+                  <div className="w-full flex justify-between">
+                      <div>
+                        {step > 1 && (
+                          <Button variant="ghost" onClick={() => setStep(s => s - 1)}>
+                            <ArrowLeft className="ml-2 h-4 w-4" /> Back
+                          </Button>
                         )}
-                        {step === 2 && schedule && (
-                             <SaveTemplateDialog onSave={handleSaveTemplate}>
-                                <Button variant="outline">
-                                   <Save className="mr-2 h-4 w-4" /> Save as Template
-                               </Button>
-                             </SaveTemplateDialog>
-                        )}
-                        {step === 2 && schedule && (
-                            <Button onClick={handleApplySchedule}>
-                                <Plus className="mr-2 h-4 w-4" />
-                                Apply Schedule
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            </DialogFooter>
-          </>
-      </DialogContent>
-    </Dialog>
+                      </div>
+                      <div className="flex gap-2">
+                          {step === 1 && <Button onClick={handleGenerate} disabled={!energyPeak || isLoading}>{isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}Generate Schedule <ArrowRight className="ml-2 h-4 w-4" /></Button>}
+                          {step === 2 && schedule && (
+                              <Button onClick={handleGenerate} variant="outline" disabled={isLoading}>
+                                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                  Regenerate
+                              </Button>
+                          )}
+                          {step === 2 && schedule && (
+                              <SaveTemplateDialog onSave={handleSaveTemplate}>
+                                  <Button variant="outline">
+                                    <Save className="mr-2 h-4 w-4" /> Save as Template
+                                </Button>
+                              </SaveTemplateDialog>
+                          )}
+                          {step === 2 && schedule && (
+                              <Button onClick={handleApplySchedule}>
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Apply Schedule
+                              </Button>
+                          )}
+                      </div>
+                  </div>
+              </DialogFooter>
+            </>
+        </DialogContent>
+      </Dialog>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuLabel>Delete Tasks</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Delete All...</DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will permanently delete all {allTasks.length} tasks. This action cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete('all')}>Delete All</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Delete Today's Tasks...</DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will permanently delete all of today's tasks. This action cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete('today')}>Delete Today's</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Delete This Week's Tasks...</DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will permanently delete all tasks for this week. This action cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete('week')}>Delete This Week's</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </DropdownMenuContent>
+        </DropdownMenu>
+      <TaskDialog onSave={(data) => user && addTask(user.uid, data)}>
+          <Button>
+              <Plus className="mr-2 h-4 w-4" /> New Task
+          </Button>
+      </TaskDialog>
+    </div>
   );
 }
