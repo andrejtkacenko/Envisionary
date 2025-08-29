@@ -11,93 +11,89 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String?  @unique
-  displayName String?
-  telegramId  Int?     @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  goals          Goal[]
-  tasks          Task[]
-  notifications  Notification[]
-  goalTemplates  GoalTemplate[]
+  id              String         @id @default(cuid())
+  email           String?        @unique
+  displayName     String?
+  telegramId      Int?           @unique
+  firebaseUid     String         @unique
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  goals           Goal[]
+  tasks           Task[]
+  notifications   Notification[]
+  goalTemplates   GoalTemplate[]
   scheduleTemplates ScheduleTemplate[]
 }
 
 model Goal {
-  id            String      @id @default(cuid())
+  id            String       @id @default(cuid())
   title         String
-  description   String?     @db.Text
-  status        String      @default("todo") // "todo", "inprogress", "done", "ongoing"
-  priority      String      @default("medium") // "low", "medium", "high"
-  category      String      @default("General")
+  description   String?
+  status        String       @default("todo")
+  priority      String       @default("medium")
+  category      String       @default("General")
   dueDate       DateTime?
   estimatedTime String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
-  user    User   @relation(fields: [userId], references: [id])
-  userId  String
-
-  parent   Goal?  @relation("SubGoals", fields: [parentId], references: [id], onDelete: Cascade)
-  parentId String?
-  subGoals Goal[] @relation("SubGoals")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  user          User         @relation(fields: [userId], references: [id])
+  userId        String
+  parent        Goal?        @relation("GoalSubGoals", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId      String?
+  subGoals      Goal[]       @relation("GoalSubGoals")
 }
 
 model Task {
-  id           String    @id @default(cuid())
-  title        String
-  description  String?   @db.Text
-  priority     String    @default("p4") // "p1", "p2", "p3", "p4"
-  isCompleted  Boolean   @default(false)
-  dueDate      DateTime?
-  time         String?   // "HH:mm" format
-  duration     Int?      // in minutes
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  user    User   @relation(fields: [userId], references: [id])
-  userId  String
-
-  parent   Task?  @relation("SubTasks", fields: [parentId], references: [id], onDelete: Cascade)
-  parentId String?
-  subTasks Task[] @relation("SubTasks")
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  priority    String    @default("p4")
+  dueDate     DateTime?
+  time        String?
+  duration    Int?
+  isCompleted Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  parent      Task?     @relation("TaskSubTasks", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId    String?
+  subTasks    Task[]    @relation("TaskSubTasks")
 }
 
 model Notification {
   id          String   @id @default(cuid())
   title       String
   description String
-  type        String   @default("info") // "important", "reminder", "info"
+  type        String
   isRead      Boolean  @default(false)
   link        String?
   createdAt   DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
 }
 
 model GoalTemplate {
   id          String   @id @default(cuid())
   title       String
-  description String?  @db.Text
+  description String?
   category    String
-  subGoals    Json     // Store sub-goals as a JSON object
+  subGoals    Json
+  authorName  String
   likes       Int      @default(0)
   createdAt   DateTime @default(now())
-  
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  String
-  authorName String
+  updatedAt   DateTime @updatedAt
+  user        User?    @relation(fields: [authorId], references: [id])
+  authorId    String?
 }
 
 model ScheduleTemplate {
-    id        String   @id @default(cuid())
-    name      String
-    schedule  Json     // Store the array of DailySchedule as JSON
-    createdAt DateTime @default(now())
-    
-    author    User   @relation(fields: [authorId], references: [id])
-    authorId  String
+  id        String   @id @default(cuid())
+  name      String
+  schedule  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [authorId], references: [id])
+  authorId  String
 }

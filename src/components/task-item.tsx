@@ -69,7 +69,7 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
     const plannerContent = (
          <div className={cn(
              "h-full w-full p-2 rounded-lg flex flex-col justify-center text-white", 
-             isSleepTask ? "bg-indigo-500" : priorityMap[task.priority].color
+             isSleepTask ? "bg-indigo-500" : priorityMap[task.priority as TaskPriority].color
          )}>
             <p className={cn("font-semibold text-sm", task.isCompleted && "line-through opacity-70")}>
                 {task.title}

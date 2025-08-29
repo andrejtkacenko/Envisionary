@@ -16,11 +16,11 @@ interface TaskStore {
   isLoading: boolean;
   error: string | null;
   fetchTasks: (userId: string) => Promise<void>;
-  addTask: (userId: string, taskData: Omit<Task, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
-  updateTask: (userId: string, task: Task) => Promise<void>;
-  deleteTask: (userId: string, taskId: string) => Promise<void>;
-  updateTasks: (userId: string, tasksToUpdate: Task[]) => Promise<void>;
-  deleteTasks: (userId: string, taskIds: string[]) => Promise<void>;
+  addTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateTask: (task: Task) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
+  updateTasks: (tasksToUpdate: Task[]) => Promise<void>;
+  deleteTasks: (taskIds: string[]) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -31,34 +31,25 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   fetchTasks: async (userId) => {
     set({ isLoading: true, error: null });
     try {
-      getTasksFromDb(
-        userId,
-        (tasks) => {
-          const sortedTasks = tasks.sort((a, b) => (b.createdAt as any) - (a.createdAt as any));
-          set({ tasks: sortedTasks, isLoading: false });
-        },
-        (error) => {
-          console.error(error);
-          set({ error: "Failed to fetch tasks", isLoading: false });
-        }
-      );
+      const tasks = await getTasksFromDb(userId);
+      set({ tasks: tasks, isLoading: false });
     } catch (e) {
       console.error(e);
       set({ error: "Failed to fetch tasks", isLoading: false });
     }
   },
 
-  addTask: async (userId, taskData) => {
+  addTask: async (taskData) => {
     try {
-      await addTaskToDb({ ...taskData, userId });
-      // Real-time listener will update the state
+      const newTask = await addTaskToDb(taskData);
+      set(state => ({ tasks: [...state.tasks, newTask]}));
     } catch (e) {
       console.error(e);
       set({ error: 'Failed to add task' });
     }
   },
 
-  updateTask: async (userId, task) => {
+  updateTask: async (task) => {
     const originalTasks = get().tasks;
     set(state => ({
         tasks: state.tasks.map(t => t.id === task.id ? task : t)
@@ -71,7 +62,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  deleteTask: async (userId, taskId) => {
+  deleteTask: async (taskId) => {
     const originalTasks = get().tasks;
     set(state => ({
         tasks: state.tasks.filter(t => t.id !== taskId)
@@ -84,7 +75,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  deleteTasks: async (userId, taskIds) => {
+  deleteTasks: async (taskIds) => {
     const originalTasks = get().tasks;
     set(state => ({
         tasks: state.tasks.filter(t => !taskIds.includes(t.id))
@@ -97,7 +88,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  updateTasks: async (userId, tasksToUpdate) => {
+  updateTasks: async (tasksToUpdate) => {
       const originalTasks = get().tasks;
       const updatesMap = new Map(tasksToUpdate.map(t => [t.id, t]));
       set(state => ({

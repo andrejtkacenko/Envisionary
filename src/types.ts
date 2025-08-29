@@ -1,62 +1,22 @@
-
-
-import type { Timestamp } from "firebase/firestore";
+import type { Goal as PrismaGoal, Task as PrismaTask, Notification as PrismaNotification, GoalTemplate as PrismaGoalTemplate, ScheduleTemplate as PrismaScheduleTemplate, User as PrismaUser } from '@prisma/client';
 
 export type GoalStatus = "todo" | "inprogress" | "done" | "ongoing";
 
 export type GoalPriority = "low" | "medium" | "high";
 export type TaskPriority = "p1" | "p2" | "p3" | "p4";
 
-
 // This represents a user in our system.
-export type AppUser = {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  telegramId?: number;
-};
+export type AppUser = PrismaUser;
 
-export type Goal = {
-  id: string;
-  userId: string;
-  parentId?: string; // ID of the parent goal if this is a sub-goal
-  title: string;
-  description?: string;
-  status: GoalStatus;
-  priority: GoalPriority;
-  category: string;
-  dueDate?: Date;
-  estimatedTime?: string;
-  createdAt: any; // Allow Date or Timestamp
-};
-
-export type Task = {
-    id: string;
-    userId: string;
-    parentId?: string; // ID of the parent task if this is a sub-task
-    title: string;
-    description?: string;
-    priority: TaskPriority;
-    dueDate?: Date | string; // Allow string for serialization
-    isCompleted: boolean;
-    createdAt: any;
-    time?: string | null; // e.g., "09:00"
-    duration?: number; // in minutes
+export type Goal = PrismaGoal;
+export type Task = Omit<PrismaTask, 'dueDate'> & {
+    dueDate?: Date | string;
 };
 
 
 export type NotificationType = "important" | "reminder" | "info";
 
-export type Notification = {
-    id: string;
-    userId: string;
-    title: string;
-    description: string;
-    type: NotificationType;
-    isRead: boolean;
-    createdAt: Timestamp;
-    link?: string; // Optional link to navigate to
-};
+export type Notification = PrismaNotification;
 
 
 export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
@@ -66,16 +26,10 @@ export const KANBAN_COLUMNS: { id: GoalStatus; title: string }[] = [
 ];
 
 // Types for Goal Library
-export type GoalTemplate = {
-    id: string;
-    title: string;
-    description?: string;
-    category: string;
-    subGoals: { title: string; description: string; estimatedTime: string; }[];
-    authorId: string;
-    authorName: string;
-    likes: number;
-    createdAt: Timestamp;
+export type GoalTemplateSubGoal = { title: string; description: string; estimatedTime: string; };
+
+export type GoalTemplate = Omit<PrismaGoalTemplate, 'subGoals'> & {
+    subGoals: GoalTemplateSubGoal[];
 };
 
 // Types for Schedule Generator
@@ -92,10 +46,6 @@ export type DailySchedule = {
     items: ScheduledItem[];
 };
 
-export type ScheduleTemplate = {
-    id: string;
-    name: string;
-    authorId: string;
+export type ScheduleTemplate = Omit<PrismaScheduleTemplate, 'schedule'> & {
     schedule: DailySchedule[];
-    createdAt: Timestamp;
 };

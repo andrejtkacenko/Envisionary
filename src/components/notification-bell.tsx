@@ -35,13 +35,13 @@ const NotificationItem = ({ notification, onClick }: { notification: Notificatio
             <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
         )}
         <div className={cn("flex-shrink-0", notification.isRead && 'ml-4')}>
-            {notificationIcons[notification.type]}
+            {notificationIcons[notification.type as NotificationType]}
         </div>
         <div className="flex-grow">
             <p className="font-semibold text-sm">{notification.title}</p>
             <p className="text-sm text-muted-foreground">{notification.description}</p>
             <p className="text-xs text-muted-foreground mt-1">
-                {formatDistanceToNow(notification.createdAt.toDate(), { addSuffix: true })}
+                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
             </p>
         </div>
     </div>
@@ -49,31 +49,28 @@ const NotificationItem = ({ notification, onClick }: { notification: Notificatio
 
 
 export function NotificationBell() {
-  const { user } = useAuth();
+  const { appUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (user) {
-      const unsubscribe = getNotifications(
-        user.uid,
-        (notifs) => {
+    if (appUser) {
+      getNotifications(appUser.id)
+        .then(notifs => {
           setNotifications(notifs);
-          setUnreadCount(notifs.filter((n) => !n.isRead).length);
-        },
-        (error) => {
+          setUnreadCount(notifs.filter(n => !n.isRead).length);
+        })
+        .catch(error => {
           console.error('Failed to get notifications:', error);
           toast({
             variant: 'destructive',
             title: 'Could not load notifications',
           });
-        }
-      );
-      return () => unsubscribe();
+        });
     }
-  }, [user, toast]);
+  }, [appUser, toast]);
 
   const { importantNotifications, otherNotifications } = useMemo(() => {
     const important = notifications.filter(n => n.type === 'important');
@@ -82,9 +79,11 @@ export function NotificationBell() {
   }, [notifications]);
 
   const handleMarkAllAsRead = async () => {
-    if (!user || unreadCount === 0) return;
+    if (!appUser || unreadCount === 0) return;
     try {
-      await markAllNotificationsAsRead(user.uid);
+      await markAllNotificationsAsRead(appUser.id);
+      setNotifications(notifications.map(n => ({...n, isRead: true})));
+      setUnreadCount(0);
     } catch (error) {
       console.error('Failed to mark notifications as read:', error);
       toast({

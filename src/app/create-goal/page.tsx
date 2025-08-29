@@ -63,7 +63,7 @@ type GoalFormValues = z.infer<typeof goalSchema>;
 
 export default function CreateGoalPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { appUser } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -85,7 +85,7 @@ export default function CreateGoalPage() {
   };
 
   const onSubmit = async (data: GoalFormValues) => {
-    if (!user) {
+    if (!appUser) {
         toast({
             variant: "destructive",
             title: "Not Authenticated",
@@ -97,7 +97,7 @@ export default function CreateGoalPage() {
     try {
       await addGoal({
         ...data,
-        userId: user.uid,
+        userId: appUser.id,
         category: data.category || 'General' // Use 'General' if not provided
       });
       router.push('/');

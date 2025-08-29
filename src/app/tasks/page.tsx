@@ -36,17 +36,14 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
     const { setNodeRef, isOver } = useDroppable({
         id: 'inbox',
     });
-    const { user } = useAuth();
 
     const handleUpdate = useCallback((task: Task) => {
-        if (!user) return;
         onUpdate(task);
-    }, [user, onUpdate]);
+    }, [onUpdate]);
 
     const handleDelete = useCallback((taskId: string) => {
-        if (!user) return;
         onDelete(taskId);
-    }, [user, onDelete]);
+    }, [onDelete]);
 
 
     return (
@@ -78,17 +75,17 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
 
 
 export default function TasksPage() {
-    const { user } = useAuth();
+    const { appUser } = useAuth();
     const { tasks, isLoading, fetchTasks, addTask, updateTask, deleteTask } = useTaskStore();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
     // Initial fetch of tasks
     useEffect(() => {
-        if (user) {
-            fetchTasks(user.uid);
+        if (appUser) {
+            fetchTasks(appUser.id);
         }
-    }, [user, fetchTasks]);
+    }, [appUser, fetchTasks]);
 
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.dueDate), [tasks]);
@@ -128,7 +125,7 @@ export default function TasksPage() {
         const { active, over } = event;
         setDraggedTask(null);
 
-        if (!user || !over || !active.id) return;
+        if (!appUser || !over || !active.id) return;
         
         const originalTask = tasks.find(t => t.id === active.id);
         if (!originalTask) return;
@@ -151,26 +148,25 @@ export default function TasksPage() {
             return; // Dropped in a non-droppable area
         }
 
-        // Only call update if there's an actual change
         if (!isEqual(originalTask, finalTask)) {
-            updateTask(user.uid, finalTask);
+            updateTask(finalTask);
         }
     };
     
     const handleUpdateTask = useCallback((task: Task) => {
-        if (!user) return;
-        updateTask(user.uid, task);
-    }, [user, updateTask]);
+        if (!appUser) return;
+        updateTask(task);
+    }, [appUser, updateTask]);
 
     const handleDeleteTask = useCallback((taskId: string) => {
-        if (!user) return;
-        deleteTask(user.uid, taskId);
-    }, [user, deleteTask]);
+        if (!appUser) return;
+        deleteTask(taskId);
+    }, [appUser, deleteTask]);
 
-    const handleAddTask = useCallback((taskData: Omit<Task, 'id' | 'createdAt'>) => {
-        if (!user) return;
-        addTask(user.uid, taskData);
-    }, [user, addTask]);
+    const handleAddTask = useCallback((taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+        if (!appUser) return;
+        addTask(taskData);
+    }, [appUser, addTask]);
 
 
     return (
@@ -192,11 +188,6 @@ export default function TasksPage() {
                     </div>
                      <div className="flex items-center gap-2">
                         <TaskActions allTasks={tasks} />
-                        <TaskDialog onSave={handleAddTask}>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" /> New Task
-                            </Button>
-                        </TaskDialog>
                     </div>
                 </div>
 

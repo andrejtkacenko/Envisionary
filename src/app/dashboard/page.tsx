@@ -31,7 +31,7 @@ const chartColors = [
 ];
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { appUser } = useAuth()
   const { toast } = useToast();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,20 +39,19 @@ export default function DashboardPage() {
   const [insights, setInsights] = useState<{summary: string} | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (appUser) {
       setIsLoading(true);
-      const unsubscribe = getGoals(user.uid, (userGoals) => {
-        const sortedGoals = userGoals.sort((a, b) => (b.createdAt as any) - (a.createdAt as any));
-        setGoals(sortedGoals);
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Failed to fetch goals:", error);
-        toast({ variant: 'destructive', title: 'Error fetching goals' });
-        setIsLoading(false);
-      });
-      return () => unsubscribe(); // Cleanup listener on unmount
+      getGoals(appUser.id)
+        .then((userGoals) => {
+          setGoals(userGoals);
+        })
+        .catch((error) => {
+          console.error("Failed to fetch goals:", error);
+          toast({ variant: 'destructive', title: 'Error fetching goals' });
+        })
+        .finally(() => setIsLoading(false));
     }
-  }, [user, toast]);
+  }, [appUser, toast]);
   
   const handleGenerateInsights = async () => {
     setIsInsightsLoading(true);
@@ -97,7 +96,7 @@ export default function DashboardPage() {
     const todo = activeGoals.filter(g => g.status === 'todo').length;
     
     const recent = [...mainGoals].sort((a, b) => {
-        return (b.createdAt as any) - (a.createdAt as any);
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }).slice(0, 4);
 
     const categoryCounts = activeGoals.reduce((acc, goal) => {
@@ -176,7 +175,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-headline">
-            Welcome back, {user?.displayName || user?.email || 'Achiever'}! 👋
+            Welcome back, {appUser?.displayName || appUser?.email || 'Achiever'}! 👋
           </h1>
           <p className="text-muted-foreground">
             Here's your progress overview and latest insights.

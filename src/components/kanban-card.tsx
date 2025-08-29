@@ -41,10 +41,16 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [subGoals, setSubGoals] = useState<Goal[]>([]);
   
+  const fetchSubGoals = async () => {
+      if (goal.id) {
+        const fetchedSubGoals = await getSubGoals(goal.id);
+        setSubGoals(fetchedSubGoals);
+      }
+  }
+
   useEffect(() => {
-    if (goal.id) {
-        getSubGoals(goal.id).then(setSubGoals);
-    }
+    fetchSubGoals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goal.id]);
 
   const {
@@ -85,7 +91,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
                 <Badge variant="secondary" className="text-xs">{goal.category || 'Uncategorized'}</Badge>
                 <div className="flex items-center gap-2">
                      <span title={`Status: ${goal.status}`}>
-                        {statusIcons[goal.status]}
+                        {statusIcons[goal.status as GoalStatus]}
                     </span>
                 </div>
             </div>
@@ -133,6 +139,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
                 onGoalUpdate={onGoalUpdate}
                 onGoalDelete={onGoalDelete}
                 onOpenChange={setIsDialogOpen}
+                onSubGoalsChange={fetchSubGoals}
                 trigger={cardContent}
             />
         ) : (

@@ -9,7 +9,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { CalendarIcon, Flag, Plus, Trash2, Wand2, Clock } from "lucide-react";
 import { format } from "date-fns";
-import { nanoid } from "nanoid";
 
 import type { Task, TaskPriority } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -72,7 +71,7 @@ type TaskFormValues = z.infer<typeof taskSchema>;
 
 interface TaskDialogProps {
   task?: Task;
-  onSave: (data: Omit<Task, 'id' | 'createdAt'> | Task) => void;
+  onSave: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> | Task) => void;
   onDelete?: (taskId: string) => void;
   children: React.ReactNode;
 }
@@ -81,8 +80,15 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   const [open, setOpen] = useState(false);
   const [subTasks, setSubTasks] = useState<Task[]>([]);
   const isEditMode = !!task;
-  const { user } = useAuth();
-  const { addTask, updateTask } = useTaskStore();
+  const { appUser } = useAuth();
+  const { addTask, updateTask: updateTaskInStore } = useTaskStore();
+
+  const fetchSubTasks = async () => {
+    if (task?.id) {
+        const fetchedSubTasks = await getSubTasks(task.id);
+        setSubTasks(fetchedSubTasks);
+    }
+  }
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -90,8 +96,9 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   
   useEffect(() => {
     if (task?.id) {
-        getSubTasks(task.id).then(setSubTasks);
+        fetchSubTasks();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task?.id])
 
   useEffect(() => {
@@ -99,17 +106,18 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
       form.reset({
         title: task?.title ?? "",
         description: task?.description ?? "",
-        priority: task?.priority ?? "p4",
+        priority: task?.priority as TaskPriority ?? "p4",
         dueDate: task?.dueDate ? new Date(task.dueDate) : undefined,
         time: task?.time || "",
         duration: task?.duration || 60,
       });
       if (task?.id) {
-        getSubTasks(task.id).then(setSubTasks);
+        fetchSubTasks();
       } else {
         setSubTasks([]);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task, open, form]);
   
   const watchedTitle = form.watch("title");
@@ -123,8 +131,8 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
 
       if (isEditMode && task) {
           onSave({ ...task, ...taskData });
-      } else if(user) {
-          onSave({ ...taskData, userId: user.uid });
+      } else if(appUser) {
+          onSave({ ...taskData, userId: appUser.id });
       }
       handleOpenChange(false);
   };
@@ -138,27 +146,26 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   }
 
   const handleSubTaskAdd = (newSubTasks: GeneratedSubTask[]) => {
-    if (!user || !task) return;
+    if (!appUser || !task) return;
     const tasksToAdd = newSubTasks.map(st => ({
-        userId: user.uid,
+        userId: appUser.id,
         parentId: task.id,
         title: st.title,
         description: st.description,
         isCompleted: false,
-        priority: 'p4' as TaskPriority,
-        createdAt: new Date(),
+        priority: 'p4' as TaskPriority
     }));
-    tasksToAdd.forEach(t => addTask(user.uid, t));
+    tasksToAdd.forEach(t => addTask(t).then(() => fetchSubTasks()));
   };
   
   const handleToggleSubTask = (subTask: Task) => {
-    if(!user) return;
-    updateTask(user.uid, { ...subTask, isCompleted: !subTask.isCompleted });
+    if(!appUser) return;
+    updateTaskInStore({ ...subTask, isCompleted: !subTask.isCompleted }).then(() => fetchSubTasks());
   };
   
   const handleDeleteSubTask = (subTaskId: string) => {
-     if(!user) return;
-     deleteTask(subTaskId);
+     if(!appUser) return;
+     deleteTask(subTaskId).then(() => fetchSubTasks());
   };
 
 
@@ -238,7 +245,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                     name="priority"
                     render={({ field }) => (
                         <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange as any} defaultValue={field.value}>
                                 <FormControl>
                                 <Button asChild variant="outline" className="w-full justify-start">
                                     <SelectTrigger>

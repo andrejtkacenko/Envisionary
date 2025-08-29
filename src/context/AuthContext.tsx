@@ -12,10 +12,14 @@ import {
   sendPasswordResetEmail,
   signInWithCustomToken
 } from "firebase/auth";
+import { getOrCreateUser } from "@/lib/firebase-admin-service";
+import type { AppUser } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+
 
 interface AuthContextType {
   user: User | null;
+  appUser: AppUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -28,16 +32,29 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+          try {
+              const dbUser = await getOrCreateUser(currentUser);
+              setAppUser(dbUser);
+          } catch(e) {
+              console.error("Failed to get/create user in DB", e);
+              toast({ variant: 'destructive', title: "Database Error", description: "Could not sync user account."});
+              setAppUser(null);
+          }
+      } else {
+        setAppUser(null);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signIn = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
@@ -63,6 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
+        appUser,
         loading,
         signIn,
         signUp,

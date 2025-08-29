@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from 'react';
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { coachChat, createGoal, updateGoal, findGoals, summarizeProgress } from '@/ai/tools/goal-actions';
-import { getGoalsSnapshot } from '@/lib/goals-service';
+import { getGoals } from '@/lib/goals-service';
 import type { Goal } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -38,25 +39,8 @@ const initialMessage: ChatMessage = {
     content: "Hello! I'm your AI Coach. I can help you manage your goals. Try asking me to create a new goal. How can I support you today?"
 };
 
-const callTool = async (toolRequest: any, userId: string): Promise<any> => {
-    const toolName = toolRequest.name;
-    const args = toolRequest.input;
-    args.userId = userId;
-
-    switch (toolName) {
-        case 'createGoal':
-            return await createGoal(args);
-        case 'updateGoal':
-            return await updateGoal(args);
-        case 'findGoals':
-            return await findGoals(args);
-        default:
-            throw new Error(`Unknown tool: ${toolName}`);
-    }
-};
-
 export default function CoachPage() {
-    const { user } = useAuth();
+    const { user, appUser } = useAuth();
     const { toast } = useToast();
 
     const [isClient, setIsClient] = useState(false);
@@ -76,6 +60,24 @@ export default function CoachPage() {
     useEffect(() => {
       setIsClient(true);
     }, [])
+
+    const callTool = async (toolRequest: any, userId: string): Promise<any> => {
+        const toolName = toolRequest.name;
+        const args = toolRequest.input;
+        args.userId = userId;
+
+        switch (toolName) {
+            case 'createGoal':
+                return await createGoal(args);
+            case 'updateGoal':
+                return await updateGoal(args);
+            case 'findGoals':
+                return await findGoals(args);
+            default:
+                throw new Error(`Unknown tool: ${toolName}`);
+        }
+    };
+
 
     // Load chat history from localStorage on mount
     useEffect(() => {
@@ -106,17 +108,17 @@ export default function CoachPage() {
     }, [chatHistory, isClient]);
 
     const fetchGoals = useCallback(async () => {
-        if (user) {
-          getGoalsSnapshot(user.uid).then(setGoals);
+        if (appUser) {
+          getGoals(appUser.id).then(setGoals);
         }
-    }, [user]);
+    }, [appUser]);
 
     useEffect(() => {
         fetchGoals();
     }, [fetchGoals]);
 
     const handleSendMessage = async (message: string, toolResponse?: any) => {
-        if (!user) {
+        if (!appUser) {
             toast({ variant: 'destructive', title: 'Not authenticated.' });
             return;
         }
@@ -137,11 +139,11 @@ export default function CoachPage() {
             const result = await coachChat({
                 history: newHistory.map(m => ({ role: m.role, content: m.content, toolRequest: m.toolRequest, toolResult: m.toolResult })),
                 message: message,
-                userId: user.uid,
+                userId: appUser.id,
             });
 
             if (result.toolRequest) {
-                 const toolResult = await callTool(result.toolRequest, user.uid);
+                 const toolResult = await callTool(result.toolRequest, appUser.id);
                  const toolResponseMsg = {
                     role: 'tool' as const,
                     content: `Tool ${result.toolRequest.name} called successfully.`,

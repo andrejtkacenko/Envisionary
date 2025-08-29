@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
     // Hardcode the production URL to avoid Vercel's preview-specific URLs
     NEXT_PUBLIC_APP_URL: 'https://envisionary-beta.vercel.app',
   },
+  webpack: (config) => {
+    config.experiments = { ...config.experiments, asyncWebAssembly: true, layers: true };
+    return config;
+  },
   serverActions: {
     bodySizeLimit: '2mb',
     // @ts-ignore

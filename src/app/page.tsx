@@ -4,12 +4,12 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Goal, GoalStatus } from '@/types';
+import type { Goal, GoalStatus, AppUser } from '@/types';
 import { AppHeader } from '@/components/app-header';
 import { KanbanBoard } from '@/components/kanban-board';
 import { KANBAN_COLUMNS } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { getGoals, addGoal, addGoals, updateGoal, deleteGoal, addNotification } from '@/lib/goals-service';
+import { getGoals, addGoal, updateGoal, deleteGoal, addNotification } from '@/lib/goals-service';
 import { Loader2, Target, Plus, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -44,7 +44,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isTelegramAuth, setIsTelegramAuth] = useState(false);
   const [telegramStatus, setTelegramStatus] = useState("Loading...");
-  const { user, loading: authLoading, signInWithToken } = useAuth();
+  const { user, appUser, loading: authLoading, signInWithToken } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -87,10 +87,8 @@ export default function Home() {
           const { token } = await response.json();
           await signInWithToken(token);
 
-          // Auth state will update via AuthContext, and we will be redirected.
-          // We can hide the button and loading state now.
           tg.MainButton.hide();
-          router.replace('/'); // Clean the URL
+          router.replace('/');
           
         } catch (err: any) {
           console.error(err);
@@ -102,7 +100,6 @@ export default function Home() {
       tg.onEvent('mainButtonClicked', mainButtonClickHandler);
 
       return () => {
-        // Cleanup listener when component unmounts
         tg.offEvent('mainButtonClicked', mainButtonClickHandler);
         tg.MainButton.hide();
       };
@@ -113,63 +110,41 @@ export default function Home() {
 
 
   useEffect(() => {
-    // Regular auth flow
     if (!isTelegramFlow && !authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router, isTelegramFlow]);
 
-  useEffect(() => {
-    if (user && !isTelegramFlow) {
-      setIsLoading(true);
-      const unsubscribe = getGoals(user.uid, (userGoals) => {
-        const sortedGoals = userGoals.sort((a, b) => (b.createdAt as any) - (a.createdAt as any));
-        setGoals(sortedGoals.filter(g => g.status !== 'ongoing'));
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Error fetching real-time goals:", error);
-        toast({ variant: "destructive", title: "Error", description: "Could not fetch goals." });
-        setIsLoading(false);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [user, toast, isTelegramFlow]);
-
-
-  const handleAddNewGoal = useCallback(async (newGoalData: Omit<Goal, 'id' | 'createdAt'>) => {
-    if (!user) return;
+  const fetchGoals = useCallback(async (currentAppUser: AppUser) => {
     try {
-        const newGoal = await addGoal({ ...newGoalData, userId: user.uid });
-        return newGoal;
-    } catch(e) {
-        console.error("Error adding goal:", e);
+      setIsLoading(true);
+      const userGoals = await getGoals(currentAppUser.id);
+      setGoals(userGoals.filter(g => g.status !== 'ongoing'));
+    } catch (error) {
+      console.error("Error fetching goals:", error);
+      toast({ variant: "destructive", title: "Error", description: "Could not fetch goals." });
+    } finally {
+      setIsLoading(false);
     }
-  }, [user]);
-
-  const handleAddNewGoals = useCallback(async (newGoalsData: Omit<Goal, 'id' | 'createdAt'>[]) => {
-      if (!user) return;
-      try {
-        const newGoals = await addGoals(user.uid, newGoalsData.map(g => ({...g, userId: user.uid})));
-        return newGoals;
-      } catch (e) {
-        console.error("Error adding goals:", e);
-      }
-  }, [user]);
+  }, [toast]);
+  
+  useEffect(() => {
+    if (appUser && !isTelegramFlow) {
+      fetchGoals(appUser);
+    }
+  }, [appUser, isTelegramFlow, fetchGoals]);
 
   const handleGoalUpdate = async (updatedGoal: Goal) => {
-    if (!user) return;
+    if (!appUser) return;
     
-    const originalGoals = goals;
-    setGoals((prevGoals) => {
-        return prevGoals.map(g => g.id === updatedGoal.id ? updatedGoal : g);
-    });
+    const originalGoals = [...goals];
+    setGoals((prevGoals) => prevGoals.map(g => g.id === updatedGoal.id ? updatedGoal : g));
 
     try {
       await updateGoal(updatedGoal);
        if (updatedGoal.status === 'done') {
         await addNotification({
-          userId: user.uid,
+          userId: appUser.id,
           title: 'Goal Completed!',
           description: `You've completed the goal: "${updatedGoal.title}"`,
           type: 'info',
@@ -187,9 +162,9 @@ export default function Home() {
   };
   
   const handleGoalDelete = async (goalId: string) => {
-    if (!user) return;
+    if (!appUser) return;
 
-    const originalGoals = goals;
+    const originalGoals = [...goals];
     setGoals((prev) => prev.filter((goal) => goal.id !== goalId));
 
     try {
@@ -289,7 +264,7 @@ export default function Home() {
     setActiveGoal(null);
     document.body.style.overflow = '';
     const { active, over } = event;
-    if (!over || !user) return;
+    if (!over || !appUser) return;
 
     const activeGoalId = active.id as string;
     const updatedGoal = goals.find(g => g.id === activeGoalId);
@@ -314,7 +289,7 @@ export default function Home() {
     }
   };
 
-  if (isTelegramAuth && !user) {
+  if (isTelegramAuth && !appUser) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
             <div className="flex flex-col items-center gap-4 text-center">
@@ -326,7 +301,7 @@ export default function Home() {
     );
   }
 
-  if (authLoading || (!user && !isTelegramFlow)) {
+  if (authLoading || (!appUser && !isTelegramFlow)) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

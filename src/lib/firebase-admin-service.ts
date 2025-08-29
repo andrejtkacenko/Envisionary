@@ -1,98 +1,87 @@
-
-import { db } from "@/lib/firebase";
-import { collection, doc, setDoc, query, where, limit, getDocs } from "firebase/firestore";
+import prisma from "@/lib/prisma";
 import type { AppUser } from "@/types";
 import { adminApp } from "@/lib/firebase-admin";
 import { getAuth } from "firebase-admin/auth";
 
-// This file contains functions that use the Firebase Admin SDK
-// and should ONLY be called from the server (e.g., API routes).
-
-// Firestore data converter for Users
-const userConverter = {
-    toFirestore: (user: Partial<AppUser>) => {
-        const data: any = {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-        };
-        if (user.telegramId) {
-            data.telegramId = user.telegramId;
-        }
-        return data;
-    },
-    fromFirestore: (snapshot: any, options: any): AppUser => {
-        const data = snapshot.data(options);
-        const user: AppUser = {
-            uid: data.uid,
-            email: data.email,
-            displayName: data.displayName,
-        };
-        if (data.telegramId) {
-            user.telegramId = data.telegramId;
-        }
-        return user;
-    }
+export const findUserByTelegramId = async (telegramId: number): Promise<AppUser | null> => {
+    return await prisma.user.findUnique({
+        where: { telegramId },
+    });
 };
 
-const getUsersCollection = () => {
-    return collection(db, "users").withConverter(userConverter);
-}
-
-
-export const findUserByTelegramId = async (telegramId: number): Promise<AppUser | null> => {
-    const usersCollection = getUsersCollection();
-    const q = query(usersCollection, where("telegramId", "==", telegramId), limit(1));
-    const snapshot = await getDocs(q);
-
-    if (!snapshot.empty) {
-        return snapshot.docs[0].data();
-    }
-    return null;
-}
+export const findUserByFirebaseUid = async (firebaseUid: string): Promise<AppUser | null> => {
+    return await prisma.user.findUnique({
+        where: { firebaseUid },
+    });
+};
 
 export const createUserFromTelegramData = async (telegramData: any): Promise<AppUser> => {
     if (!adminApp) throw new Error("Firebase Admin not initialized");
     const auth = getAuth(adminApp);
-    const usersCollection = getUsersCollection();
     
-    // Use Telegram ID as UID in Firebase Auth for simplicity
-    const uid = `tg-${telegramData.id}`;
-    
+    // Create or get Firebase Auth user
+    const firebaseUid = `tg-${telegramData.id}`;
     let firebaseUser;
     try {
-        firebaseUser = await auth.createUser({
-            uid: uid,
-            displayName: `${telegramData.first_name} ${telegramData.last_name || ''}`.trim(),
-            photoURL: telegramData.photo_url,
-        });
+        firebaseUser = await auth.getUser(firebaseUid);
     } catch (error: any) {
-        if (error.code === 'auth/uid-already-exists') {
-            // User already exists in Firebase Auth, just fetch them
-            firebaseUser = await auth.getUser(uid);
+        if (error.code === 'auth/user-not-found') {
+            firebaseUser = await auth.createUser({
+                uid: firebaseUid,
+                displayName: `${telegramData.first_name} ${telegramData.last_name || ''}`.trim(),
+                photoURL: telegramData.photo_url,
+            });
         } else {
-            throw error; // Re-throw other errors
+            throw error;
         }
     }
 
-    const newUser: AppUser = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || null, // Telegram doesn't provide email
-        displayName: firebaseUser.displayName || 'Telegram User',
-        telegramId: telegramData.id,
-    };
-
-    // Create or update the user document in Firestore
-    await setDoc(doc(usersCollection, firebaseUser.uid), newUser, { merge: true });
+    // Create or update user in our database
+    const newUser = await prisma.user.upsert({
+        where: { telegramId: telegramData.id },
+        update: {
+            displayName: `${telegramData.first_name} ${telegramData.last_name || ''}`.trim(),
+            firebaseUid: firebaseUser.uid,
+        },
+        create: {
+            telegramId: telegramData.id,
+            displayName: `${telegramData.first_name} ${telegramData.last_name || ''}`.trim(),
+            firebaseUid: firebaseUser.uid,
+        }
+    });
     
     return newUser;
 };
 
-export const linkTelegramToUser = async (userId: string, telegramId: number) => {
-    const userRef = doc(getUsersCollection(), userId);
+export const linkTelegramToUser = async (firebaseUid: string, telegramId: number) => {
     const existingUser = await findUserByTelegramId(telegramId);
-    if (existingUser && existingUser.uid !== userId) {
+    if (existingUser && existingUser.firebaseUid !== firebaseUid) {
         throw new Error("This Telegram account is already linked to another user.");
     }
-    await setDoc(userRef, { telegramId: telegramId }, { merge: true });
-}
+
+    const user = await findUserByFirebaseUid(firebaseUid);
+    if (!user) {
+        throw new Error("User not found.");
+    }
+    
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { telegramId },
+    });
+};
+
+export const getOrCreateUser = async (firebaseUser: import('firebase/auth').User): Promise<AppUser> => {
+    const user = await prisma.user.findUnique({ where: { firebaseUid: firebaseUser.uid } });
+    if (user) {
+        return user;
+    }
+    
+    // Create new user in our DB if they don't exist
+    return await prisma.user.create({
+        data: {
+            firebaseUid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+        }
+    });
+};

@@ -1,14 +1,12 @@
 'use server';
 
 /**
- * @fileOverview Defines Genkit tools for interacting with user goals in Firestore.
- * This file should only define the tools and not export them directly for client use.
- * The actions in goal-actions.ts are the public API for the client.
+ * @fileOverview Defines Genkit tools for interacting with user goals via Prisma.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { addGoal as addGoalToDb, getGoalsSnapshot, updateGoal as updateGoalInDb } from '@/lib/goals-service';
+import prisma from '@/lib/prisma';
 import type { Goal, GoalStatus } from '@/types';
 
 // Schema for creating a new goal
@@ -51,11 +49,14 @@ export const createGoal = ai.defineTool(
     async (input) => {
         console.log(`[Tool] createGoal called with:`, input);
         const { userId, ...goalData } = input;
-        const newGoal = await addGoalToDb(userId, {
-            ...goalData,
-            status: 'todo', // Default status
-            priority: goalData.priority || 'medium', // Default priority
-            category: goalData.category || 'General', // Default category
+        const newGoal = await prisma.goal.create({
+            data: {
+                ...goalData,
+                userId,
+                status: 'todo', // Default status
+                priority: goalData.priority || 'medium', // Default priority
+                category: goalData.category || 'General', // Default category
+            }
         });
         return newGoal;
     }
@@ -76,17 +77,11 @@ export const updateGoal = ai.defineTool(
         console.log(`[Tool] updateGoal called with:`, input);
         const { userId, goalId, ...updates } = input;
         
-        // First, fetch all goals to find the one to update
-        const goals = await getGoalsSnapshot(userId);
-        const goalToUpdate = goals.find(g => g.id === goalId);
+        await prisma.goal.update({
+            where: { id: goalId, userId },
+            data: updates,
+        });
 
-        if (!goalToUpdate) {
-            throw new Error(`Goal with ID ${goalId} not found.`);
-        }
-
-        const updatedGoal = { ...goalToUpdate, ...updates };
-
-        await updateGoalInDb(userId, updatedGoal);
         return { success: true };
     }
 );
@@ -104,16 +99,31 @@ export const findGoals = ai.defineTool(
     },
     async ({ userId, query }) => {
         console.log(`[Tool] findGoals called with query: "${query}" for user: ${userId}`);
-        const allGoals = await getGoalsSnapshot(userId);
-        const lowerCaseQuery = query.toLowerCase();
+        const foundGoals = await prisma.goal.findMany({
+            where: {
+                userId,
+                OR: [
+                    { title: { contains: query, mode: 'insensitive' } },
+                    { description: { contains: query, mode: 'insensitive' } },
+                ]
+            },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                category: true,
+                // Select only the fields needed by the model
+                createdAt: false,
+                dueDate: false,
+                estimatedTime: false,
+                parentId: false,
+                priority: false,
+                status: false,
+                updatedAt: false,
+                userId: false,
+            }
+        });
 
-        // Simple text search in title and description
-        const foundGoals = allGoals.filter(goal => 
-            goal.title.toLowerCase().includes(lowerCaseQuery) ||
-            goal.description?.toLowerCase().includes(lowerCaseQuery)
-        );
-
-        // Return only essential fields to the model to save tokens
-        return foundGoals.map(({ id, title, description, category }) => ({ id, title, description, category })) as Goal[];
+        return foundGoals as Goal[];
     }
 );

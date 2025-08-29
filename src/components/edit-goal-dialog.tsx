@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import isEqual from 'lodash.isequal';
 
 
-import type { Goal, GoalStatus } from "@/types";
+import type { Goal, GoalStatus, SubGoal as SubGoalType } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -60,8 +60,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent } from "./ui/card";
-import { GoalDialog } from "./goal-dialog";
-import { BreakDownGoalDialog, SubGoal } from "./break-down-goal-dialog";
+import { BreakDownGoalDialog } from "./break-down-goal-dialog";
 import { Badge } from "./ui/badge";
 import { DeleteGoalAlert } from "./delete-goal-alert";
 import { useAuth } from "@/context/AuthContext";
@@ -86,16 +85,17 @@ interface EditGoalDialogProps {
   onGoalDelete: (goalId: string) => void;
   trigger: React.ReactNode;
   onOpenChange?: (open: boolean) => void;
+  onSubGoalsChange: () => void;
 }
 
-export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, onGoalDelete, trigger, onOpenChange }: EditGoalDialogProps) {
+export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, onGoalDelete, trigger, onOpenChange, onSubGoalsChange }: EditGoalDialogProps) {
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [localSubGoals, setLocalSubGoals] = useState<Goal[]>([]);
   const [showUnsavedChangesAlert, setShowUnsavedChangesAlert] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { appUser } = useAuth();
   
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(goalSchema),
@@ -108,28 +108,26 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
 
   useEffect(() => {
     if (open) {
-      // Reset form and subgoals when dialog is opened or goal changes
       form.reset({
         title: goal.title,
         description: goal.description || "",
         category: goal.category,
-        status: goal.status,
-        priority: goal.priority,
+        status: goal.status as GoalStatus,
+        priority: goal.priority as "low" | "medium" | "high",
         dueDate: goal.dueDate ? new Date(goal.dueDate) : undefined,
         estimatedTime: goal.estimatedTime || "",
       });
       setLocalSubGoals(initialSubGoals);
     } else {
-        // Reset editing state when dialog closes
         setIsEditing(false);
     }
-  }, [goal, initialSubGoals, open, form.reset]);
+  }, [goal, initialSubGoals, open, form]);
 
   const handleSaveChanges = async () => {
     const isValid = await form.trigger();
     if (isValid) {
       await onSubmit(form.getValues());
-      setOpen(false); // Close the main dialog after saving.
+      setOpen(false);
     } else {
         toast({
             variant: "destructive",
@@ -140,14 +138,14 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
   };
 
   const onSubmit = async (data: GoalFormValues) => {
-    const updatedGoal = {
+    const updatedData = {
       ...goal,
       ...data,
       category: data.category || 'General',
     };
-    onGoalUpdate(updatedGoal);
+    onGoalUpdate(updatedData);
     setIsEditing(false);
-    form.reset(data); // Reset form state to not be dirty
+    form.reset(data);
     toast({
       title: "Goal Updated",
       description: `The goal "${data.title}" has been successfully updated.`,
@@ -165,26 +163,26 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
     }
   };
 
-  const handleSubGoalAdd = (newSubGoals: SubGoal[]) => {
-      if (!user) return;
+  const handleSubGoalAdd = (newSubGoals: SubGoalType[]) => {
+      if (!appUser) return;
       const goalsToAdd = newSubGoals.map(sg => ({
-        userId: user.uid,
+        userId: appUser.id,
         parentId: goal.id,
         title: sg.title,
         description: sg.description,
         category: form.getValues('category') || 'General',
-        status: 'todo' as GoalStatus,
+        status: 'todo',
         priority: form.getValues('priority'),
         dueDate: form.getValues('dueDate'),
         estimatedTime: sg.estimatedTime,
       }));
-      goalsToAdd.forEach(g => addGoal(g));
+      goalsToAdd.forEach(g => addGoal(g).then(() => onSubGoalsChange()));
   }
   
   const handleAddManualSubGoal = () => {
-    if (!user) return;
-    const newSubGoal: Omit<Goal, 'id'|'createdAt'> = {
-        userId: user.uid,
+    if (!appUser) return;
+    const newSubGoal: Omit<Goal, 'id'|'createdAt'|'updatedAt'> = {
+        userId: appUser.id,
         parentId: goal.id,
         title: "New sub-goal",
         description: "",
@@ -193,15 +191,15 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
         priority: form.getValues('priority'),
         dueDate: form.getValues('dueDate'),
     };
-    addGoal(newSubGoal);
+    addGoal(newSubGoal).then(() => onSubGoalsChange());
   };
 
   const handleSubGoalUpdate = (updatedSubGoal: Goal) => {
-    updateGoal(updatedSubGoal);
+    updateGoal(updatedSubGoal).then(() => onSubGoalsChange());
   }
 
   const handleSubGoalDelete = (id: string) => {
-    deleteSubGoal(id);
+    deleteSubGoal(id).then(() => onSubGoalsChange());
   }
   
   const handleCancel = () => {
@@ -210,9 +208,9 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
       title: goal.title,
       description: goal.description || "",
       category: goal.category,
-      status: goal.status,
-      priority: goal.priority,
-      dueDate: goal.dueDate,
+      status: goal.status as GoalStatus,
+      priority: goal.priority as any,
+      dueDate: goal.dueDate ? new Date(goal.dueDate) : undefined,
       estimatedTime: goal.estimatedTime || ""
     });
     setLocalSubGoals(initialSubGoals);
@@ -229,7 +227,7 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
   }
 
   const handleShare = async () => {
-    if (!user) {
+    if (!appUser) {
         toast({ variant: "destructive", title: "Not authenticated." });
         return;
     }
@@ -244,9 +242,8 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
                 description: sg.description || "",
                 estimatedTime: sg.estimatedTime || "not set" 
             })),
-            authorId: user.uid,
-            authorName: user.displayName || user.email || "Anonymous",
-            likes: 0,
+            authorId: appUser.id,
+            authorName: appUser.displayName || appUser.email || "Anonymous",
         });
         toast({
             title: "Goal Shared!",
@@ -452,15 +449,7 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
                                             {sg.description && <p className="text-sm text-muted-foreground">{sg.description}</p>}
                                         </div>
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                                            <GoalDialog 
-                                                goal={sg} 
-                                                onSave={(updated) => handleSubGoalUpdate({ ...sg, ...updated })} 
-                                                triggerButton={
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                }
-                                            />
+                                            {/* Edit for sub-goal would be complex, omitting for now */}
                                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/70 hover:text-destructive" onClick={() => handleSubGoalDelete(sg.id)}>
                                                 <Trash className="h-4 w-4" />
                                             </Button>
@@ -526,9 +515,9 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
                 <div className="space-y-4">
                      <h4 className="text-sm font-medium text-muted-foreground">Sub-goals / Plan</h4>
                      <ScrollArea className="h-[430px] border rounded-md p-2">
-                        {localSubGoals.length > 0 ? (
+                        {initialSubGoals.length > 0 ? (
                             <div className="space-y-2">
-                                {localSubGoals.map(sg => (
+                                {initialSubGoals.map(sg => (
                                     <Card key={sg.id}>
                                         <CardContent className="p-3">
                                             <p className="font-semibold text-sm">{sg.title}</p>
