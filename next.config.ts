@@ -27,9 +27,26 @@ const nextConfig: NextConfig = {
     ]
   },
   env: {
-    NEXT_PUBLIC_APP_URL: process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000',
+    // Hardcode the production URL to avoid Vercel's preview-specific URLs
+    NEXT_PUBLIC_APP_URL: 'https://envisionary-beta.vercel.app',
+  },
+  webpack: (config) => {
+    config.experiments = { ...config.experiments, asyncWebAssembly: true, layers: true };
+    // This new rule explicitly tells webpack how to handle .wasm files
+    config.module.rules.push({
+        test: /\.wasm$/,
+        type: 'webassembly/async',
+    });
+    return config;
+  },
+  serverActions: {
+    bodySizeLimit: '2mb',
+    // @ts-ignore
+    experimental: {
+      serverActions: {
+        executionTimeout: 60,
+      },
+    },
   },
 };
 
