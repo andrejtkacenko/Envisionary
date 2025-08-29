@@ -16,6 +16,7 @@
 
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task, ScheduleTemplate, DailySchedule } from "@/types";
@@ -124,19 +125,22 @@ const taskConverter = {
     toFirestore: (task: Partial<Task>) => {
         const data: any = { ...task };
         
+        // Remove ID before sending to Firestore
+        delete data.id;
+
         // Handle dates
         if (task.dueDate) {
             const date = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate;
             data.dueDate = Timestamp.fromDate(date as Date);
         } else {
-            // Explicitly delete if not present to clear it in Firestore
-            delete data.dueDate;
+            // Explicitly set to null if not present to clear it in Firestore on merge
+            data.dueDate = null;
         }
 
         if (task.time) {
             data.time = task.time;
         } else {
-            delete data.time;
+            data.time = null;
         }
 
         // Ensure createdAt is set on creation
@@ -374,14 +378,12 @@ export const getTasksSnapshot = async (userId: string): Promise<Task[]> => {
 // Add a single task
 export const addTask = async (userId: string, taskData: Omit<Task, 'id' | 'createdAt'>): Promise<Task> => {
     const tasksCollection = getTasksCollection(userId);
-    const newDocRef = doc(tasksCollection);
-    const newTask: Task = {
+    const newDocRef = await addDoc(tasksCollection, taskData);
+    return {
         ...taskData,
         id: newDocRef.id,
-        createdAt: Timestamp.now(),
+        createdAt: Timestamp.now(), // This might be slightly different from server, but acceptable
     };
-    await setDoc(newDocRef, newTask);
-    return newTask;
 };
 
 // Update a task
