@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -112,23 +113,22 @@ const TemplatesView = ({ onApply }: { onApply: (template: ScheduleTemplate) => v
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const fetchTemplates = async () => {
-        if (!user) return;
-        setIsLoading(true);
-        try {
-            const fetchedTemplates = await getScheduleTemplates(user.uid);
-            setTemplates(fetchedTemplates);
-        } catch (error) {
-            console.error("Failed to fetch schedule templates:", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not load templates." });
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
     useEffect(() => {
+        if (!user) return;
+        const fetchTemplates = async () => {
+            setIsLoading(true);
+            try {
+                const fetchedTemplates = await getScheduleTemplates(user.uid);
+                setTemplates(fetchedTemplates.filter(t => t.schedule)); // Filter out templates without a schedule
+            } catch (error) {
+                console.error("Failed to fetch schedule templates:", error);
+                toast({ variant: "destructive", title: "Error", description: "Could not load templates." });
+            } finally {
+                setIsLoading(false);
+            }
+        }
         fetchTemplates();
-    }, [user]);
+    }, [user, toast]);
 
     const handleDelete = async (templateId: string) => {
         if (!user) return;
@@ -169,7 +169,7 @@ const TemplatesView = ({ onApply }: { onApply: (template: ScheduleTemplate) => v
                             </CardHeader>
                              <CardContent className="flex-grow">
                                 <p className="text-sm font-medium text-muted-foreground">
-                                    Plan for {template.schedule.length} days.
+                                    Plan for {template.schedule?.length || 0} days.
                                 </p>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">
@@ -202,7 +202,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
   const [view, setView] = useState<'generator' | 'templates'>('generator');
 
   const unscheduledTasks = allTasks.filter(t => !t.dueDate);
-  const scheduledTasks = allTasks.filter(t => !!t.dueDate);
+  const previouslyScheduledTasks = allTasks.filter(t => !!t.dueDate);
 
   // --- Step 1 state ---
   const [energyPeak, setEnergyPeak] = useState<'morning' | 'afternoon' | 'evening'>();
@@ -301,7 +301,6 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
   };
   
   const handleApplyTemplate = async (template: ScheduleTemplate) => {
-      // Logic for applying a template's schedule
       const tasksToSchedule = allTasks.filter(t => !t.dueDate);
       if (tasksToSchedule.length === 0) {
           toast({ title: "No tasks to schedule", description: "Your inbox is empty." });

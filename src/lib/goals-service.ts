@@ -12,6 +12,7 @@
 
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task, ScheduleTemplate, DailySchedule } from "@/types";
@@ -206,6 +207,7 @@ const scheduleTemplateConverter = {
     toFirestore: (template: Omit<ScheduleTemplate, 'id'>) => {
         return {
             ...template,
+            schedule: template.schedule || [], // Ensure schedule is at least an empty array
             createdAt: Timestamp.now(),
         };
     },
@@ -455,6 +457,7 @@ export const addScheduleTemplate = async (userId: string, templateData: Omit<Sch
     const newDocRef = doc(templatesCollection);
     const newTemplate: ScheduleTemplate = {
         ...templateData,
+        schedule: templateData.schedule || [],
         id: newDocRef.id,
         createdAt: Timestamp.now(),
     };
