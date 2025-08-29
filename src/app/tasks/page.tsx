@@ -1,8 +1,7 @@
 
 "use client";
 
-import React, 'react';
-import { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ListTodo, Plus, Inbox, Calendar as CalendarIconLucide, Loader2 } from 'lucide-react';
 import { isSameDay, startOfDay, isBefore, setHours, setMinutes, format } from 'date-fns';
 import {
@@ -109,7 +108,6 @@ export default function TasksPage() {
         if (!over) return;
         
         const activeId = active.id as string;
-        const overId = over.id as string;
         
         const overIsInbox = over.id === 'inbox';
         const overIsHourSlot = typeof over.data.current?.hour === 'number';
@@ -118,7 +116,7 @@ export default function TasksPage() {
             const activeTaskIndex = currentTasks.findIndex(t => t.id === activeId);
             if (activeTaskIndex === -1) return currentTasks;
 
-            let updatedTask = { ...currentTasks[activeTaskIndex] };
+            const updatedTask = { ...currentTasks[activeTaskIndex] };
 
             if (overIsInbox) {
                 updatedTask.dueDate = undefined;
@@ -132,7 +130,7 @@ export default function TasksPage() {
             } else {
                 return currentTasks;
             }
-
+            
             const newTasks = [...currentTasks];
             newTasks[activeTaskIndex] = updatedTask;
             return newTasks;
@@ -140,22 +138,35 @@ export default function TasksPage() {
     };
     
     const handleDragEnd = (event: DragEndEvent) => {
-        setDraggedTask(null);
         const { active, over } = event;
+        setDraggedTask(null);
 
         if (!over) return;
-
+        
         const activeId = active.id as string;
+        const initialTask = tasks.find(t => t.id === activeId);
+        
+        let finalTask = { ...initialTask } as Task;
+        const overIsInbox = over.id === 'inbox';
+        const overIsHourSlot = typeof over.data.current?.hour === 'number';
 
-        const originalTask = tasks.find(t => t.id === activeId);
-        const updatedTask = tasks.find(t => t.id === activeId); // This will be the one from the latest state
-
-        // Now, we get the initial task state before any optimistic updates.
-        // We can find this from the `draggedTask` state which was set on dragStart.
-        const initialTask = draggedTask;
-
-        if (updatedTask && initialTask && !isEqual(initialTask, updatedTask)) {
-            handleUpdateTask(updatedTask);
+        if (overIsInbox) {
+            finalTask.dueDate = undefined;
+            finalTask.time = null;
+            finalTask.duration = undefined;
+        } else if (overIsHourSlot && selectedDate) {
+            const hour = over.data.current?.hour as number;
+            const newDate = setHours(startOfDay(selectedDate), hour);
+            const newTime = format(newDate, 'HH:mm');
+            finalTask.dueDate = newDate;
+            finalTask.time = newTime;
+        } else {
+            // No valid drop, revert if needed (though onDragOver handles optimistic updates)
+             return;
+        }
+        
+        if (initialTask && !isEqual(initialTask, finalTask)) {
+            handleUpdateTask(finalTask);
         }
     };
     
