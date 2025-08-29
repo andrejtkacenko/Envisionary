@@ -30,6 +30,15 @@ const nextConfig: NextConfig = {
     // Hardcode the production URL to avoid Vercel's preview-specific URLs
     NEXT_PUBLIC_APP_URL: 'https://envisionary-beta.vercel.app',
   },
+  serverActions: {
+    bodySizeLimit: '2mb',
+    // @ts-ignore
+    experimental: {
+      serverActions: {
+        executionTimeout: 60,
+      },
+    },
+  },
 };
 
 export default nextConfig;

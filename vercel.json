@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "trailingSlash": false,
   "functions": {
-    "src/app/api/**/*.ts": {
+    "src/**/*.ts": {
       "memory": 1024,
       "maxDuration": 60
     }
