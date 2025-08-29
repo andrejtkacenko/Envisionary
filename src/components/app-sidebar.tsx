@@ -57,11 +57,6 @@ export function AppSidebar() {
         label: "AI Coach",
         icon: Zap,
     },
-    {
-        href: "/library",
-        label: "Library",
-        icon: Library,
-    }
   ];
 
   return (

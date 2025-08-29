@@ -59,26 +59,17 @@ export const useTasks = () => {
 
     const handleBulkUpdateTasks = useCallback(async (allTasks: Task[]) => {
         if (!user) return;
-
+        
+        const originalTasks = tasks;
         // Optimistic update with the full list of tasks
         setTasks(allTasks);
 
         try {
-            // Find which tasks were actually changed to persist them
-            const originalTasks = tasks; // `tasks` here is the state before this update
-            const changedTasks = allTasks.filter(updatedTask => {
-                const originalTask = originalTasks.find(t => t.id === updatedTask.id);
-                // A task is considered changed if it's new or if its data doesn't match the original
-                return !originalTask || JSON.stringify(originalTask) !== JSON.stringify(updatedTask);
-            });
-
-            if (changedTasks.length > 0) {
-                 await updateTasks(user.uid, changedTasks);
-            }
+            await updateTasks(user.uid, allTasks);
         } catch (error) {
              console.error(error);
             toast({ variant: 'destructive', title: "Failed to schedule tasks" });
-            // TODO: Revert optimistic update on error
+            setTasks(originalTasks); // Revert on error
         }
     }, [user, toast, tasks]);
 
@@ -98,11 +89,8 @@ export const useTasks = () => {
         }
     }, [user, toast]);
 
-    const tasksForDay = useMemo(() => tasks, [tasks]);
-
     return {
         tasks,
-        tasksForDay,
         isLoading,
         handleAddTask,
         handleUpdateTask,

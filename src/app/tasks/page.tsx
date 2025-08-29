@@ -137,8 +137,9 @@ export default function TasksPage() {
     const handleDragEnd = (event: DragEndEvent) => {
         if (activeTask) {
             const originalTask = tasks.find(t => t.id === activeTask.id);
-            // Only call update if there's a meaningful change.
-            if (originalTask?.dueDate !== activeTask.dueDate || originalTask?.time !== activeTask.time) {
+            const hasChanged = JSON.stringify(originalTask) !== JSON.stringify(activeTask);
+            
+            if (hasChanged) {
                 handleUpdateTask(activeTask);
             }
         }
@@ -164,7 +165,7 @@ export default function TasksPage() {
                         </p>
                     </div>
                      <div className="flex items-center gap-2">
-                        <TaskActions allTasks={tasks} onSchedule={handleBulkUpdateTasks} />
+                        <TaskActions allTasks={tasks} />
                         <TaskDialog onSave={handleAddTask}>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" /> New Task

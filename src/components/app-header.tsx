@@ -16,9 +16,9 @@ import {
   Calendar,
   LayoutDashboard,
   KanbanSquare,
-  Library,
   ListTodo,
   CalendarCog,
+  BookOpen,
 } from "lucide-react";
 import type { Goal } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,6 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
     { href: "/", label: "Goals Board", icon: KanbanSquare },
     { href: "/tasks", label: "Tasks", icon: ListTodo },
     { href: "/coach", label: "AI Coach", icon: Zap },
-    { href: "/library", label: "Library", icon: Library },
   ];
 
   return (
