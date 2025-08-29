@@ -95,7 +95,7 @@ export function AppHeader({ allGoals }: AppHeaderProps) {
                     href={item.href}
                     className={cn(
                       "flex items-center gap-4 px-2.5 hover:text-foreground",
-                      pathname === item.href ? "text-foreground" : "text-muted-foreground"
+                      pathname.startsWith(item.href) && item.href !== "/" || pathname === item.href ? "text-foreground" : "text-muted-foreground"
                     )}
                   >
                     <item.icon className="h-5 w-5" />

@@ -78,7 +78,7 @@ export type GoalTemplate = {
 
 // Types for Schedule Generator
 export type ScheduledItem = {
-    taskId: string;
+    taskId?: string;
     title: string;
     startTime: string; // e.g., "09:00"
     endTime: string;   // e.g., "10:30"
@@ -88,4 +88,12 @@ export type ScheduledItem = {
 export type DailySchedule = {
     date: string; // YYYY-MM-DD
     items: ScheduledItem[];
+};
+
+export type ScheduleTemplate = {
+    id: string;
+    name: string;
+    authorId: string;
+    schedule: DailySchedule[];
+    createdAt: Timestamp;
 };

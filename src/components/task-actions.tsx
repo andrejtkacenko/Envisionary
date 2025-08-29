@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Wand2, Loader2, Sparkles, Plus, Clock, ListFilter, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Wand2, Loader2, Sparkles, Plus, Clock, ArrowRight, ArrowLeft, Save } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,10 +21,22 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { format, setHours, setMinutes, startOfWeek, addDays, endOfWeek } from 'date-fns';
+import { format, setHours, setMinutes, startOfWeek, endOfWeek } from 'date-fns';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
+import { useAuth } from '@/context/AuthContext';
+import { addScheduleTemplate } from '@/lib/goals-service';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TaskActionsProps {
   allTasks: Task[];
@@ -62,13 +74,55 @@ const DaySchedule = ({ day, allTasks }: { day: DailySchedule, allTasks: Task[] }
     )
 }
 
+const SaveTemplateDialog = ({ children, onSave }: { children: React.ReactNode, onSave: (name: string) => Promise<void>}) => {
+    const [open, setOpen] = useState(false);
+    const [name, setName] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        if (!name) return;
+        setIsSaving(true);
+        await onSave(name);
+        setIsSaving(false);
+        setOpen(false);
+    }
+    
+    return (
+        <AlertDialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>{children}</DialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Save Schedule as Template</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Give this schedule a name so you can easily reuse it later.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="template-name">Template Name</Label>
+                    <Input id="template-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., My Productive Week" />
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSave} disabled={!name || isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save Template
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+};
+
+
 export function TaskActions({ allTasks, onSchedule }: TaskActionsProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
 
   const unscheduledTasks = allTasks.filter(t => !t.dueDate);
+  const scheduledTasks = allTasks.filter(t => !!t.dueDate);
 
   // --- Step 1 state ---
   const [energyPeak, setEnergyPeak] = useState<'morning' | 'afternoon' | 'evening'>();
@@ -130,7 +184,7 @@ export function TaskActions({ allTasks, onSchedule }: TaskActionsProps) {
     if (!schedule) return;
 
     // Create a map of tasks for easy lookup
-    const taskMap = new Map(allTasks.map(t => [t.id, t]));
+    const taskMap = new Map(allTasks.map(t => [t.id, { ...t }]));
 
     // Apply updates from the schedule
     schedule.flatMap(day => 
@@ -146,6 +200,7 @@ export function TaskActions({ allTasks, onSchedule }: TaskActionsProps) {
                 taskToUpdate.dueDate = taskDate;
                 taskToUpdate.time = item.startTime;
                 taskToUpdate.duration = item.duration;
+                taskMap.set(item.taskId, taskToUpdate); // Update the map
             }
         })
     );
@@ -157,6 +212,24 @@ export function TaskActions({ allTasks, onSchedule }: TaskActionsProps) {
     toast({ title: `${scheduledCount} tasks scheduled!` });
     setOpen(false);
 };
+
+  const handleSaveTemplate = async (name: string) => {
+    if (!user || !schedule) {
+        toast({ variant: 'destructive', title: "Error", description: "Cannot save template." });
+        return;
+    }
+    try {
+        await addScheduleTemplate(user.uid, {
+            name,
+            authorId: user.uid,
+            schedule,
+        });
+        toast({ title: "Template Saved!", description: `"${name}" is now available in your library.` });
+    } catch (e) {
+        console.error(e);
+        toast({ variant: 'destructive', title: "Save Failed", description: "Could not save the template." });
+    }
+  };
   
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
@@ -330,6 +403,13 @@ export function TaskActions({ allTasks, onSchedule }: TaskActionsProps) {
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                             Regenerate
                         </Button>
+                    )}
+                    {step === 3 && schedule && (
+                         <SaveTemplateDialog onSave={handleSaveTemplate}>
+                            <Button variant="outline">
+                               <Save className="mr-2 h-4 w-4" /> Save as Template
+                           </Button>
+                         </SaveTemplateDialog>
                     )}
                     {step === 3 && schedule && (
                         <Button onClick={handleApplySchedule}>

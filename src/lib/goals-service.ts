@@ -11,9 +11,10 @@
 
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
-import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task } from "@/types";
+import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task, ScheduleTemplate, DailySchedule } from "@/types";
 
 
 // Firestore data converter for Users
@@ -200,6 +201,25 @@ const goalTemplateConverter = {
     }
 };
 
+// Firestore data converter for Schedule Templates
+const scheduleTemplateConverter = {
+    toFirestore: (template: Omit<ScheduleTemplate, 'id'>) => {
+        return {
+            ...template,
+            createdAt: Timestamp.now(),
+        };
+    },
+    fromFirestore: (snapshot: any, options: any): ScheduleTemplate => {
+        const data = snapshot.data(options);
+        return {
+            ...data,
+            id: snapshot.id,
+            createdAt: data.createdAt,
+        };
+    }
+};
+
+
 // Firestore data converter for Notifications
 const notificationConverter = {
   toFirestore: (notification: Omit<Notification, 'id'>) => {
@@ -228,6 +248,10 @@ const getTasksCollection = (userId: string) => {
 
 const getGoalTemplatesCollection = () => {
     return collection(db, "goal_templates").withConverter(goalTemplateConverter);
+}
+
+const getScheduleTemplatesCollection = (userId: string) => {
+    return collection(db, "users", userId, "schedule_templates").withConverter(scheduleTemplateConverter);
 }
 
 const getNotificationsCollection = (userId: string) => {
@@ -418,6 +442,31 @@ export const addGoalTemplate = async (templateData: Omit<GoalTemplate, 'id' | 'c
     return newTemplate;
 };
 
+// --- SCHEDULE TEMPLATE FUNCTIONS ---
+
+export const getScheduleTemplates = async (userId: string): Promise<ScheduleTemplate[]> => {
+    const templatesCollection = getScheduleTemplatesCollection(userId);
+    const snapshot = await getDocs(query(templatesCollection, orderBy("createdAt", "desc")));
+    return snapshot.docs.map(doc => doc.data());
+};
+
+export const addScheduleTemplate = async (userId: string, templateData: Omit<ScheduleTemplate, 'id'|'createdAt'>): Promise<ScheduleTemplate> => {
+    const templatesCollection = getScheduleTemplatesCollection(userId);
+    const newDocRef = doc(templatesCollection);
+    const newTemplate: ScheduleTemplate = {
+        ...templateData,
+        id: newDocRef.id,
+        createdAt: Timestamp.now(),
+    };
+    await setDoc(newDocRef, newTemplate);
+    return newTemplate;
+};
+
+export const deleteScheduleTemplate = async (userId: string, templateId: string): Promise<void> => {
+    const templatesCollection = getScheduleTemplatesCollection(userId);
+    const docRef = doc(templatesCollection, templateId);
+    await deleteDoc(docRef);
+};
 
 
 // --- NOTIFICATION FUNCTIONS ---
@@ -473,4 +522,4 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<void> 
   await batch.commit();
 };
 
-export type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task };
+export type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task, DailySchedule, ScheduleTemplate };
