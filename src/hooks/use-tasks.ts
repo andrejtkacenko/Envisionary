@@ -57,21 +57,30 @@ export const useTasks = () => {
         }
     }, [user, toast]);
 
-    const handleBulkUpdateTasks = useCallback(async (updatedTasks: Task[], remainingTasks: Task[]) => {
+    const handleBulkUpdateTasks = useCallback(async (allTasks: Task[]) => {
         if (!user) return;
 
-        // Optimistic update: combine the updated tasks with the remaining unscheduled ones
-        setTasks([...updatedTasks, ...remainingTasks]);
+        // Optimistic update with the full list of tasks
+        setTasks(allTasks);
 
         try {
-            // Persist only the updated tasks to Firestore
-            await updateTasks(user.uid, updatedTasks);
+            // Find which tasks were actually changed to persist them
+            const originalTasks = tasks; // `tasks` here is the state before this update
+            const changedTasks = allTasks.filter(updatedTask => {
+                const originalTask = originalTasks.find(t => t.id === updatedTask.id);
+                // A task is considered changed if it's new or if its data doesn't match the original
+                return !originalTask || JSON.stringify(originalTask) !== JSON.stringify(updatedTask);
+            });
+
+            if (changedTasks.length > 0) {
+                 await updateTasks(user.uid, changedTasks);
+            }
         } catch (error) {
              console.error(error);
             toast({ variant: 'destructive', title: "Failed to schedule tasks" });
             // TODO: Revert optimistic update on error
         }
-    }, [user, toast]);
+    }, [user, toast, tasks]);
 
     const handleDeleteTask = useCallback(async (taskId: string) => {
         if (!user) return;

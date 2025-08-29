@@ -164,7 +164,7 @@ export default function TasksPage() {
                         </p>
                     </div>
                      <div className="flex items-center gap-2">
-                        <TaskActions unscheduledTasks={unscheduledTasks} onSchedule={handleBulkUpdateTasks} />
+                        <TaskActions allTasks={tasks} onSchedule={handleBulkUpdateTasks} />
                         <TaskDialog onSave={handleAddTask}>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" /> New Task

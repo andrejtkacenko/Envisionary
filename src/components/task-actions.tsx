@@ -27,18 +27,9 @@ import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
 
 interface TaskActionsProps {
-  unscheduledTasks: Task[];
-  onSchedule: (updatedTasks: Task[], remainingTasks: Task[]) => void;
+  allTasks: Task[];
+  onSchedule: (allTasks: Task[]) => void;
 }
-
-const goals = [
-    { id: 'career', label: 'Career Growth' },
-    { id: 'learning', label: 'Learn a New Skill' },
-    { id: 'health', label: 'Improve Health & Fitness' },
-    { id: 'finance', label: 'Financial Planning' },
-    { id: 'personal', label: 'Personal Projects' },
-];
-
 
 const DaySchedule = ({ day, allTasks }: { day: DailySchedule, allTasks: Task[] }) => {
     return (
@@ -71,14 +62,15 @@ const DaySchedule = ({ day, allTasks }: { day: DailySchedule, allTasks: Task[] }
     )
 }
 
-export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) {
+export function TaskActions({ allTasks, onSchedule }: TaskActionsProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
 
+  const unscheduledTasks = allTasks.filter(t => !t.dueDate);
+
   // --- Step 1 state ---
-  const [mainGoals, setMainGoals] = useState<string[]>([]);
   const [energyPeak, setEnergyPeak] = useState<'morning' | 'afternoon' | 'evening'>();
   const [preferences, setPreferences] = useState('');
   const [workStartTime, setWorkStartTime] = useState('09:00');
@@ -107,7 +99,6 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
         const end = endOfWeek(today, { weekStartsOn: 1 });
 
         const preferenceString = `
-            Main goals: ${mainGoals.join(', ')}.
             Work hours: from ${workStartTime} to ${workEndTime}.
             Desired sleep: ${sleepHours} hours per night.
             Workout frequency: ${workoutFrequency} times per week.
@@ -138,34 +129,32 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
   const handleApplySchedule = () => {
     if (!schedule) return;
 
-    // Map the scheduled items to updated Task objects
-    const updatedTasks = schedule.flatMap(day => 
-        day.items.map(item => {
-            if (!item.taskId) return null;
-            
-            const originalTask = unscheduledTasks.find(t => t.id === item.taskId);
-            if (!originalTask) return null;
-            
-            const scheduledDate = new Date(day.date + 'T00:00:00'); // Use T00 to avoid timezone issues
-            const [hours, minutes] = item.startTime.split(':').map(Number);
-            const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
+    // Create a map of tasks for easy lookup
+    const taskMap = new Map(allTasks.map(t => [t.id, t]));
 
-            return {
-                ...originalTask,
-                dueDate: taskDate,
-                time: item.startTime,
-                duration: item.duration,
-            };
-        }).filter((t): t is Task => t !== null)
+    // Apply updates from the schedule
+    schedule.flatMap(day => 
+        day.items.forEach(item => {
+            if (!item.taskId) return;
+            
+            const taskToUpdate = taskMap.get(item.taskId);
+            if (taskToUpdate) {
+                const scheduledDate = new Date(day.date + 'T00:00:00');
+                const [hours, minutes] = item.startTime.split(':').map(Number);
+                const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
+
+                taskToUpdate.dueDate = taskDate;
+                taskToUpdate.time = item.startTime;
+                taskToUpdate.duration = item.duration;
+            }
+        })
     );
 
-    // Identify which unscheduled tasks were NOT part of the scheduling process
-    const remainingUnscheduled = unscheduledTasks.filter(
-        t => !selectedTasks.includes(t.id)
-    );
+    const updatedTaskList = Array.from(taskMap.values());
+    const scheduledCount = updatedTaskList.filter(t => selectedTasks.includes(t.id)).length;
 
-    onSchedule(updatedTasks, remainingUnscheduled);
-    toast({ title: `${updatedTasks.length} tasks scheduled!` });
+    onSchedule(updatedTaskList);
+    toast({ title: `${scheduledCount} tasks scheduled!` });
     setOpen(false);
 };
   
@@ -177,7 +166,6 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
         setStep(1);
         setSchedule(null);
         setSelectedTasks([]);
-        setMainGoals([]);
         setEnergyPeak(undefined);
         setPreferences('');
     }
@@ -309,7 +297,7 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
                             <p>AI is planning your ideal week...</p>
                         </div>
                      ) : schedule ? (
-                        schedule.map(day => <DaySchedule key={day.date} day={day} allTasks={unscheduledTasks} />)
+                        schedule.map(day => <DaySchedule key={day.date} day={day} allTasks={allTasks} />)
                      ) : (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                            <Clock className="h-8 w-8" />
