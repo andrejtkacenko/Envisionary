@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
-import { Wand2, Loader2, Sparkles, Plus, Clock, ArrowRight, ArrowLeft, Save, Trash2, Play, BookCopy, CalendarDays } from 'lucide-react';
+import { Wand2, Loader2, Sparkles, Plus, Clock, ArrowRight, ArrowLeft, Save, Trash2, Play, BookCopy, CalendarDays, Library } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,6 @@ import { generateSchedule } from '@/ai/tools/schedule-actions';
 import { getScheduleTemplates, deleteScheduleTemplate, addScheduleTemplate } from '@/lib/goals-service';
 import { useTaskStore } from '@/hooks/use-task-store';
 import { ScrollArea } from './ui/scroll-area';
-import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
@@ -29,9 +28,7 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardFooter, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useRouter } from 'next/navigation';
 import { TaskDialog } from './task-dialog';
 import {
   DropdownMenu,
@@ -40,7 +37,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+
 
 interface TaskActionsProps {
   allTasks: Task[];
@@ -116,17 +116,83 @@ const SaveTemplateDialog = ({ children, onSave }: { children: React.ReactNode, o
     );
 };
 
+const ScheduleTemplateCard = ({ template, onDelete, onApply }: { template: ScheduleTemplate, onDelete: (id: string) => void, onApply: (template: ScheduleTemplate) => void }) => {
+    return (
+        <Card className="flex flex-col">
+            <CardHeader>
+                <CardTitle className="font-headline text-xl">{template.name}</CardTitle>
+                <CardDescription>Created on {format(template.createdAt.toDate(), 'PPP')}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow">
+                 <p className="text-sm font-medium text-muted-foreground">
+                    Plan for {template.schedule.length} days.
+                </p>
+            </CardContent>
+            <CardFooter className="flex justify-end gap-2">
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4"/></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will permanently delete the schedule template. This action cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(template.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                 </AlertDialog>
+
+                <Dialog>
+                    <DialogTrigger asChild><Button variant="outline">View</Button></DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                         <DialogHeader>
+                            <DialogTitle className="font-headline text-xl">{template.name}</DialogTitle>
+                         </DialogHeader>
+                         <ScrollArea className="h-[60vh] p-1">
+                             {template.schedule.map(day => (
+                                <div key={day.date} className="mb-4">
+                                    <h3 className="font-bold text-lg mb-2 border-b pb-1">{format(new Date(day.date + 'T00:00:00'), "eeee, MMMM do")}</h3>
+                                    <div className="space-y-2">
+                                        {day.items.map((item, index) => (
+                                            <div key={index} className="flex items-center gap-4 p-2 rounded-md bg-muted/50">
+                                                <div className="font-mono text-sm bg-background p-1 rounded">{item.startTime}</div>
+                                                <div className="flex-grow">
+                                                    <p className="font-medium">{item.title}</p>
+                                                </div>
+                                                <Badge variant="outline">{item.duration} min</Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                         </ScrollArea>
+                    </DialogContent>
+                </Dialog>
+                <Button onClick={() => onApply(template)}>
+                    <Play className="mr-2 h-4 w-4"/>
+                    Apply
+                </Button>
+            </CardFooter>
+        </Card>
+    )
+};
+
+
 export function TaskActions({ allTasks }: TaskActionsProps) {
   const { user } = useAuth();
   const { tasks: allTasksFromStore, addTask, updateTasks, deleteTasks } = useTaskStore();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentTab, setCurrentTab] = useState("create");
   const [step, setStep] = useState(1);
 
   const unscheduledTasks = allTasks.filter(t => !t.dueDate);
 
-  // --- Step 1 state ---
+  // --- Step 1 state (Create Tab) ---
   const [energyPeak, setEnergyPeak] = useState<'morning' | 'afternoon' | 'evening'>();
   const [preferences, setPreferences] = useState('');
   const [workStartTime, setWorkStartTime] = useState('09:00');
@@ -134,8 +200,37 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
   const [sleepHours, setSleepHours] = useState('8');
   const [workoutFrequency, setWorkoutFrequency] = useState('3');
   
-  // --- Step 2 state ---
+  // --- Step 2 state (Preview) ---
   const [schedule, setSchedule] = useState<DailySchedule[] | null>(null);
+
+  // --- Templates Tab State ---
+  const [templates, setTemplates] = useState<ScheduleTemplate[]>([]);
+  const [isTemplatesLoading, setIsTemplatesLoading] = useState(true);
+
+  const fetchTemplates = useCallback(async () => {
+    if (!user) return;
+    setIsTemplatesLoading(true);
+    try {
+        const fetchedTemplates = await getScheduleTemplates(user.uid);
+        setTemplates(fetchedTemplates);
+    } catch (error) {
+        console.error("Failed to fetch schedule templates:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not load schedule templates.",
+        });
+    } finally {
+        setIsTemplatesLoading(false);
+    }
+  }, [user, toast]);
+
+  useEffect(() => {
+    if (open && currentTab === 'templates') {
+        fetchTemplates();
+    }
+  }, [open, currentTab, fetchTemplates]);
+
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -191,18 +286,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
               const [hours, minutes] = item.startTime.split(':').map(Number);
               const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
 
-              const isGenericSlot = !item.taskId;
-
-              if (isGenericSlot && unscheduledTasksCopy.length > 0) {
-                 // This is a generic slot (not AI-created like 'Lunch'). Fill it with a user's task.
-                 const taskToSchedule = unscheduledTasksCopy.shift()!; // Take the next unscheduled task
-                  tasksToUpdate.push({
-                      ...taskToSchedule,
-                      dueDate: taskDate,
-                      time: item.startTime,
-                      duration: item.duration,
-                  });
-              } else if (item.taskId) {
+              if (item.taskId) {
                    // This is an existing task that needs to be updated
                   const taskToUpdate = allTasksFromStore.find(t => t.id === item.taskId);
                   if (taskToUpdate) {
@@ -213,8 +297,16 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                           duration: item.duration,
                       });
                   }
-              }
-               else {
+              } else if (unscheduledTasksCopy.length > 0) {
+                 // This is a generic slot (not AI-created like 'Lunch'). Fill it with a user's task.
+                 const taskToSchedule = unscheduledTasksCopy.shift()!; // Take the next unscheduled task
+                  tasksToUpdate.push({
+                      ...taskToSchedule,
+                      dueDate: taskDate,
+                      time: item.startTime,
+                      duration: item.duration,
+                  });
+              } else {
                   // This is a new, AI-generated task to be created (like 'Lunch' or 'Sleep')
                   tasksToCreate.push({
                       title: item.title,
@@ -307,6 +399,10 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
       if (!schedule) return;
       applySchedule(schedule);
   };
+
+  const handleApplyTemplate = (template: ScheduleTemplate) => {
+    applySchedule(template.schedule);
+  }
   
   const handleSaveTemplate = async (name: string) => {
     if (!user || !schedule) {
@@ -334,6 +430,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
         setSchedule(null);
         setEnergyPeak(undefined);
         setPreferences('');
+        setCurrentTab("create");
     }
   }
 
@@ -387,87 +484,118 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
               <Wand2 /> AI Schedule Generator
             </DialogTitle>
             <DialogDescription>
-              Answer a few questions and AI will generate an ideal weekly schedule for your unscheduled tasks.
+              Create a new schedule with AI or apply one of your saved templates.
             </DialogDescription>
           </DialogHeader>
 
-            <>
-              {step === 1 && (
-                  <div className="flex-grow overflow-y-auto p-1">
-                      <h3 className="text-lg font-semibold mb-4">Step 1: Your Productivity Profile</h3>
-                      <div className="space-y-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div>
-                                  <Label className="font-semibold">Typical Work/School Hours</Label>
-                                  <div className="flex items-center gap-2 mt-2">
-                                      <Input type="time" value={workStartTime} onChange={(e) => setWorkStartTime(e.target.value)} />
-                                      <span>to</span>
-                                      <Input type="time" value={workEndTime} onChange={(e) => setWorkEndTime(e.target.value)} />
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="create"><Sparkles className="mr-2 h-4 w-4" />Create New</TabsTrigger>
+                    <TabsTrigger value="templates"><Library className="mr-2 h-4 w-4"/>Use Template</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="create">
+                  {step === 1 && (
+                      <div className="flex-grow overflow-y-auto p-1 mt-4">
+                          <h3 className="text-lg font-semibold mb-4">Step 1: Your Productivity Profile</h3>
+                          <div className="space-y-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div>
+                                      <Label className="font-semibold">Typical Work/School Hours</Label>
+                                      <div className="flex items-center gap-2 mt-2">
+                                          <Input type="time" value={workStartTime} onChange={(e) => setWorkStartTime(e.target.value)} />
+                                          <span>to</span>
+                                          <Input type="time" value={workEndTime} onChange={(e) => setWorkEndTime(e.target.value)} />
+                                      </div>
+                                  </div>
+                                  <div>
+                                      <Label className="font-semibold">Core Needs</Label>
+                                      <div className="flex items-center gap-2 mt-2">
+                                          <Input type="number" value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} className="w-24"/>
+                                          <Label>hours of sleep</Label>
+                                          <Input type="number" value={workoutFrequency} onChange={(e) => setWorkoutFrequency(e.target.value)} className="w-24 ml-4"/>
+                                          <Label>workouts/week</Label>
+                                      </div>
                                   </div>
                               </div>
+                              <Separator/>
                               <div>
-                                  <Label className="font-semibold">Core Needs</Label>
-                                  <div className="flex items-center gap-2 mt-2">
-                                      <Input type="number" value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} className="w-24"/>
-                                      <Label>hours of sleep</Label>
-                                      <Input type="number" value={workoutFrequency} onChange={(e) => setWorkoutFrequency(e.target.value)} className="w-24 ml-4"/>
-                                      <Label>workouts/week</Label>
-                                  </div>
+                                  <Label className="font-semibold">When are your energy levels at their peak?</Label>
+                                  <RadioGroup onValueChange={(v) => setEnergyPeak(v as any)} value={energyPeak} className="mt-2">
+                                      <div className="flex items-center space-x-2">
+                                          <RadioGroupItem value="morning" id="morning" />
+                                          <Label htmlFor="morning">Morning (8 AM - 12 PM)</Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                          <RadioGroupItem value="afternoon" id="afternoon" />
+                                          <Label htmlFor="afternoon">Afternoon (1 PM - 5 PM)</Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                          <RadioGroupItem value="evening" id="evening" />
+                                          <Label htmlFor="evening">Evening (6 PM - 10 PM)</Label>
+                                      </div>
+                                  </RadioGroup>
                               </div>
-                          </div>
-                          <Separator/>
-                          <div>
-                              <Label className="font-semibold">When are your energy levels at their peak?</Label>
-                              <RadioGroup onValueChange={(v) => setEnergyPeak(v as any)} value={energyPeak} className="mt-2">
-                                  <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="morning" id="morning" />
-                                      <Label htmlFor="morning">Morning (8 AM - 12 PM)</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="afternoon" id="afternoon" />
-                                      <Label htmlFor="afternoon">Afternoon (1 PM - 5 PM)</Label>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                      <RadioGroupItem value="evening" id="evening" />
-                                      <Label htmlFor="evening">Evening (6 PM - 10 PM)</Label>
-                                  </div>
-                              </RadioGroup>
-                          </div>
-                            <Separator/>
-                            <div>
-                              <Label className="font-semibold" htmlFor="preferences">Any other goals or preferences?</Label>
-                              <Textarea 
-                                  id="preferences"
-                                  placeholder="e.g., I want to learn guitar, No meetings on Fridays, I need to walk the dog twice a day..." 
-                                  value={preferences}
-                                  onChange={(e) => setPreferences(e.target.value)}
-                                  className="mt-2"
-                              />
+                                <Separator/>
+                                <div>
+                                  <Label className="font-semibold" htmlFor="preferences">Any other goals or preferences?</Label>
+                                  <Textarea 
+                                      id="preferences"
+                                      placeholder="e.g., I want to learn guitar, No meetings on Fridays, I need to walk the dog twice a day..." 
+                                      value={preferences}
+                                      onChange={(e) => setPreferences(e.target.value)}
+                                      className="mt-2"
+                                  />
+                              </div>
                           </div>
                       </div>
-                  </div>
-              )}
-              
-              {step === 2 && (
-                  <div className="flex-grow overflow-y-auto p-1">
-                      <h3 className="text-lg font-semibold mb-4">Step 2: Preview Your Ideal Week</h3>
-                      <ScrollArea className="h-[500px] border rounded-md p-4 bg-muted/20">
-                          {isLoading ? (
-                              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
-                                  <Loader2 className="h-8 w-8 animate-spin" />
-                                  <p>AI is planning your ideal week...</p>
-                              </div>
-                          ) : schedule ? (
-                              schedule.map(day => <DaySchedule key={day.date} day={day} allTasks={allTasks} />)
-                          ) : (
-                              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
-                                <Clock className="h-8 w-8" />
-                                <p>Your schedule will appear here.</p>
-                              </div>
-                          )}
-                      </ScrollArea>
-                  </div>
-              )}
+                  )}
+                  
+                  {step === 2 && (
+                      <div className="flex-grow overflow-y-auto p-1 mt-4">
+                          <h3 className="text-lg font-semibold mb-4">Step 2: Preview Your Ideal Week</h3>
+                          <ScrollArea className="h-[40vh] border rounded-md p-4 bg-muted/20">
+                              {isLoading ? (
+                                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                                      <Loader2 className="h-8 w-8 animate-spin" />
+                                      <p>AI is planning your ideal week...</p>
+                                  </div>
+                              ) : schedule ? (
+                                  schedule.map(day => <DaySchedule key={day.date} day={day} allTasks={allTasks} />)
+                              ) : (
+                                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                                    <Clock className="h-8 w-8" />
+                                    <p>Your schedule will appear here.</p>
+                                  </div>
+                              )}
+                          </ScrollArea>
+                      </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="templates">
+                    <ScrollArea className="h-[60vh] mt-4">
+                        {isTemplatesLoading ? (
+                             <div className="flex flex-col items-center justify-center py-10">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <p className="text-muted-foreground mt-4">Loading Schedule Templates...</p>
+                            </div>
+                        ) : templates.length === 0 ? (
+                             <div className="text-center text-muted-foreground py-12 border rounded-lg bg-card/50">
+                                <CalendarDays className="mx-auto h-12 w-12" />
+                                <p className="mt-4 text-lg">No Schedule Templates Yet</p>
+                                <p className="text-sm">Generate a schedule and save it as a template.</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                {templates.map(template => (
+                                    <ScheduleTemplateCard key={template.id} template={template} onDelete={fetchTemplates} onApply={handleApplyTemplate} />
+                                ))}
+                            </div>
+                        )}
+                    </ScrollArea>
+                </TabsContent>
+            </Tabs>
 
               <DialogFooter>
                   <div className="w-full flex justify-between">
@@ -478,31 +606,32 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                           </Button>
                         )}
                       </div>
-                      <div className="flex gap-2">
-                          {step === 1 && <Button onClick={handleGenerate} disabled={!energyPeak || isLoading}>{isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}Generate Schedule <ArrowRight className="ml-2 h-4 w-4" /></Button>}
-                          {step === 2 && schedule && (
-                              <Button onClick={handleGenerate} variant="outline" disabled={isLoading}>
-                                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                  Regenerate
-                              </Button>
-                          )}
-                          {step === 2 && schedule && (
-                              <SaveTemplateDialog onSave={handleSaveTemplate}>
-                                  <Button variant="outline">
-                                    <Save className="mr-2 h-4 w-4" /> Save as Template
+                      {currentTab === 'create' && (
+                        <div className="flex gap-2">
+                            {step === 1 && <Button onClick={handleGenerate} disabled={!energyPeak || isLoading}>{isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}Generate Schedule <ArrowRight className="ml-2 h-4 w-4" /></Button>}
+                            {step === 2 && schedule && (
+                                <Button onClick={handleGenerate} variant="outline" disabled={isLoading}>
+                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                    Regenerate
                                 </Button>
-                              </SaveTemplateDialog>
-                          )}
-                          {step === 2 && schedule && (
-                              <Button onClick={handleApplySchedule}>
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Apply Schedule
-                              </Button>
-                          )}
-                      </div>
+                            )}
+                            {step === 2 && schedule && (
+                                <SaveTemplateDialog onSave={handleSaveTemplate}>
+                                    <Button variant="outline">
+                                        <Save className="mr-2 h-4 w-4" /> Save as Template
+                                    </Button>
+                                </SaveTemplateDialog>
+                            )}
+                            {step === 2 && schedule && (
+                                <Button onClick={handleApplySchedule}>
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Apply Schedule
+                                </Button>
+                            )}
+                        </div>
+                      )}
                   </div>
               </DialogFooter>
-            </>
         </DialogContent>
       </Dialog>
         <DropdownMenu>
