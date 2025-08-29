@@ -24,7 +24,7 @@ export type GenerateScheduleInput = z.infer<typeof GenerateScheduleInputSchema>;
 
 
 const ScheduledItemSchema = z.object({
-    taskId: z.string().optional().describe("The ID of the task being scheduled. This is optional; items like 'Lunch' or 'Workout' will not have a taskId."),
+    taskId: z.string().optional().describe("The ID of the task being scheduled. This is required if the item is from the user's task list. For generic, AI-generated items like 'Lunch' or 'Workout', this field should be omitted."),
     title: z.string().describe("The title of the event or task."),
     startTime: z.string().describe("The scheduled start time in HH:MM format (e.g., '09:00')."),
     endTime: z.string().describe("The scheduled end time in HH:MM format (e.g., '10:30')."),

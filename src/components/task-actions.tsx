@@ -15,7 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Task, DailySchedule, ScheduleTemplate } from '@/types';
+import { Task, DailySchedule, ScheduleTemplate, ScheduledItem } from '@/types';
 import { generateSchedule } from '@/ai/tools/schedule-actions';
 import { getScheduleTemplates, deleteScheduleTemplate, addScheduleTemplate } from '@/lib/goals-service';
 import { useTaskStore } from '@/hooks/use-task-store';
@@ -107,100 +107,13 @@ const SaveTemplateDialog = ({ children, onSave }: { children: React.ReactNode, o
     );
 };
 
-
-const TemplatesView = ({ onApply }: { onApply: (template: ScheduleTemplate) => void }) => {
-    const [templates, setTemplates] = useState<ScheduleTemplate[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const { user } = useAuth();
-    const { toast } = useToast();
-
-    useEffect(() => {
-        if (!user) return;
-        const fetchTemplates = async () => {
-            setIsLoading(true);
-            try {
-                const fetchedTemplates = await getScheduleTemplates(user.uid);
-                setTemplates(fetchedTemplates.filter(t => t.schedule && t.schedule.length > 0)); // Filter out templates without a schedule
-            } catch (error) {
-                console.error("Failed to fetch schedule templates:", error);
-                toast({ variant: "destructive", title: "Error", description: "Could not load templates." });
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        fetchTemplates();
-    }, [user, toast]);
-
-    const handleDelete = async (templateId: string) => {
-        if (!user) return;
-        try {
-            await deleteScheduleTemplate(user.uid, templateId);
-            setTemplates(prev => prev.filter(t => t.id !== templateId));
-            toast({ title: "Template Deleted" });
-        } catch (e) {
-            toast({ variant: "destructive", title: "Error", description: "Could not delete template." });
-        }
-    }
-
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center h-96">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-muted-foreground mt-4">Loading Templates...</p>
-            </div>
-        );
-    }
-    
-    return (
-        <div className="flex-grow overflow-y-auto p-1 h-full">
-            {templates.length === 0 ? (
-                <div className="text-center text-muted-foreground py-12 border rounded-lg bg-card/50 h-96 flex flex-col justify-center items-center">
-                    <CalendarDays className="mx-auto h-12 w-12" />
-                    <p className="mt-4 text-lg">No Schedule Templates Yet</p>
-                    <p className="text-sm">Generate a schedule and save it as a template to see it here.</p>
-                </div>
-            ) : (
-                <ScrollArea className="h-96">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {templates.map(template => (
-                        <Card key={template.id} className="flex flex-col">
-                            <CardHeader>
-                                <CardTitle className="font-headline text-lg">{template.name}</CardTitle>
-                                <CardDescription>Created on {format(template.createdAt.toDate(), 'PPP')}</CardDescription>
-                            </CardHeader>
-                             <CardContent className="flex-grow">
-                                <p className="text-sm font-medium text-muted-foreground">
-                                    Plan for {template.schedule?.length || 0} days.
-                                </p>
-                            </CardContent>
-                            <CardFooter className="flex justify-end gap-2">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild><Button variant="destructive" size="icon"><Trash2 className="h-4 w-4"/></Button></AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone.</AlertDialogDescription></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(template.id)}>Delete</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                                <Button variant="outline" onClick={() => onApply(template)}><Play className="mr-2 h-4 w-4"/>Apply</Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
-                </ScrollArea>
-            )}
-        </div>
-    );
-};
-
-
 export function TaskActions({ allTasks }: TaskActionsProps) {
   const { user } = useAuth();
-  const { updateTasks } = useTaskStore();
+  const { tasks: allTasksFromStore, addTask, updateTask, updateTasks } = useTaskStore();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
-  const [view, setView] = useState<'generator' | 'templates'>('generator');
 
   const unscheduledTasks = allTasks.filter(t => !t.dueDate);
 
@@ -211,23 +124,14 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
   const [workEndTime, setWorkEndTime] = useState('17:00');
   const [sleepHours, setSleepHours] = useState('8');
   const [workoutFrequency, setWorkoutFrequency] = useState('3');
-
   
   // --- Step 2 state ---
-  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
-  
-  // --- Step 3 state ---
   const [schedule, setSchedule] = useState<DailySchedule[] | null>(null);
 
   const handleGenerate = async () => {
-    if (selectedTasks.length === 0) {
-      toast({ variant: 'destructive', title: 'No tasks selected' });
-      return;
-    }
     setIsLoading(true);
     setSchedule(null);
     try {
-        const tasksToSchedule = unscheduledTasks.filter(t => selectedTasks.includes(t.id));
         const today = new Date();
         const start = startOfWeek(today, { weekStartsOn: 1 }); // Monday
         const end = endOfWeek(today, { weekStartsOn: 1 });
@@ -241,13 +145,13 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
         `;
 
         const result = await generateSchedule({
-            tasks: tasksToSchedule.map(t => ({ id: t.id, title: t.title, description: t.description, priority: t.priority })),
+            tasks: unscheduledTasks.map(t => ({ id: t.id, title: t.title, description: t.description, priority: t.priority })),
             scheduleStartDate: start.toISOString().split('T')[0],
             scheduleEndDate: end.toISOString().split('T')[0],
             preferences: preferenceString,
         });
       setSchedule(result.schedule);
-      setStep(3); // Move to preview
+      setStep(2); // Move to preview
     } catch (error) {
       console.error(error);
       toast({
@@ -260,45 +164,63 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
     }
   };
 
-  const applySchedule = async (scheduleToApply: DailySchedule[], tasksToSchedule: Task[]) => {
+  const applySchedule = async (scheduleToApply: DailySchedule[]) => {
       if (!user) {
         toast({ variant: 'destructive', title: 'Not authenticated' });
         return;
       }
       
       const tasksToUpdate: Task[] = [];
-      let taskIndex = 0;
+      const tasksToCreate: Omit<Task, 'id' | 'createdAt'>[] = [];
+      const unscheduledTasksCopy = [...unscheduledTasks];
 
       for (const day of scheduleToApply) {
           for (const item of day.items) {
-              if (item.taskId || item.title.toLowerCase().includes('lunch') || item.title.toLowerCase().includes('break')) {
-                  continue;
-              }
-
-              if (taskIndex >= tasksToSchedule.length) break;
-
-              const taskToUpdate = tasksToSchedule[taskIndex];
-              
               const scheduledDate = new Date(day.date + 'T00:00:00');
               const [hours, minutes] = item.startTime.split(':').map(Number);
-              taskToUpdate.dueDate = setMinutes(setHours(scheduledDate, hours), minutes);
-              taskToUpdate.time = item.startTime;
-              taskToUpdate.duration = item.duration;
-              
-              tasksToUpdate.push(taskToUpdate);
-              taskIndex++;
+              const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
+
+              if (item.taskId) {
+                  // This is an existing task that needs to be updated
+                  const taskToUpdate = allTasksFromStore.find(t => t.id === item.taskId);
+                  if (taskToUpdate) {
+                      tasksToUpdate.push({
+                          ...taskToUpdate,
+                          dueDate: taskDate,
+                          time: item.startTime,
+                          duration: item.duration,
+                      });
+                  }
+              } else {
+                  // This is a new, AI-generated task to be created
+                  tasksToCreate.push({
+                      userId: user.uid,
+                      title: item.title,
+                      priority: 'p4', // Default priority
+                      isCompleted: false,
+                      dueDate: taskDate,
+                      time: item.startTime,
+                      duration: item.duration,
+                  });
+              }
           }
-           if (taskIndex >= tasksToSchedule.length) break;
       }
 
-      if (tasksToUpdate.length === 0) {
-        toast({ title: "No tasks to schedule", description: "The schedule didn't contain any slots for your tasks."});
+      const totalScheduled = tasksToUpdate.length + tasksToCreate.length;
+      if (totalScheduled === 0) {
+        toast({ title: "No tasks to schedule", description: "The schedule didn't contain any applicable tasks."});
         return;
       }
 
       try {
-          await updateTasks(user.uid, tasksToUpdate);
-          toast({ title: "Schedule Applied!", description: `${tasksToUpdate.length} tasks have been scheduled.` });
+          if (tasksToUpdate.length > 0) {
+            await updateTasks(user.uid, tasksToUpdate);
+          }
+          if (tasksToCreate.length > 0) {
+            await Promise.all(tasksToCreate.map(t => addTask(user.uid, t)));
+          }
+          
+          toast({ title: "Schedule Applied!", description: `${totalScheduled} tasks have been scheduled.` });
           setOpen(false);
       } catch (e) {
           console.error(e);
@@ -306,22 +228,11 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
       }
   };
 
-
   const handleApplySchedule = () => {
       if (!schedule) return;
-      const tasksToSchedule = allTasks.filter(t => selectedTasks.includes(t.id));
-      applySchedule(schedule, tasksToSchedule);
+      applySchedule(schedule);
   };
   
-  const handleApplyTemplate = async (template: ScheduleTemplate) => {
-      const tasksToSchedule = allTasks.filter(t => !t.dueDate);
-      if (tasksToSchedule.length === 0) {
-          toast({ title: "No tasks to schedule", description: "Your inbox is empty." });
-          return;
-      }
-      await applySchedule(template.schedule, tasksToSchedule);
-  }
-
   const handleSaveTemplate = async (name: string) => {
     if (!user || !schedule) {
         toast({ variant: 'destructive', title: "Error", description: "Cannot save template." });
@@ -346,19 +257,9 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
         // Reset state on close
         setIsLoading(false);
         setStep(1);
-        setView('generator');
         setSchedule(null);
-        setSelectedTasks([]);
         setEnergyPeak(undefined);
         setPreferences('');
-    }
-  }
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedTasks(unscheduledTasks.map(t => t.id));
-    } else {
-      setSelectedTasks([]);
     }
   }
 
@@ -375,20 +276,11 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
           <DialogTitle className="font-headline flex items-center gap-2">
             <Wand2 /> AI Schedule Generator
           </DialogTitle>
-          <div className="flex justify-between items-center">
-            <DialogDescription>
-              {view === 'generator' 
-                ? 'Answer a few questions to generate your ideal weekly schedule.'
-                : 'Apply a saved template to your unscheduled tasks.'}
-            </DialogDescription>
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
-                <Button size="sm" variant={view === 'generator' ? 'secondary' : 'ghost'} onClick={() => setView('generator')}><Wand2 className="mr-2 h-4 w-4"/>Generator</Button>
-                <Button size="sm" variant={view === 'templates' ? 'secondary' : 'ghost'} onClick={() => setView('templates')}><BookCopy className="mr-2 h-4 w-4"/>Templates</Button>
-            </div>
-          </div>
+          <DialogDescription>
+             Answer a few questions and AI will generate an ideal weekly schedule for your unscheduled tasks.
+          </DialogDescription>
         </DialogHeader>
 
-        {view === 'generator' && (
           <>
             {step === 1 && (
                 <div className="flex-grow overflow-y-auto p-1">
@@ -447,42 +339,8 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
             )}
             
             {step === 2 && (
-                 <div className="flex-grow overflow-y-auto p-1">
-                    <h3 className="text-lg font-semibold">Step 2: Select Tasks to Schedule</h3>
-                    <div className="flex items-center space-x-2 my-4">
-                        <Checkbox
-                            id="select-all"
-                            onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
-                            checked={unscheduledTasks.length > 0 && selectedTasks.length === unscheduledTasks.length}
-                        />
-                        <Label htmlFor="select-all">Select All ({unscheduledTasks.length} tasks)</Label>
-                    </div>
-                    <ScrollArea className="h-96 border rounded-md p-2">
-                        {unscheduledTasks.length > 0 ? (
-                            unscheduledTasks.map(task => (
-                                <div key={task.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
-                                    <Checkbox 
-                                        id={`task-${task.id}`}
-                                        checked={selectedTasks.includes(task.id)}
-                                        onCheckedChange={(checked) => {
-                                            setSelectedTasks(prev => 
-                                                checked ? [...prev, task.id] : prev.filter(id => id !== task.id)
-                                            )
-                                        }}
-                                    />
-                                    <Label htmlFor={`task-${task.id}`} className="font-medium cursor-pointer w-full">{task.title}</Label>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-sm text-muted-foreground text-center py-10">Your inbox is empty!</p>
-                        )}
-                    </ScrollArea>
-                </div>
-            )}
-            
-            {step === 3 && (
                 <div className="flex-grow overflow-y-auto p-1">
-                    <h3 className="text-lg font-semibold mb-4">Step 3: Preview Your Ideal Week</h3>
+                    <h3 className="text-lg font-semibold mb-4">Step 2: Preview Your Ideal Week</h3>
                     <ScrollArea className="h-[500px] border rounded-md p-4 bg-muted/20">
                          {isLoading ? (
                             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
@@ -511,27 +369,21 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                        )}
                     </div>
                     <div className="flex gap-2">
-                        {step === 1 && <Button onClick={() => setStep(2)} disabled={!energyPeak}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>}
-                        {step === 2 && (
-                            <Button onClick={handleGenerate} disabled={isLoading || selectedTasks.length === 0}>
-                                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                Generate Schedule
-                            </Button>
-                        )}
-                        {step === 3 && schedule && (
+                        {step === 1 && <Button onClick={handleGenerate} disabled={!energyPeak || isLoading}>{isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}Generate Schedule <ArrowRight className="ml-2 h-4 w-4" /></Button>}
+                        {step === 2 && schedule && (
                              <Button onClick={handleGenerate} variant="outline" disabled={isLoading}>
                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                                 Regenerate
                             </Button>
                         )}
-                        {step === 3 && schedule && (
+                        {step === 2 && schedule && (
                              <SaveTemplateDialog onSave={handleSaveTemplate}>
                                 <Button variant="outline">
                                    <Save className="mr-2 h-4 w-4" /> Save as Template
                                </Button>
                              </SaveTemplateDialog>
                         )}
-                        {step === 3 && schedule && (
+                        {step === 2 && schedule && (
                             <Button onClick={handleApplySchedule}>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Apply Schedule
@@ -541,11 +393,8 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                 </div>
             </DialogFooter>
           </>
-        )}
-
-        {view === 'templates' && <TemplatesView onApply={handleApplyTemplate} />}
-        
       </DialogContent>
     </Dialog>
   );
 }
+
