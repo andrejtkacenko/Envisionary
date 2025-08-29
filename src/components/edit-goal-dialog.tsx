@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import isEqual from 'lodash.isequal';
 
 
-import type { Goal, GoalStatus, SubGoal as SubGoalType } from "@/types";
+import type { Goal, GoalStatus, GoalTemplateSubGoal } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -163,7 +163,7 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
     }
   };
 
-  const handleSubGoalAdd = (newSubGoals: SubGoalType[]) => {
+  const handleSubGoalAdd = (newSubGoals: GoalTemplateSubGoal[]) => {
       if (!appUser) return;
       const goalsToAdd = newSubGoals.map(sg => ({
         userId: appUser.id,
@@ -171,7 +171,7 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
         title: sg.title,
         description: sg.description,
         category: form.getValues('category') || 'General',
-        status: 'todo',
+        status: 'todo' as GoalStatus,
         priority: form.getValues('priority'),
         dueDate: form.getValues('dueDate'),
         estimatedTime: sg.estimatedTime,
@@ -235,7 +235,7 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
     try {
         await addGoalTemplate({
             title: goal.title,
-            description: goal.description,
+            description: goal.description || undefined,
             category: goal.category || 'General',
             subGoals: localSubGoals.map(sg => ({ 
                 title: sg.title,
@@ -243,7 +243,6 @@ export function EditGoalDialog({ goal, subGoals: initialSubGoals, onGoalUpdate, 
                 estimatedTime: sg.estimatedTime || "not set" 
             })),
             authorId: appUser.id,
-            authorName: appUser.displayName || appUser.email || "Anonymous",
         });
         toast({
             title: "Goal Shared!",

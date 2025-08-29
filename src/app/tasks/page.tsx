@@ -83,7 +83,7 @@ export default function TasksPage() {
     // Initial fetch of tasks
     useEffect(() => {
         if (appUser) {
-            fetchTasks(appUser.id);
+            fetchTasks(appUser.firebaseUid);
         }
     }, [appUser, fetchTasks]);
 
@@ -142,7 +142,7 @@ export default function TasksPage() {
             const hour = over.data.current?.hour as number;
             const newDate = setHours(startOfDay(selectedDate), hour);
             const newTime = format(newDate, 'HH:mm');
-            finalTask.dueDate = newDate;
+            finalTask.dueDate = newDate.toISOString();
             finalTask.time = newTime;
         } else {
             return; // Dropped in a non-droppable area
@@ -165,7 +165,7 @@ export default function TasksPage() {
 
     const handleAddTask = useCallback((taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (!appUser) return;
-        addTask(taskData);
+        addTask({ ...taskData, userId: appUser.id });
     }, [appUser, addTask]);
 
 

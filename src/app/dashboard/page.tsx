@@ -41,7 +41,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (appUser) {
       setIsLoading(true);
-      getGoals(appUser.id)
+      getGoals(appUser.firebaseUid)
         .then((userGoals) => {
           setGoals(userGoals);
         })

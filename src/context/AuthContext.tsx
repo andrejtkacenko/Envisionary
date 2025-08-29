@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signInWithToken,
       }}
     >
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

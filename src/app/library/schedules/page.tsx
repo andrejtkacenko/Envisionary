@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, PlusCircle, Trash2, Clock, CalendarDays, Play } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -93,16 +93,16 @@ const ScheduleTemplateCard = ({ template, onDelete, onApply }: { template: Sched
 export default function ScheduleLibraryPage() {
   const [templates, setTemplates] = useState<ScheduleTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { appUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
-  const { tasks: allTasks, updateTasks } = useTaskStore();
+  const { tasks: allTasks, updateTasks, addTask } = useTaskStore();
 
-  const fetchTemplates = async () => {
-      if (!user) return;
+  const fetchTemplates = useCallback(async () => {
+      if (!appUser) return;
       setIsLoading(true);
       try {
-        const fetchedTemplates = await getScheduleTemplates(user.uid);
+        const fetchedTemplates = await getScheduleTemplates(appUser.firebaseUid);
         setTemplates(fetchedTemplates);
       } catch (error) {
         console.error("Failed to fetch schedule templates:", error);
@@ -114,17 +114,16 @@ export default function ScheduleLibraryPage() {
       } finally {
         setIsLoading(false);
       }
-  }
+  }, [appUser, toast]);
 
   useEffect(() => {
-    if (user) {
+    if (appUser) {
         fetchTemplates();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [appUser, fetchTemplates]);
 
   const handleDelete = async (templateId: string) => {
-    if (!user) return;
+    if (!appUser) return;
     try {
         await deleteScheduleTemplate(templateId);
         setTemplates(prev => prev.filter(t => t.id !== templateId));
@@ -134,62 +133,64 @@ export default function ScheduleLibraryPage() {
     }
   }
   
-  const handleApplyTemplate = async (template: ScheduleTemplate) => {
-    if (!user) return;
+  const handleApplyTemplate = useCallback(async (template: ScheduleTemplate) => {
+    if (!appUser) return;
+
+    const tasksToUpdate: Task[] = [];
+    const tasksToCreate: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[] = [];
+    const unscheduledTasksCopy = [...allTasks.filter(t => !t.dueDate)];
 
     try {
-        const unscheduledTasks = allTasks.filter(t => !t.dueDate);
-
-        if (unscheduledTasks.length === 0) {
-            toast({ title: "No tasks to schedule", description: "Your inbox is empty."});
-            return;
-        }
-
-        const tasksToUpdate: Task[] = [];
-        let taskIndex = 0;
-
         for (const day of template.schedule) {
             for (const item of day.items) {
-                 if (item.taskId || item.title.toLowerCase().includes('lunch') || item.title.toLowerCase().includes('break')) {
-                    continue;
-                 }
-                
-                if (taskIndex >= unscheduledTasks.length) break;
-
-                const taskToSchedule = unscheduledTasks[taskIndex];
-                
                 const scheduledDate = new Date(day.date + 'T00:00:00');
                 const [hours, minutes] = item.startTime.split(':').map(Number);
                 const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
 
-                const updatedTask = {
-                    ...taskToSchedule,
-                    dueDate: taskDate,
-                    time: item.startTime,
-                    duration: item.duration,
-                };
-                
-                tasksToUpdate.push(updatedTask);
-                taskIndex++;
+                if (unscheduledTasksCopy.length > 0) {
+                     // Prioritize filling slots with existing tasks
+                    const taskToSchedule = unscheduledTasksCopy.shift()!;
+                    tasksToUpdate.push({
+                        ...taskToSchedule,
+                        dueDate: taskDate.toISOString(),
+                        time: item.startTime,
+                        duration: item.duration,
+                    });
+                } else {
+                    // If no more user tasks, create the AI-suggested ones
+                    tasksToCreate.push({
+                        title: item.title,
+                        priority: 'p4',
+                        isCompleted: false,
+                        dueDate: taskDate.toISOString(),
+                        time: item.startTime,
+                        duration: item.duration,
+                    });
+                }
             }
-             if (taskIndex >= unscheduledTasks.length) break;
         }
-
-        if (tasksToUpdate.length === 0) {
-            toast({ title: "No slots for tasks", description: "This template had no available slots for your tasks." });
+        
+        const totalScheduled = tasksToUpdate.length + tasksToCreate.length;
+        if (totalScheduled === 0) {
+            toast({ title: "No tasks to schedule", description: "Your inbox is empty or the template has no slots."});
             return;
         }
 
-        await updateTasks(user.uid, tasksToUpdate);
+        if (tasksToUpdate.length > 0) {
+            await updateTasks(tasksToUpdate);
+        }
+        if (tasksToCreate.length > 0) {
+            await Promise.all(tasksToCreate.map(t => addTask({ ...t, userId: appUser.id })));
+        }
 
-        toast({ title: "Schedule Applied!", description: `${tasksToUpdate.length} tasks have been scheduled.` });
+        toast({ title: "Schedule Applied!", description: `${totalScheduled} tasks have been scheduled.` });
         router.push('/tasks');
 
     } catch (e) {
         console.error(e);
         toast({ variant: 'destructive', title: 'Failed to apply schedule' });
     }
-  }
+  }, [appUser, allTasks, updateTasks, addTask, toast, router]);
 
   if (isLoading) {
     return (

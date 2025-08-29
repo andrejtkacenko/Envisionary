@@ -71,7 +71,7 @@ type TaskFormValues = z.infer<typeof taskSchema>;
 
 interface TaskDialogProps {
   task?: Task;
-  onSave: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> | Task) => void;
+  onSave: (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'| 'userId'> | Task) => void;
   onDelete?: (taskId: string) => void;
   children: React.ReactNode;
 }
@@ -83,12 +83,12 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   const { appUser } = useAuth();
   const { addTask, updateTask: updateTaskInStore } = useTaskStore();
 
-  const fetchSubTasks = async () => {
+  const fetchSubTasks = React.useCallback(async () => {
     if (task?.id) {
         const fetchedSubTasks = await getSubTasks(task.id);
         setSubTasks(fetchedSubTasks);
     }
-  }
+  }, [task?.id]);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -98,8 +98,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
     if (task?.id) {
         fetchSubTasks();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task?.id])
+  }, [task?.id, fetchSubTasks])
 
   useEffect(() => {
     if (open) {
@@ -117,8 +116,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
         setSubTasks([]);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task, open, form]);
+  }, [task, open, form, fetchSubTasks]);
   
   const watchedTitle = form.watch("title");
   const watchedDescription = form.watch("description");
@@ -126,13 +124,14 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   const onSubmit = (data: TaskFormValues) => {
       const taskData = {
           ...data,
+          dueDate: data.dueDate?.toISOString(),
           isCompleted: task?.isCompleted || false,
       };
 
       if (isEditMode && task) {
           onSave({ ...task, ...taskData });
-      } else if(appUser) {
-          onSave({ ...taskData, userId: appUser.id });
+      } else {
+          onSave({ ...taskData });
       }
       handleOpenChange(false);
   };

@@ -134,7 +134,7 @@ const GoalTemplateCard = ({ template, onAdd }: { template: GoalTemplate, onAdd: 
 export default function GoalLibraryPage() {
   const [communityTemplates, setCommunityTemplates] = useState<GoalTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { appUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -158,13 +158,13 @@ export default function GoalLibraryPage() {
   }, [toast]);
 
   const handleAddGoal = async (template: GoalTemplate) => {
-    if (!user) {
+    if (!appUser) {
       toast({ variant: 'destructive', title: 'You must be logged in.' });
       return;
     }
     try {
       const parentGoalData = {
-        userId: user.uid,
+        userId: appUser.id,
         title: template.title,
         description: template.description,
         category: template.category || 'General',
@@ -174,7 +174,7 @@ export default function GoalLibraryPage() {
       const parentGoal = await addGoal(parentGoalData);
 
       const subGoalsData = template.subGoals.map(sg => ({
-        userId: user.uid,
+        userId: appUser.id,
         parentId: parentGoal.id,
         title: sg.title,
         description: sg.description,
@@ -208,7 +208,7 @@ export default function GoalLibraryPage() {
       id: `system-${i}`,
       authorId: 'system',
       likes: 0,
-      createdAt: new Date() as any, // Not a real timestamp, but satisfies type
+      createdAt: new Date().toISOString(),
   }));
 
   if (isLoading) {

@@ -109,7 +109,7 @@ export default function CoachPage() {
 
     const fetchGoals = useCallback(async () => {
         if (appUser) {
-          getGoals(appUser.id).then(setGoals);
+          getGoals(appUser.firebaseUid).then(setGoals);
         }
     }, [appUser]);
 

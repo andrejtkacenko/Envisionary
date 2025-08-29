@@ -118,7 +118,7 @@ export default function Home() {
   const fetchGoals = useCallback(async (currentAppUser: AppUser) => {
     try {
       setIsLoading(true);
-      const userGoals = await getGoals(currentAppUser.id);
+      const userGoals = await getGoals(currentAppUser.firebaseUid);
       setGoals(userGoals.filter(g => g.status !== 'ongoing'));
     } catch (error) {
       console.error("Error fetching goals:", error);

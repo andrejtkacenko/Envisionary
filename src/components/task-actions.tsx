@@ -121,7 +121,7 @@ const ScheduleTemplateCard = ({ template, onDelete, onApply }: { template: Sched
         <Card className="flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline text-xl">{template.name}</CardTitle>
-                <CardDescription>Created on {format(template.createdAt.toDate(), 'PPP')}</CardDescription>
+                <CardDescription>Created on {format(new Date(template.createdAt), 'PPP')}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
                  <p className="text-sm font-medium text-muted-foreground">
@@ -226,10 +226,10 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
   }, [user, toast]);
 
   useEffect(() => {
-    if (open && currentTab === 'templates') {
+    if (open && currentTab === 'templates' && user) {
         fetchTemplates();
     }
-  }, [open, currentTab, fetchTemplates]);
+  }, [open, currentTab, fetchTemplates, user]);
 
 
   const handleGenerate = async () => {
@@ -249,7 +249,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
         `;
 
         const result = await generateSchedule({
-            tasks: unscheduledTasks.map(t => ({ id: t.id, title: t.title, description: t.description, priority: t.priority })),
+            tasks: unscheduledTasks.map(t => ({ id: t.id, title: t.title, description: t.description || '', priority: t.priority })),
             scheduleStartDate: start.toISOString().split('T')[0],
             scheduleEndDate: end.toISOString().split('T')[0],
             preferences: preferenceString,
@@ -275,7 +275,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
       }
       
       const tasksToUpdate: Task[] = [];
-      const tasksToCreate: Omit<Task, 'id' | 'createdAt' | 'userId'>[] = [];
+      const tasksToCreate: Omit<Task, 'id' | 'createdAt' | 'updatedAt'| 'userId'>[] = [];
       let unscheduledTasksCopy = [...unscheduledTasks];
 
       const processedSchedule = preprocessSchedule(scheduleToApply);
@@ -292,17 +292,17 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                   if (taskToUpdate) {
                       tasksToUpdate.push({
                           ...taskToUpdate,
-                          dueDate: taskDate,
+                          dueDate: taskDate.toISOString(),
                           time: item.startTime,
                           duration: item.duration,
                       });
                   }
-              } else if (unscheduledTasksCopy.length > 0) {
+              } else if (unscheduledTasksCopy.length > 0 && !['lunch', 'break', 'sleep', 'workout', 'plan', 'review'].some(keyword => item.title.toLowerCase().includes(keyword))) {
                  // This is a generic slot (not AI-created like 'Lunch'). Fill it with a user's task.
                  const taskToSchedule = unscheduledTasksCopy.shift()!; // Take the next unscheduled task
                   tasksToUpdate.push({
                       ...taskToSchedule,
-                      dueDate: taskDate,
+                      dueDate: taskDate.toISOString(),
                       time: item.startTime,
                       duration: item.duration,
                   });
@@ -312,7 +312,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                       title: item.title,
                       priority: 'p4', // Default priority
                       isCompleted: false,
-                      dueDate: taskDate,
+                      dueDate: taskDate.toISOString(),
                       time: item.startTime,
                       duration: item.duration,
                   });
@@ -328,10 +328,10 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
 
       try {
           if (tasksToUpdate.length > 0) {
-            await updateTasks(user.uid, tasksToUpdate);
+            await updateTasks(tasksToUpdate);
           }
           if (tasksToCreate.length > 0) {
-            await Promise.all(tasksToCreate.map(t => addTask(user.uid, t)));
+            await Promise.all(tasksToCreate.map(t => addTask({ ...t, userId: user.id })));
           }
           
           toast({ title: "Schedule Applied!", description: `${totalScheduled} tasks have been scheduled.` });
@@ -356,13 +356,13 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                 const startTime = parse(item.startTime, 'HH:mm', new Date());
                 const endTime = parse(item.endTime, 'HH:mm', new Date());
 
-                if (endTime < startTime) { // This means it crosses midnight
+                if (endTime <= startTime) { // This means it crosses midnight
                     const today = new Date(day.date + 'T00:00:00');
                     const nextDayDate = addDays(today, 1);
                     const nextDayStr = format(nextDayDate, 'yyyy-MM-dd');
                     
-                    const endOfToday = new Date(day.date + 'T23:59:59'); // Use 23:59:59
-                    const duration1 = Math.round((endOfToday.getTime() - startTime.getTime()) / (1000 * 60));
+                    const endOfToday = new Date(day.date + 'T23:59:00');
+                    const duration1 = Math.round((endOfToday.getTime() - startTime.getTime()) / (1000 * 60)) + 1;
 
                     // First part of sleep (today)
                     day.items.push({
@@ -374,15 +374,17 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                     // Second part of sleep (tomorrow)
                     const startOfNextDay = new Date(nextDayStr + 'T00:00:00');
                     const duration2 = Math.round((endTime.getTime() - startOfNextDay.getTime()) / (1000 * 60));
-
-                    const nextDayEntry = scheduleMap.get(nextDayStr) || { date: nextDayStr, items: []};
-                    nextDayEntry.items.unshift({ // Add to the beginning of the next day
-                        ...item,
-                        startTime: '00:00',
-                        endTime: item.endTime,
-                        duration: duration2,
-                    });
-                    scheduleMap.set(nextDayStr, nextDayEntry);
+                    
+                    if (duration2 > 0) {
+                        const nextDayEntry = scheduleMap.get(nextDayStr) || { date: nextDayStr, items: []};
+                        nextDayEntry.items.unshift({ // Add to the beginning of the next day
+                            ...item,
+                            startTime: '00:00',
+                            endTime: item.endTime,
+                            duration: duration2,
+                        });
+                        scheduleMap.set(nextDayStr, nextDayEntry);
+                    }
                     
                     continue; // Skip adding the original item
                 }
@@ -438,20 +440,16 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
     if (!user) return;
     
     let tasksToDelete: Task[] = [];
-    let confirmationMessage = "";
 
     switch(filter) {
         case 'all':
             tasksToDelete = allTasks;
-            confirmationMessage = `This will permanently delete all ${tasksToDelete.length} tasks.`;
             break;
         case 'today':
             tasksToDelete = allTasks.filter(t => t.dueDate && isToday(new Date(t.dueDate)));
-             confirmationMessage = `This will permanently delete all ${tasksToDelete.length} of today's tasks.`;
             break;
         case 'week':
             tasksToDelete = allTasks.filter(t => t.dueDate && isThisWeek(new Date(t.dueDate), { weekStartsOn: 1 }));
-            confirmationMessage = `This will permanently delete all ${tasksToDelete.length} tasks for this week.`;
             break;
     }
 
@@ -461,7 +459,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
     }
     
     try {
-        await deleteTasks(user.uid, tasksToDelete.map(t => t.id));
+        await deleteTasks(tasksToDelete.map(t => t.id));
         toast({ title: "Tasks Deleted", description: `${tasksToDelete.length} tasks have been successfully deleted.` });
     } catch (e) {
         console.error(e);
@@ -600,9 +598,9 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
               <DialogFooter>
                   <div className="w-full flex justify-between">
                       <div>
-                        {step > 1 && (
+                        {step > 1 && currentTab === 'create' && (
                           <Button variant="ghost" onClick={() => setStep(s => s - 1)}>
-                            <ArrowLeft className="ml-2 h-4 w-4" /> Back
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Back
                           </Button>
                         )}
                       </div>
@@ -690,7 +688,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                 </AlertDialog>
             </DropdownMenuContent>
         </DropdownMenu>
-      <TaskDialog onSave={(data) => user && addTask(user.uid, data)}>
+      <TaskDialog onSave={(data) => user && addTask({ ...data, userId: user.id })}>
           <Button>
               <Plus className="mr-2 h-4 w-4" /> New Task
           </Button>
