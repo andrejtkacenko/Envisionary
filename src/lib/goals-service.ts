@@ -62,6 +62,8 @@ const goalConverter = {
         if (!data.category) {
             data.category = 'General';
         }
+        
+        delete data.subGoals;
 
         return data;
     },
@@ -91,12 +93,14 @@ const taskConverter = {
     toFirestore: (task: Partial<Task>) => {
         const data: any = { ...task };
         delete data.id;
+        delete data.subTasks;
 
         if (task.dueDate) {
             const date = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate;
             data.dueDate = Timestamp.fromDate(date as Date);
         } else {
-            data.dueDate = null;
+            // Ensure dueDate is deleted if not present, to remove it from Firestore doc
+             data.dueDate = null;
         }
 
         if (task.time) {
@@ -197,8 +201,7 @@ export const getGoals = (
 ): Unsubscribe => {
     const q = query(
         getGoalsCollection(), 
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc")
+        where("userId", "==", userId)
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -213,7 +216,7 @@ export const getGoals = (
 };
 
 export const getGoalsSnapshot = async (userId: string): Promise<Goal[]> => {
-    const q = query(getGoalsCollection(), where("userId", "==", userId), orderBy("createdAt", "desc"));
+    const q = query(getGoalsCollection(), where("userId", "==", userId));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => doc.data());
 };
@@ -227,14 +230,15 @@ export const addGoal = async (goalData: Omit<Goal, 'id' | 'createdAt'>): Promise
     };
 };
 
-export const addGoals = async (goalsData: Omit<Goal, 'id' | 'createdAt'>[]): Promise<Goal[]> => {
+export const addGoals = async (userId: string, goalsData: Omit<Goal, 'id' | 'createdAt' | 'userId'>[]): Promise<Goal[]> => {
     const batch = writeBatch(db);
     const newGoals: Goal[] = [];
 
     goalsData.forEach(goalData => {
         const newDocRef = doc(getGoalsCollection());
-        batch.set(newDocRef, goalData);
-        newGoals.push({ ...goalData, id: newDocRef.id, createdAt: Timestamp.now() });
+        const goalWithUser = { ...goalData, userId };
+        batch.set(newDocRef, goalWithUser);
+        newGoals.push({ ...goalWithUser, id: newDocRef.id, createdAt: Timestamp.now() });
     });
 
     await batch.commit();
@@ -273,7 +277,7 @@ export const getTasks = (
     callback: (tasks: Task[]) => void,
     onError: (error: Error) => void
 ): Unsubscribe => {
-    const q = query(getTasksCollection(), where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const q = query(getTasksCollection(), where('userId', '==', userId));
     return onSnapshot(q, (snapshot) => {
         const tasks = snapshot.docs.map(doc => doc.data());
         callback(tasks);
@@ -281,7 +285,7 @@ export const getTasks = (
 };
 
 export const getTasksSnapshot = async (userId: string): Promise<Task[]> => {
-    const q = query(getTasksCollection(), where("userId", "==", userId), orderBy("createdAt", "desc"));
+    const q = query(getTasksCollection(), where("userId", "==", userId));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => doc.data());
 };

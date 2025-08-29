@@ -1,4 +1,5 @@
 
+
 import { create } from 'zustand';
 import {
   getTasks as getTasksFromDb,
@@ -31,7 +32,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       getTasksFromDb(
         userId,
         (tasks) => {
-          set({ tasks, isLoading: false });
+          const sortedTasks = tasks.sort((a, b) => (b.createdAt as any) - (a.createdAt as any));
+          set({ tasks: sortedTasks, isLoading: false });
         },
         (error) => {
           console.error(error);

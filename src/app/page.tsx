@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -122,7 +123,8 @@ export default function Home() {
     if (user && !isTelegramFlow) {
       setIsLoading(true);
       const unsubscribe = getGoals(user.uid, (userGoals) => {
-        setGoals(userGoals.filter(g => g.status !== 'ongoing'));
+        const sortedGoals = userGoals.sort((a, b) => (b.createdAt as any) - (a.createdAt as any));
+        setGoals(sortedGoals.filter(g => g.status !== 'ongoing'));
         setIsLoading(false);
       }, (error) => {
         console.error("Error fetching real-time goals:", error);
@@ -148,8 +150,7 @@ export default function Home() {
   const handleAddNewGoals = useCallback(async (newGoalsData: Omit<Goal, 'id' | 'createdAt'>[]) => {
       if (!user) return;
       try {
-        const goalsWithUser = newGoalsData.map(g => ({ ...g, userId: user.uid }));
-        const newGoals = await addGoals(goalsWithUser);
+        const newGoals = await addGoals(user.uid, newGoalsData.map(g => ({...g, userId: user.uid})));
         return newGoals;
       } catch (e) {
         console.error("Error adding goals:", e);

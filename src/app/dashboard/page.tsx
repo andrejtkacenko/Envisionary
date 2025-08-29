@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
@@ -41,7 +42,8 @@ export default function DashboardPage() {
     if (user) {
       setIsLoading(true);
       const unsubscribe = getGoals(user.uid, (userGoals) => {
-        setGoals(userGoals);
+        const sortedGoals = userGoals.sort((a, b) => (b.createdAt as any) - (a.createdAt as any));
+        setGoals(sortedGoals);
         setIsLoading(false);
       }, (error) => {
         console.error("Failed to fetch goals:", error);
