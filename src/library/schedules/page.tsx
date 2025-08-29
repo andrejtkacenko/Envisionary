@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, PlusCircle, Trash2, Clock, CalendarDays, Play } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -134,7 +134,7 @@ export default function ScheduleLibraryPage() {
     }
   }
   
-  const handleApplyTemplate = async (template: ScheduleTemplate) => {
+  const handleApplyTemplate = useCallback(async (template: ScheduleTemplate) => {
     if (!appUser) return;
 
     const tasksToUpdate: Task[] = [];
@@ -192,7 +192,7 @@ export default function ScheduleLibraryPage() {
         console.error(e);
         toast({ variant: 'destructive', title: 'Failed to apply schedule' });
     }
-  }
+  }, [appUser, allTasks, updateTasks, addTask, toast, router]);
 
   if (isLoading) {
     return (
