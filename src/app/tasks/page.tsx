@@ -17,6 +17,8 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
+import isEqual from 'lodash.isequal';
+
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -66,6 +68,8 @@ export default function TasksPage() {
     const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks } = useTasks();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
+    const [originalTaskBeforeDrag, setOriginalTaskBeforeDrag] = useState<Task | null>(null);
+
 
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.dueDate), [tasks]);
@@ -98,6 +102,7 @@ export default function TasksPage() {
         const task = tasks.find(t => t.id === active.id);
         if (task) {
             setActiveTask(task);
+            setOriginalTaskBeforeDrag(task); // Save original state
         }
     };
     
@@ -106,8 +111,9 @@ export default function TasksPage() {
         if (!over || !activeTask) return;
 
         const overIsHourSlot = typeof over.data.current?.hour === 'number';
+        const overIsInbox = over.id === 'inbox';
 
-        // Dragging over an hour slot
+
         if (overIsHourSlot && selectedDate) {
             const hour = over.data.current?.hour as number;
             const newDate = setHours(startOfDay(selectedDate), hour);
@@ -122,26 +128,39 @@ export default function TasksPage() {
                     return { ...currentActiveTask, dueDate: newDate, time: newTime };
                 });
             }
+        } else if (overIsInbox) {
+            if (activeTask.dueDate || activeTask.time) {
+                 setActiveTask(currentActiveTask => {
+                    if (!currentActiveTask) return null;
+                    const updatedTask = {...currentActiveTask};
+                    delete updatedTask.dueDate;
+                    delete updatedTask.time;
+                    return updatedTask;
+                });
+            }
         }
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { over } = event;
-        if (activeTask) {
-            let taskToUpdate = { ...activeTask };
-            
-            if (over?.id === 'inbox') {
-              taskToUpdate = { ...taskToUpdate, dueDate: undefined, time: null };
-            }
 
-            const originalTask = tasks.find(t => t.id === taskToUpdate.id);
-            const hasChanged = JSON.stringify(originalTask) !== JSON.stringify(taskToUpdate);
+        if (originalTaskBeforeDrag && activeTask) {
+             let finalTaskState = { ...activeTask };
+
+            // Explicitly handle dropping on inbox
+            if (over?.id === 'inbox') {
+                delete finalTaskState.dueDate;
+                delete finalTaskState.time;
+            }
             
-            if (hasChanged) {
-                handleUpdateTask(taskToUpdate);
+            // Compare the final state with the original state before dragging
+            if (!isEqual(originalTaskBeforeDrag, finalTaskState)) {
+                handleUpdateTask(finalTaskState);
             }
         }
+        
         setActiveTask(null);
+        setOriginalTaskBeforeDrag(null);
     };
 
     return (
