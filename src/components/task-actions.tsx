@@ -28,7 +28,7 @@ import { Separator } from './ui/separator';
 
 interface TaskActionsProps {
   unscheduledTasks: Task[];
-  onSchedule: (updatedTasks: Task[]) => void;
+  onSchedule: (updatedTasks: Task[], remainingTasks: Task[]) => void;
 }
 
 const goals = [
@@ -137,14 +137,16 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
 
   const handleApplySchedule = () => {
     if (!schedule) return;
-    
-    const allUpdatedTasks = schedule.flatMap(day => {
-        const scheduledDate = new Date(day.date + 'T12:00:00Z');
-        return day.items.map(item => {
-             if (!item.taskId) return null;
-             const originalTask = unscheduledTasks.find(t => t.id === item.taskId);
-            if (!originalTask) return null;
 
+    // Map the scheduled items to updated Task objects
+    const updatedTasks = schedule.flatMap(day => 
+        day.items.map(item => {
+            if (!item.taskId) return null;
+            
+            const originalTask = unscheduledTasks.find(t => t.id === item.taskId);
+            if (!originalTask) return null;
+            
+            const scheduledDate = new Date(day.date + 'T00:00:00'); // Use T00 to avoid timezone issues
             const [hours, minutes] = item.startTime.split(':').map(Number);
             const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
 
@@ -154,12 +156,18 @@ export function TaskActions({ unscheduledTasks, onSchedule }: TaskActionsProps) 
                 time: item.startTime,
                 duration: item.duration,
             };
-        })
-    }).filter((t): t is Task => t !== null);
+        }).filter((t): t is Task => t !== null)
+    );
 
-    onSchedule(allUpdatedTasks);
+    // Identify which unscheduled tasks were NOT part of the scheduling process
+    const remainingUnscheduled = unscheduledTasks.filter(
+        t => !selectedTasks.includes(t.id)
+    );
+
+    onSchedule(updatedTasks, remainingUnscheduled);
+    toast({ title: `${updatedTasks.length} tasks scheduled!` });
     setOpen(false);
-  };
+};
   
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);

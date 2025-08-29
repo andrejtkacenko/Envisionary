@@ -60,8 +60,8 @@ export default function TasksPage() {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-    const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate || !t.time), [tasks]);
-    const scheduledTasks = useMemo(() => tasks.filter(t => t.dueDate && t.time), [tasks]);
+    const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
+    const scheduledTasks = useMemo(() => tasks.filter(t => !!t.dueDate), [tasks]);
     
     const tasksForSelectedDay = useMemo(() => {
         if (!selectedDate) return [];
@@ -136,8 +136,11 @@ export default function TasksPage() {
 
     const handleDragEnd = (event: DragEndEvent) => {
         if (activeTask) {
-            // Persist the changes from onDragOver
-            handleUpdateTask(activeTask);
+            const originalTask = tasks.find(t => t.id === activeTask.id);
+            // Only call update if there's a meaningful change.
+            if (originalTask?.dueDate !== activeTask.dueDate || originalTask?.time !== activeTask.time) {
+                handleUpdateTask(activeTask);
+            }
         }
         setActiveTask(null);
     };

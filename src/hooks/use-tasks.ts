@@ -57,21 +57,19 @@ export const useTasks = () => {
         }
     }, [user, toast]);
 
-    const handleBulkUpdateTasks = useCallback(async (tasksToUpdate: Task[]) => {
+    const handleBulkUpdateTasks = useCallback(async (updatedTasks: Task[], remainingTasks: Task[]) => {
         if (!user) return;
 
-        // Optimistic update
-        setTasks(currentTasks => {
-            const tasksMap = new Map(tasksToUpdate.map(t => [t.id, t]));
-            return currentTasks.map(t => tasksMap.has(t.id) ? tasksMap.get(t.id)! : t);
-        });
+        // Optimistic update: combine the updated tasks with the remaining unscheduled ones
+        setTasks([...updatedTasks, ...remainingTasks]);
 
         try {
-            await updateTasks(user.uid, tasksToUpdate);
-            toast({ title: `${tasksToUpdate.length} tasks scheduled!` });
+            // Persist only the updated tasks to Firestore
+            await updateTasks(user.uid, updatedTasks);
         } catch (error) {
              console.error(error);
             toast({ variant: 'destructive', title: "Failed to schedule tasks" });
+            // TODO: Revert optimistic update on error
         }
     }, [user, toast]);
 
