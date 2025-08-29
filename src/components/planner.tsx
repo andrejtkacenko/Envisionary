@@ -79,18 +79,28 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
     const plannerRef = useRef<HTMLDivElement>(null);
     const { setNodeRef: setPlannerRef } = useDroppable({ id: 'planner' });
     const { user } = useAuth();
+    
+    const { allDayTasks, timedTasks, hourHeight } = useMemo(() => {
+        const allDay = tasks.filter(t => !t.time);
+        const timed = tasks.filter(t => !!t.time);
+        
+        const sleepTasks = timed.filter(t => t.title.toLowerCase().includes('sleep'));
+        const totalSleepMinutes = sleepTasks.reduce((acc, task) => acc + (task.duration || 0), 0);
+        
+        // Each sleep task visually takes up 1 hour (60 min)
+        const visualSleepMinutes = sleepTasks.length * 60;
+        
+        const savedMinutes = totalSleepMinutes - visualSleepMinutes;
+        const savedHours = savedMinutes / 60;
 
-    const [hourHeight, setHourHeight] = useState(HOUR_HEIGHT_DEFAULT);
+        // Calculate new hour height based on saved space
+        const totalHoursInDay = 24;
+        const totalPlannerHeight = totalHoursInDay * HOUR_HEIGHT_DEFAULT;
+        const newPlannerHeight = totalPlannerHeight - (savedHours * HOUR_HEIGHT_DEFAULT);
+        const newHourHeight = savedHours > 0 ? newPlannerHeight / (totalHoursInDay - savedHours) : HOUR_HEIGHT_DEFAULT;
 
-    useEffect(() => {
-        if (plannerRef.current) {
-            const heightValue = getComputedStyle(plannerRef.current).getPropertyValue('--hour-height');
-            const parsedHeight = parseInt(heightValue, 10);
-            if (!isNaN(parsedHeight)) {
-                setHourHeight(parsedHeight);
-            }
-        }
-    }, []);
+        return { allDayTasks: allDay, timedTasks: timed, hourHeight: newHourHeight };
+    }, [tasks]);
 
 
     const getHeaderText = () => {
@@ -104,12 +114,6 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
          return format(date, 'yyyy');
     }
 
-    const { allDayTasks, timedTasks } = useMemo(() => {
-        const allDay = tasks.filter(t => !t.time);
-        const timed = tasks.filter(t => !!t.time);
-        return { allDayTasks: allDay, timedTasks: timed };
-    }, [tasks]);
-
     useEffect(() => {
         if(scrollRef.current && hourHeight > 0) {
             // Scroll to 8 AM
@@ -119,10 +123,25 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
 
     const getTaskPosition = (task: Task) => {
         if (!task.time) return { top: 0, height: 0 };
+
         const [hour, minute] = task.time.split(':').map(Number);
-        const top = (hour + minute / 60) * hourHeight;
-        const durationInMinutes = task.duration || 60;
-        const height = (durationInMinutes / 60) * hourHeight;
+        
+        const sleepTasksBefore = timedTasks
+            .filter(t => t.title.toLowerCase().includes('sleep') && parseInt(t.time!.split(':')[0]) < hour)
+            .reduce((acc, t) => acc + (t.duration || 0) - 60, 0) / 60;
+
+        const topOffset = sleepTasksBefore * hourHeight;
+        
+        const top = (hour * hourHeight) - topOffset;
+        
+        let height;
+        if (task.title.toLowerCase().includes('sleep')) {
+             height = hourHeight; // Visually 1 hour
+        } else {
+            const durationInMinutes = task.duration || 60;
+            height = (durationInMinutes / 60) * hourHeight;
+        }
+
         return { top, height };
     }
 
@@ -137,7 +156,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
             <CardContent 
                 ref={plannerRef}
                 className="flex-grow flex flex-col overflow-hidden p-2" 
-                style={{ '--hour-height': `${HOUR_HEIGHT_DEFAULT}px` } as React.CSSProperties}
+                style={{ '--hour-height': `${hourHeight}px` } as React.CSSProperties}
             >
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
@@ -163,7 +182,18 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                                 {date && isToday(date) && <TimeIndicator hourHeight={hourHeight} />}
                                 
                                 <div className="relative">
-                                    {hours.map(hour => <HourSlot key={hour} hour={hour} />)}
+                                    {hours.map(hour => {
+                                         const isHourHidden = timedTasks.some(t => {
+                                            if (!t.title.toLowerCase().includes('sleep') || !t.time || !t.duration) return false;
+                                            const startHour = parseInt(t.time.split(':')[0]);
+                                            const endHour = startHour + (t.duration / 60);
+                                            return hour > startHour && hour < endHour;
+                                        });
+
+                                        if (isHourHidden) return null;
+
+                                        return <HourSlot key={hour} hour={hour} />
+                                    })}
                                     {timedTasks.map(task => {
                                         const { top, height } = getTaskPosition(task);
                                         return (

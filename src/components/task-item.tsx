@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Flag, ListTree, Clock } from 'lucide-react';
+import { Flag, ListTree, Clock, Bed } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Task, TaskPriority } from '@/types';
 import { TaskDialog } from './task-dialog';
@@ -32,6 +32,7 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
     
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [subTasks, setSubTasks] = useState<Task[]>([]);
+    const isSleepTask = task.title.toLowerCase().includes('sleep');
 
     useEffect(() => {
         if(task.id) {
@@ -66,11 +67,14 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
     const totalSubTasks = subTasks.length || 0;
 
     const plannerContent = (
-         <div className={cn("h-full w-full p-2 rounded-lg flex flex-col justify-center text-white", priorityMap[task.priority].color)}>
+         <div className={cn(
+             "h-full w-full p-2 rounded-lg flex flex-col justify-center text-white", 
+             isSleepTask ? "bg-indigo-500" : priorityMap[task.priority].color
+         )}>
             <p className={cn("font-semibold text-sm", task.isCompleted && "line-through opacity-70")}>
                 {task.title}
             </p>
-            {task.description && (
+            {task.description && !isSleepTask && (
                 <p className={cn("text-xs text-white/80", task.isCompleted && "line-through opacity-70")}>
                     {task.description}
                 </p>
@@ -83,7 +87,8 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
               )}
                {task.duration && (
                   <div className="flex items-center gap-1">
-                     <Clock className="h-3 w-3" /> {task.duration}m
+                     {isSleepTask ? <Bed className="h-3 w-3" /> : <Clock className="h-3 w-3" />} 
+                     {Math.floor(task.duration / 60)}h {task.duration % 60 > 0 ? `${task.duration % 60}m` : ''}
                   </div>
               )}
             </div>
@@ -124,7 +129,12 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
     if (isOverlay) {
         // We calculate style for the overlay separately, as we don't have access to the --hour-height var easily here
         const DUMMY_HOUR_HEIGHT = 80;
-        const height = (task.duration || 60) / 60 * DUMMY_HOUR_HEIGHT;
+        let height;
+        if (isSleepTask) {
+            height = DUMMY_HOUR_HEIGHT; // 1 hour visually
+        } else {
+            height = (task.duration || 60) / 60 * DUMMY_HOUR_HEIGHT;
+        }
         return <div style={{ height }}>{content}</div>
     }
 
