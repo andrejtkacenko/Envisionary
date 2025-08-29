@@ -68,8 +68,6 @@ export default function TasksPage() {
     const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks } = useTasks();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [activeTask, setActiveTask] = useState<Task | null>(null);
-    const [originalTaskBeforeDrag, setOriginalTaskBeforeDrag] = useState<Task | null>(null);
-
 
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.dueDate), [tasks]);
@@ -102,7 +100,6 @@ export default function TasksPage() {
         const task = tasks.find(t => t.id === active.id);
         if (task) {
             setActiveTask(task);
-            setOriginalTaskBeforeDrag(task); // Save original state
         }
     };
     
@@ -144,23 +141,30 @@ export default function TasksPage() {
     const handleDragEnd = (event: DragEndEvent) => {
         const { over } = event;
 
-        if (originalTaskBeforeDrag && activeTask) {
-             let finalTaskState = { ...activeTask };
+        // Get the original task from the main `tasks` array to compare against.
+        const originalTask = tasks.find(t => t.id === activeTask?.id);
 
-            // Explicitly handle dropping on inbox
-            if (over?.id === 'inbox') {
-                delete finalTaskState.dueDate;
-                delete finalTaskState.time;
-            }
-            
-            // Compare the final state with the original state before dragging
-            if (!isEqual(originalTaskBeforeDrag, finalTaskState)) {
-                handleUpdateTask(finalTaskState);
-            }
+        if (!activeTask || !originalTask) {
+            setActiveTask(null);
+            return;
+        }
+
+        // We create a mutable copy of the final activeTask state for modification
+        let finalTaskState = { ...activeTask };
+
+        // Explicitly handle dropping on inbox to ensure date/time are cleared
+        if (over?.id === 'inbox') {
+            delete finalTaskState.dueDate;
+            delete finalTaskState.time;
+        }
+        
+        // Compare the original task with the final state after dragging.
+        // If they are different, we persist the changes.
+        if (!isEqual(originalTask, finalTaskState)) {
+            handleUpdateTask(finalTaskState);
         }
         
         setActiveTask(null);
-        setOriginalTaskBeforeDrag(null);
     };
 
     return (
