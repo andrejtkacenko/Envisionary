@@ -23,14 +23,25 @@ interface PlannerProps {
 const hours = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT_DEFAULT = 80; // in pixels
 
-const TimeIndicator = ({ hourHeight }: { hourHeight: number }) => {
+const TimeIndicator = ({ hourHeight, timedTasks }: { hourHeight: number, timedTasks: Task[] }) => {
     const [top, setTop] = useState(0);
 
     useEffect(() => {
         const updatePosition = () => {
             const now = new Date();
-            const totalMinutes = now.getHours() * 60 + now.getMinutes();
-            const newTop = (totalMinutes / 60) * hourHeight; 
+            const currentHour = now.getHours();
+            const totalMinutes = currentHour * 60 + now.getMinutes();
+            
+            // Calculate the "saved" visual space from sleep tasks that have already passed
+            const sleepOffset = timedTasks
+                .filter(t => 
+                    t.title.toLowerCase().includes('sleep') && 
+                    t.time && 
+                    parseInt(t.time.split(':')[0]) < currentHour
+                )
+                .reduce((acc, t) => acc + (t.duration || 0) - 60, 0);
+
+            const newTop = ((totalMinutes / 60) * hourHeight) - ((sleepOffset / 60) * hourHeight);
             setTop(newTop);
         };
         
@@ -38,7 +49,7 @@ const TimeIndicator = ({ hourHeight }: { hourHeight: number }) => {
         const interval = setInterval(updatePosition, 60000);
 
         return () => clearInterval(interval);
-    }, [hourHeight]);
+    }, [hourHeight, timedTasks]);
 
     if (hourHeight === 0) return null;
 
@@ -127,7 +138,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
         const [hour, minute] = task.time.split(':').map(Number);
         
         const sleepTasksBefore = timedTasks
-            .filter(t => t.title.toLowerCase().includes('sleep') && parseInt(t.time!.split(':')[0]) < hour)
+            .filter(t => t.title.toLowerCase().includes('sleep') && t.time && parseInt(t.time.split(':')[0]) < hour)
             .reduce((acc, t) => acc + (t.duration || 0) - 60, 0) / 60;
 
         const topOffset = sleepTasksBefore * hourHeight;
@@ -179,7 +190,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
                         )}
                         <ScrollArea className="flex-grow" ref={scrollRef}>
                              <div className="relative mt-4">
-                                {date && isToday(date) && <TimeIndicator hourHeight={hourHeight} />}
+                                {date && isToday(date) && <TimeIndicator hourHeight={hourHeight} timedTasks={timedTasks} />}
                                 
                                 <div className="relative">
                                     {hours.map(hour => {
