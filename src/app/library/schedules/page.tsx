@@ -30,7 +30,7 @@ const ScheduleTemplateCard = ({ template, onDelete, onApply }: { template: Sched
         <Card className="flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline text-xl">{template.name}</CardTitle>
-                <CardDescription>Created on {format(template.createdAt.toDate(), 'PPP')}</CardDescription>
+                <CardDescription>Created on {format(new Date(template.createdAt), 'PPP')}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
                  <p className="text-sm font-medium text-muted-foreground">
@@ -126,7 +126,7 @@ export default function ScheduleLibraryPage() {
   const handleDelete = async (templateId: string) => {
     if (!user) return;
     try {
-        await deleteScheduleTemplate(user.uid, templateId);
+        await deleteScheduleTemplate(templateId);
         setTemplates(prev => prev.filter(t => t.id !== templateId));
         toast({ title: "Template Deleted" });
     } catch(e) {
