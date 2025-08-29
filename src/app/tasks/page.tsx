@@ -12,7 +12,6 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
-  DragOverEvent,
   DragOverlay,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
@@ -67,7 +66,7 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
 export default function TasksPage() {
     const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks } = useTasks();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-    const [activeTask, setActiveTask] = useState<Task | null>(null);
+    const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.dueDate), [tasks]);
@@ -99,79 +98,57 @@ export default function TasksPage() {
         const { active } = event;
         const task = tasks.find(t => t.id === active.id);
         if (task) {
-            setActiveTask(task);
+            setDraggedTask(task);
         }
     };
     
-    const handleDragOver = (event: DragOverEvent) => {
-        const { over } = event;
-        if (!over || !activeTask) return;
+    const handleDragEnd = (event: DragEndEvent) => {
+        setDraggedTask(null);
+        const { active, over } = event;
 
-        const overIsHourSlot = typeof over.data.current?.hour === 'number';
+        if (!over) return;
+        
+        const originalTask = tasks.find(t => t.id === active.id);
+        if (!originalTask) return;
+
+        let updatedTask = { ...originalTask };
+        let hasChanges = false;
+        
         const overIsInbox = over.id === 'inbox';
+        const overIsHourSlot = typeof over.data.current?.hour === 'number';
 
-
-        if (overIsHourSlot && selectedDate) {
+        if (overIsInbox) {
+            // Dragged to Inbox
+            if (updatedTask.dueDate || updatedTask.time) {
+                delete updatedTask.dueDate;
+                delete updatedTask.time;
+                hasChanges = true;
+            }
+        } else if (overIsHourSlot && selectedDate) {
+            // Dragged to a time slot in the planner
             const hour = over.data.current?.hour as number;
             const newDate = setHours(startOfDay(selectedDate), hour);
             const newTime = format(newDate, 'HH:mm');
             
-            const currentDueDate = activeTask.dueDate ? new Date(activeTask.dueDate) : null;
-            const isSameDate = currentDueDate ? isSameDay(currentDueDate, newDate) : false;
+            const currentDueDate = updatedTask.dueDate ? startOfDay(new Date(updatedTask.dueDate)) : null;
+            const isDifferentDay = !currentDueDate || !isSameDay(currentDueDate, startOfDay(newDate));
 
-            if (!isSameDate || newTime !== activeTask.time) {
-                 setActiveTask(currentActiveTask => {
-                    if (!currentActiveTask) return null;
-                    return { ...currentActiveTask, dueDate: newDate, time: newTime };
-                });
-            }
-        } else if (overIsInbox) {
-            if (activeTask.dueDate || activeTask.time) {
-                 setActiveTask(currentActiveTask => {
-                    if (!currentActiveTask) return null;
-                    const updatedTask = {...currentActiveTask};
-                    delete updatedTask.dueDate;
-                    delete updatedTask.time;
-                    return updatedTask;
-                });
+            if (isDifferentDay || newTime !== updatedTask.time) {
+                updatedTask.dueDate = newDate;
+                updatedTask.time = newTime;
+                hasChanges = true;
             }
         }
-    };
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { over } = event;
-
-        // Get the original task from the main `tasks` array to compare against.
-        const originalTask = tasks.find(t => t.id === activeTask?.id);
-
-        if (!activeTask || !originalTask) {
-            setActiveTask(null);
-            return;
+        if (hasChanges) {
+            handleUpdateTask(updatedTask);
         }
-
-        // We create a mutable copy of the final activeTask state for modification
-        let finalTaskState = { ...activeTask };
-
-        // Explicitly handle dropping on inbox to ensure date/time are cleared
-        if (over?.id === 'inbox') {
-            delete finalTaskState.dueDate;
-            delete finalTaskState.time;
-        }
-        
-        // Compare the original task with the final state after dragging.
-        // If they are different, we persist the changes.
-        if (!isEqual(originalTask, finalTaskState)) {
-            handleUpdateTask(finalTaskState);
-        }
-        
-        setActiveTask(null);
     };
 
     return (
         <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
             collisionDetection={closestCenter}
         >
@@ -239,9 +216,9 @@ export default function TasksPage() {
                  </div>
             </div>
              <DragOverlay>
-                {activeTask ? (
+                {draggedTask ? (
                     <TaskItem 
-                        task={activeTask}
+                        task={draggedTask}
                         isOverlay
                     />
                 ) : null}
