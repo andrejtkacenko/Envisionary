@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ListTodo, Plus, Inbox, Calendar as CalendarIconLucide, Loader2 } from 'lucide-react';
 import { isSameDay, startOfDay, isBefore, setHours, setMinutes, format } from 'date-fns';
 import {
@@ -19,17 +19,18 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-ki
 import { useDroppable } from '@dnd-kit/core';
 import isEqual from 'lodash.isequal';
 
-
+import { useTaskStore } from '@/hooks/use-task-store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Planner } from '@/components/planner';
-import { useTasks } from '@/hooks/use-tasks';
 import type { Task } from '@/types';
 import { TaskDialog } from '@/components/task-dialog';
 import { TaskItem } from '@/components/task-item';
 import { TaskActions } from '@/components/task-actions';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+
 
 const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpdate: (task: Task) => void, onDelete: (taskId: string) => void }) => {
     const { setNodeRef, isOver } = useDroppable({
@@ -65,10 +66,17 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
 
 
 export default function TasksPage() {
-    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks, setTasks } = useTasks();
+    const { user } = useAuth();
+    const { tasks, isLoading, fetchTasks, addTask, updateTask, deleteTask } = useTaskStore();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
-    const [initialDraggedTask, setInitialDraggedTask] = useState<Task | null>(null);
+
+    // Initial fetch of tasks
+    useEffect(() => {
+        if (user) {
+            fetchTasks(user.uid);
+        }
+    }, [user, fetchTasks]);
 
     const unscheduledTasks = useMemo(() => tasks.filter(t => !t.dueDate), [tasks]);
     const scheduledTasks = useMemo(() => tasks.filter(t => !!t.dueDate), [tasks]);
@@ -95,69 +103,49 @@ export default function TasksPage() {
           },
         })
     );
-
+    
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
         const task = tasks.find(t => t.id === active.id);
         if (task) {
             setDraggedTask(task);
-            setInitialDraggedTask(JSON.parse(JSON.stringify(task))); // Deep copy for reliable comparison
         }
-    };
-
-    const handleDragOver = (event: DragOverEvent) => {
-        const { active, over } = event;
-        if (!over) return;
-        
-        const activeId = active.id as string;
-        
-        const overIsInbox = over.id === 'inbox';
-        const overIsHourSlot = typeof over.data.current?.hour === 'number';
-
-        setTasks(currentTasks => {
-            const activeTaskIndex = currentTasks.findIndex(t => t.id === activeId);
-            if (activeTaskIndex === -1) return currentTasks;
-
-            const updatedTask = { ...currentTasks[activeTaskIndex] };
-
-            if (overIsInbox) {
-                updatedTask.dueDate = undefined;
-                updatedTask.time = null;
-            } else if (overIsHourSlot && selectedDate) {
-                const hour = over.data.current?.hour as number;
-                const newDate = setHours(startOfDay(selectedDate), hour);
-                const newTime = format(newDate, 'HH:mm');
-                updatedTask.dueDate = newDate;
-                updatedTask.time = newTime;
-            } else {
-                return currentTasks;
-            }
-            
-            const newTasks = [...currentTasks];
-            newTasks[activeTaskIndex] = updatedTask;
-            return newTasks;
-        });
     };
     
     const handleDragEnd = (event: DragEndEvent) => {
-        const { active } = event;
-        const activeId = active.id as string;
+        const { active, over } = event;
+        setDraggedTask(null);
 
-        const finalTask = tasks.find(t => t.id === activeId);
-        
-        if (initialDraggedTask && finalTask && !isEqual(initialDraggedTask, finalTask)) {
-            handleUpdateTask(finalTask);
+        if (!over || !draggedTask) return;
+
+        let finalTask = { ...draggedTask };
+
+        const overIsInbox = over.id === 'inbox';
+        const overIsHourSlot = typeof over.data.current?.hour === 'number';
+
+        if (overIsInbox) {
+            finalTask.dueDate = undefined;
+            finalTask.time = null;
+        } else if (overIsHourSlot && selectedDate) {
+            const hour = over.data.current?.hour as number;
+            const newDate = setHours(startOfDay(selectedDate), hour);
+            const newTime = format(newDate, 'HH:mm');
+            finalTask.dueDate = newDate;
+            finalTask.time = newTime;
+        } else {
+            return; // Dropped in a non-droppable area
         }
 
-        setDraggedTask(null);
-        setInitialDraggedTask(null);
+        // Only call update if there's an actual change
+        if (!isEqual(draggedTask, finalTask)) {
+            updateTask(finalTask);
+        }
     };
     
     return (
         <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
             collisionDetection={closestCenter}
         >
@@ -173,7 +161,7 @@ export default function TasksPage() {
                     </div>
                      <div className="flex items-center gap-2">
                         <TaskActions allTasks={tasks} />
-                        <TaskDialog onSave={handleAddTask}>
+                        <TaskDialog onSave={addTask}>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" /> New Task
                             </Button>
@@ -190,7 +178,7 @@ export default function TasksPage() {
                             </div>
                         ) : (
                            <div className="flex-grow flex flex-col overflow-hidden">
-                             <UnscheduledTasks tasks={unscheduledTasks} onUpdate={handleUpdateTask} onDelete={handleDeleteTask} />
+                             <UnscheduledTasks tasks={unscheduledTasks} onUpdate={updateTask} onDelete={deleteTask} />
                            </div>
                         )}
                         <Card>
@@ -218,8 +206,8 @@ export default function TasksPage() {
                             date={selectedDate}
                             tasks={tasksForSelectedDay}
                             isLoading={isLoading}
-                            onTaskUpdate={handleUpdateTask}
-                            onTaskDelete={handleDeleteTask}
+                            onTaskUpdate={updateTask}
+                            onTaskDelete={deleteTask}
                         />
                      </div>
                  </div>

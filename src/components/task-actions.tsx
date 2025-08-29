@@ -17,7 +17,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Task, DailySchedule, ScheduleTemplate } from '@/types';
 import { generateSchedule } from '@/ai/tools/schedule-actions';
-import { getScheduleTemplates, deleteScheduleTemplate, addScheduleTemplate, updateTasks } from '@/lib/goals-service';
+import { getScheduleTemplates, deleteScheduleTemplate, addScheduleTemplate } from '@/lib/goals-service';
+import { useTaskStore } from '@/hooks/use-task-store';
 import { ScrollArea } from './ui/scroll-area';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
@@ -119,7 +120,7 @@ const TemplatesView = ({ onApply }: { onApply: (template: ScheduleTemplate) => v
             setIsLoading(true);
             try {
                 const fetchedTemplates = await getScheduleTemplates(user.uid);
-                setTemplates(fetchedTemplates.filter(t => t.schedule)); // Filter out templates without a schedule
+                setTemplates(fetchedTemplates.filter(t => t.schedule && t.schedule.length > 0)); // Filter out templates without a schedule
             } catch (error) {
                 console.error("Failed to fetch schedule templates:", error);
                 toast({ variant: "destructive", title: "Error", description: "Could not load templates." });
@@ -194,7 +195,7 @@ const TemplatesView = ({ onApply }: { onApply: (template: ScheduleTemplate) => v
 
 export function TaskActions({ allTasks }: TaskActionsProps) {
   const { user } = useAuth();
-  const router = useRouter();
+  const { updateTasks } = useTaskStore();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -202,7 +203,6 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
   const [view, setView] = useState<'generator' | 'templates'>('generator');
 
   const unscheduledTasks = allTasks.filter(t => !t.dueDate);
-  const previouslyScheduledTasks = allTasks.filter(t => !!t.dueDate);
 
   // --- Step 1 state ---
   const [energyPeak, setEnergyPeak] = useState<'morning' | 'afternoon' | 'evening'>();
@@ -261,9 +261,9 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
   };
 
   const applySchedule = async (scheduleToApply: DailySchedule[]) => {
-      if (!user) return;
       const tasksMap = new Map(allTasks.map(t => [t.id, {...t}]));
       let scheduledCount = 0;
+      const tasksToUpdate: Task[] = [];
 
       for (const day of scheduleToApply) {
           for (const item of day.items) {
@@ -275,19 +275,16 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
                   taskToUpdate.dueDate = setMinutes(setHours(scheduledDate, hours), minutes);
                   taskToUpdate.time = item.startTime;
                   taskToUpdate.duration = item.duration;
-                  tasksMap.set(item.taskId, taskToUpdate);
+                  tasksToUpdate.push(taskToUpdate);
                   scheduledCount++;
               }
           }
       }
       
-      const updatedTasks = Array.from(tasksMap.values());
-      
       try {
-          await updateTasks(user.uid, updatedTasks);
+          await updateTasks(tasksToUpdate);
           toast({ title: "Schedule Applied!", description: `${scheduledCount} tasks have been scheduled.` });
           setOpen(false);
-          // We don't need a router push, the real-time listener in useTasks will update the UI
       } catch (e) {
           console.error(e);
           toast({ variant: 'destructive', title: 'Failed to apply schedule' });
