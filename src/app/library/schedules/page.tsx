@@ -117,7 +117,10 @@ export default function ScheduleLibraryPage() {
   }
 
   useEffect(() => {
-    fetchTemplates();
+    if (user) {
+        fetchTemplates();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleDelete = async (templateId: string) => {
@@ -142,12 +145,14 @@ export default function ScheduleLibraryPage() {
             return;
         }
 
-        const tasksMap = new Map(allTasks.map(t => [t.id, {...t}]));
+        const tasksToUpdate: Task[] = [];
         let taskIndex = 0;
 
         for (const day of template.schedule) {
             for (const item of day.items) {
-                if (!item.taskId) continue;
+                 if (item.taskId || item.title.toLowerCase().includes('lunch') || item.title.toLowerCase().includes('break')) {
+                    continue;
+                 }
                 
                 if (taskIndex >= unscheduledTasks.length) break;
 
@@ -157,21 +162,27 @@ export default function ScheduleLibraryPage() {
                 const [hours, minutes] = item.startTime.split(':').map(Number);
                 const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
 
-                const taskToUpdate = tasksMap.get(taskToSchedule.id)!;
-                taskToUpdate.dueDate = taskDate;
-                taskToUpdate.time = item.startTime;
-                taskToUpdate.duration = item.duration;
-
-                tasksMap.set(taskToSchedule.id, taskToUpdate);
+                const updatedTask = {
+                    ...taskToSchedule,
+                    dueDate: taskDate,
+                    time: item.startTime,
+                    duration: item.duration,
+                };
+                
+                tasksToUpdate.push(updatedTask);
                 taskIndex++;
             }
              if (taskIndex >= unscheduledTasks.length) break;
         }
 
-        const updatedTasks = Array.from(tasksMap.values());
-        await updateTasks(user.uid, updatedTasks);
+        if (tasksToUpdate.length === 0) {
+            toast({ title: "No slots for tasks", description: "This template had no available slots for your tasks." });
+            return;
+        }
 
-        toast({ title: "Schedule Applied!", description: `${taskIndex} tasks have been scheduled.` });
+        await updateTasks(user.uid, tasksToUpdate);
+
+        toast({ title: "Schedule Applied!", description: `${tasksToUpdate.length} tasks have been scheduled.` });
         router.push('/tasks');
 
     } catch (e) {

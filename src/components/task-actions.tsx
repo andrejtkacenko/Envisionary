@@ -266,12 +266,15 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
         return;
       }
       
-      const tasksMap = new Map(tasksToSchedule.map(t => [t.id, {...t}]));
+      const tasksToUpdate: Task[] = [];
       let taskIndex = 0;
 
       for (const day of scheduleToApply) {
           for (const item of day.items) {
-              if (!item.taskId) continue;
+              if (item.taskId || item.title.toLowerCase().includes('lunch') || item.title.toLowerCase().includes('break')) {
+                  continue;
+              }
+
               if (taskIndex >= tasksToSchedule.length) break;
 
               const taskToUpdate = tasksToSchedule[taskIndex];
@@ -282,17 +285,20 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
               taskToUpdate.time = item.startTime;
               taskToUpdate.duration = item.duration;
               
-              tasksMap.set(taskToUpdate.id, taskToUpdate);
+              tasksToUpdate.push(taskToUpdate);
               taskIndex++;
           }
            if (taskIndex >= tasksToSchedule.length) break;
       }
 
-      const updatedTasks = Array.from(tasksMap.values()).filter(t => t.dueDate);
+      if (tasksToUpdate.length === 0) {
+        toast({ title: "No tasks to schedule", description: "The schedule didn't contain any slots for your tasks."});
+        return;
+      }
 
       try {
-          await updateTasks(user.uid, updatedTasks);
-          toast({ title: "Schedule Applied!", description: `${taskIndex} tasks have been scheduled.` });
+          await updateTasks(user.uid, tasksToUpdate);
+          toast({ title: "Schedule Applied!", description: `${tasksToUpdate.length} tasks have been scheduled.` });
           setOpen(false);
       } catch (e) {
           console.error(e);
