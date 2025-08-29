@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, PlusCircle, Trash2, Clock, CalendarDays, Play } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { getScheduleTemplates, deleteScheduleTemplate, getTasks, updateTasks } from '@/lib/goals-service';
+import { getScheduleTemplates, deleteScheduleTemplate } from '@/lib/goals-service';
 import type { ScheduleTemplate, DailySchedule, Task } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { format, setHours, setMinutes } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useTaskStore } from '@/hooks/use-task-store';
 
 
 const ScheduleTemplateCard = ({ template, onDelete, onApply }: { template: ScheduleTemplate, onDelete: (id: string) => void, onApply: (template: ScheduleTemplate) => void }) => {
@@ -94,6 +96,7 @@ export default function ScheduleLibraryPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const { tasks: allTasks, updateTasks } = useTaskStore();
 
   const fetchTemplates = async () => {
       if (!user) return;
@@ -132,8 +135,6 @@ export default function ScheduleLibraryPage() {
     if (!user) return;
 
     try {
-        // 1. Fetch current unscheduled tasks
-        const allTasks = await getTasks(user.uid, () => {}, () => {});
         const unscheduledTasks = allTasks.filter(t => !t.dueDate);
 
         if (unscheduledTasks.length === 0) {
@@ -141,36 +142,33 @@ export default function ScheduleLibraryPage() {
             return;
         }
 
-        // 2. Distribute tasks into the template slots
-        const taskMap = new Map(allTasks.map(t => [t.id, {...t}]));
+        const tasksMap = new Map(allTasks.map(t => [t.id, {...t}]));
         let taskIndex = 0;
 
         for (const day of template.schedule) {
             for (const item of day.items) {
-                // If the slot is for a generic activity, skip it
                 if (!item.taskId) continue;
                 
-                // If we ran out of tasks, stop.
                 if (taskIndex >= unscheduledTasks.length) break;
 
                 const taskToSchedule = unscheduledTasks[taskIndex];
+                
                 const scheduledDate = new Date(day.date + 'T00:00:00');
                 const [hours, minutes] = item.startTime.split(':').map(Number);
                 const taskDate = setMinutes(setHours(scheduledDate, hours), minutes);
 
-                const taskToUpdate = taskMap.get(taskToSchedule.id)!;
+                const taskToUpdate = tasksMap.get(taskToSchedule.id)!;
                 taskToUpdate.dueDate = taskDate;
                 taskToUpdate.time = item.startTime;
                 taskToUpdate.duration = item.duration;
 
-                taskMap.set(taskToSchedule.id, taskToUpdate);
+                tasksMap.set(taskToSchedule.id, taskToUpdate);
                 taskIndex++;
             }
              if (taskIndex >= unscheduledTasks.length) break;
         }
 
-        // 3. Batch update the tasks in Firestore
-        const updatedTasks = Array.from(taskMap.values());
+        const updatedTasks = Array.from(tasksMap.values());
         await updateTasks(user.uid, updatedTasks);
 
         toast({ title: "Schedule Applied!", description: `${taskIndex} tasks have been scheduled.` });

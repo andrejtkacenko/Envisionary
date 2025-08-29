@@ -260,34 +260,39 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
     }
   };
 
-  const applySchedule = async (scheduleToApply: DailySchedule[]) => {
+  const applySchedule = async (scheduleToApply: DailySchedule[], tasksToSchedule: Task[]) => {
       if (!user) {
         toast({ variant: 'destructive', title: 'Not authenticated' });
         return;
       }
-      const tasksMap = new Map(allTasks.map(t => [t.id, {...t}]));
-      let scheduledCount = 0;
-      const tasksToUpdate: Task[] = [];
+      
+      const tasksMap = new Map(tasksToSchedule.map(t => [t.id, {...t}]));
+      let taskIndex = 0;
 
       for (const day of scheduleToApply) {
           for (const item of day.items) {
               if (!item.taskId) continue;
-              const taskToUpdate = tasksMap.get(item.taskId);
-              if (taskToUpdate) {
-                  const scheduledDate = new Date(day.date + 'T00:00:00');
-                  const [hours, minutes] = item.startTime.split(':').map(Number);
-                  taskToUpdate.dueDate = setMinutes(setHours(scheduledDate, hours), minutes);
-                  taskToUpdate.time = item.startTime;
-                  taskToUpdate.duration = item.duration;
-                  tasksToUpdate.push(taskToUpdate);
-                  scheduledCount++;
-              }
+              if (taskIndex >= tasksToSchedule.length) break;
+
+              const taskToUpdate = tasksToSchedule[taskIndex];
+              
+              const scheduledDate = new Date(day.date + 'T00:00:00');
+              const [hours, minutes] = item.startTime.split(':').map(Number);
+              taskToUpdate.dueDate = setMinutes(setHours(scheduledDate, hours), minutes);
+              taskToUpdate.time = item.startTime;
+              taskToUpdate.duration = item.duration;
+              
+              tasksMap.set(taskToUpdate.id, taskToUpdate);
+              taskIndex++;
           }
+           if (taskIndex >= tasksToSchedule.length) break;
       }
-      
+
+      const updatedTasks = Array.from(tasksMap.values()).filter(t => t.dueDate);
+
       try {
-          await updateTasks(user.uid, tasksToUpdate);
-          toast({ title: "Schedule Applied!", description: `${scheduledCount} tasks have been scheduled.` });
+          await updateTasks(user.uid, updatedTasks);
+          toast({ title: "Schedule Applied!", description: `${taskIndex} tasks have been scheduled.` });
           setOpen(false);
       } catch (e) {
           console.error(e);
@@ -298,7 +303,8 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
 
   const handleApplySchedule = () => {
       if (!schedule) return;
-      applySchedule(schedule);
+      const tasksToSchedule = allTasks.filter(t => selectedTasks.includes(t.id));
+      applySchedule(schedule, tasksToSchedule);
   };
   
   const handleApplyTemplate = async (template: ScheduleTemplate) => {
@@ -307,21 +313,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
           toast({ title: "No tasks to schedule", description: "Your inbox is empty." });
           return;
       }
-      
-      let taskIndex = 0;
-      const scheduleToApply = template.schedule.map(day => {
-          const newItems = day.items.map(item => {
-              if (item.taskId && taskIndex < tasksToSchedule.length) {
-                  const mappedTask = { ...item, taskId: tasksToSchedule[taskIndex].id };
-                  taskIndex++;
-                  return mappedTask;
-              }
-              return item;
-          });
-          return { ...day, items: newItems };
-      });
-      
-      await applySchedule(scheduleToApply);
+      await applySchedule(template.schedule, tasksToSchedule);
   }
 
   const handleSaveTemplate = async (name: string) => {
