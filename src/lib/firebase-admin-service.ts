@@ -1,3 +1,4 @@
+
 import prisma from "@/lib/prisma";
 import type { AppUser } from "@/types";
 import { adminApp } from "@/lib/firebase-admin";
@@ -5,7 +6,7 @@ import { getAuth } from "firebase-admin/auth";
 
 export const findUserByTelegramId = async (telegramId: number): Promise<AppUser | null> => {
     return await prisma.user.findUnique({
-        where: { telegramId },
+        where: { telegramId: String(telegramId) },
     });
 };
 
@@ -38,13 +39,13 @@ export const createUserFromTelegramData = async (telegramData: any): Promise<App
 
     // Create or update user in our database
     const newUser = await prisma.user.upsert({
-        where: { telegramId: telegramData.id },
+        where: { telegramId: String(telegramData.id) },
         update: {
             displayName: `${telegramData.first_name} ${telegramData.last_name || ''}`.trim(),
             firebaseUid: firebaseUser.uid,
         },
         create: {
-            telegramId: telegramData.id,
+            telegramId: String(telegramData.id),
             displayName: `${telegramData.first_name} ${telegramData.last_name || ''}`.trim(),
             firebaseUid: firebaseUser.uid,
         }
@@ -66,11 +67,11 @@ export const linkTelegramToUser = async (firebaseUid: string, telegramId: number
     
     await prisma.user.update({
         where: { id: user.id },
-        data: { telegramId },
+        data: { telegramId: String(telegramId) },
     });
 };
 
-export const getOrCreateUser = async (firebaseUser: import('firebase/auth').User): Promise<AppUser> => {
+export const getOrCreateUser = async (firebaseUser: { uid: string, email?: string | null, displayName?: string | null }): Promise<AppUser> => {
     const user = await prisma.user.findUnique({ where: { firebaseUid: firebaseUser.uid } });
     if (user) {
         return user;

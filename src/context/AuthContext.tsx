@@ -12,7 +12,7 @@ import {
   sendPasswordResetEmail,
   signInWithCustomToken
 } from "firebase/auth";
-import { getOrCreateUser } from "@/lib/firebase-admin-service";
+import { getAppUser } from "@/lib/user-actions";
 import type { AppUser } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(currentUser);
       if (currentUser) {
           try {
-              const dbUser = await getOrCreateUser(currentUser);
+              const dbUser = await getAppUser(currentUser);
               setAppUser(dbUser);
           } catch(e) {
               console.error("Failed to get/create user in DB", e);
