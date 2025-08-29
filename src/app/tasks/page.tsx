@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { ListTodo, Plus, Inbox, Calendar as CalendarIconLucide, Loader2 } from 'lucide-react';
 import { isSameDay, startOfDay, isBefore, setHours, setMinutes, format } from 'date-fns';
 import {
@@ -36,6 +36,18 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
     const { setNodeRef, isOver } = useDroppable({
         id: 'inbox',
     });
+    const { user } = useAuth();
+
+    const handleUpdate = useCallback((task: Task) => {
+        if (!user) return;
+        onUpdate(task);
+    }, [user, onUpdate]);
+
+    const handleDelete = useCallback((taskId: string) => {
+        if (!user) return;
+        onDelete(taskId);
+    }, [user, onDelete]);
+
 
     return (
         <Card className="flex-grow flex flex-col overflow-hidden">
@@ -53,7 +65,7 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
                  <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                     {tasks.length > 0 ? (
                         tasks.map(task => (
-                            <TaskItem key={task.id} task={task} onUpdate={onUpdate} onDelete={onDelete} variant="list"/>
+                            <TaskItem key={task.id} task={task} onUpdate={handleUpdate} onDelete={handleDelete} variant="list"/>
                         ))
                     ) : (
                         <div className="text-center text-sm text-muted-foreground py-16">No unscheduled tasks.</div>
@@ -116,9 +128,12 @@ export default function TasksPage() {
         const { active, over } = event;
         setDraggedTask(null);
 
-        if (!over || !draggedTask) return;
+        if (!user || !over || !active.id) return;
+        
+        const originalTask = tasks.find(t => t.id === active.id);
+        if (!originalTask) return;
 
-        let finalTask = { ...draggedTask };
+        let finalTask = { ...originalTask };
 
         const overIsInbox = over.id === 'inbox';
         const overIsHourSlot = typeof over.data.current?.hour === 'number';
@@ -137,11 +152,27 @@ export default function TasksPage() {
         }
 
         // Only call update if there's an actual change
-        if (!isEqual(draggedTask, finalTask)) {
-            updateTask(finalTask);
+        if (!isEqual(originalTask, finalTask)) {
+            updateTask(user.uid, finalTask);
         }
     };
     
+    const handleUpdateTask = useCallback((task: Task) => {
+        if (!user) return;
+        updateTask(user.uid, task);
+    }, [user, updateTask]);
+
+    const handleDeleteTask = useCallback((taskId: string) => {
+        if (!user) return;
+        deleteTask(user.uid, taskId);
+    }, [user, deleteTask]);
+
+    const handleAddTask = useCallback((taskData: Omit<Task, 'id' | 'createdAt'>) => {
+        if (!user) return;
+        addTask(user.uid, taskData);
+    }, [user, addTask]);
+
+
     return (
         <DndContext
             sensors={sensors}
@@ -161,7 +192,7 @@ export default function TasksPage() {
                     </div>
                      <div className="flex items-center gap-2">
                         <TaskActions allTasks={tasks} />
-                        <TaskDialog onSave={addTask}>
+                        <TaskDialog onSave={handleAddTask}>
                             <Button>
                                 <Plus className="mr-2 h-4 w-4" /> New Task
                             </Button>
@@ -178,7 +209,7 @@ export default function TasksPage() {
                             </div>
                         ) : (
                            <div className="flex-grow flex flex-col overflow-hidden">
-                             <UnscheduledTasks tasks={unscheduledTasks} onUpdate={updateTask} onDelete={deleteTask} />
+                             <UnscheduledTasks tasks={unscheduledTasks} onUpdate={handleUpdateTask} onDelete={handleDeleteTask} />
                            </div>
                         )}
                         <Card>
@@ -206,8 +237,8 @@ export default function TasksPage() {
                             date={selectedDate}
                             tasks={tasksForSelectedDay}
                             isLoading={isLoading}
-                            onTaskUpdate={updateTask}
-                            onTaskDelete={deleteTask}
+                            onTaskUpdate={handleUpdateTask}
+                            onTaskDelete={handleDeleteTask}
                         />
                      </div>
                  </div>

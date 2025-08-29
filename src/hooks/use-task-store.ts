@@ -8,17 +8,16 @@ import {
   updateTasks as updateTasksInDb,
 } from '@/lib/goals-service';
 import type { Task } from '@/types';
-import { useAuth } from '@/context/AuthContext';
 
 interface TaskStore {
   tasks: Task[];
   isLoading: boolean;
   error: string | null;
   fetchTasks: (userId: string) => Promise<void>;
-  addTask: (taskData: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
-  updateTask: (task: Task) => Promise<void>;
-  deleteTask: (taskId: string) => Promise<void>;
-  updateTasks: (tasksToUpdate: Task[]) => Promise<void>;
+  addTask: (userId: string, taskData: Omit<Task, 'id' | 'createdAt'>) => Promise<void>;
+  updateTask: (userId: string, task: Task) => Promise<void>;
+  deleteTask: (userId: string, taskId: string) => Promise<void>;
+  updateTasks: (userId: string, tasksToUpdate: Task[]) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -45,15 +44,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  addTask: async (taskData) => {
-    const { user } = useAuth.getState();
-    if (!user) {
-      set({ error: 'User not authenticated' });
-      return;
-    }
+  addTask: async (userId, taskData) => {
     // Optimistic update can be added here if desired
     try {
-      await addTaskToDb(user.uid, taskData);
+      await addTaskToDb(userId, taskData);
       // The real-time listener in fetchTasks will update the state
     } catch (e) {
       console.error(e);
@@ -62,13 +56,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  updateTask: async (task) => {
-    const { user } = useAuth.getState();
-    if (!user) {
-      set({ error: 'User not authenticated' });
-      return;
-    }
-
+  updateTask: async (userId, task) => {
     const originalTasks = get().tasks;
     // Optimistic update
     set(state => ({
@@ -76,38 +64,28 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }));
 
     try {
-      await updateTaskInDb(user.uid, task);
+      await updateTaskInDb(userId, task);
     } catch (e) {
       console.error(e);
       set({ error: 'Failed to update task', tasks: originalTasks }); // Revert on error
     }
   },
 
-  deleteTask: async (taskId) => {
-    const { user } = useAuth.getState();
-    if (!user) {
-      set({ error: 'User not authenticated' });
-      return;
-    }
+  deleteTask: async (userId, taskId) => {
     const originalTasks = get().tasks;
     // Optimistic update
     set(state => ({
         tasks: state.tasks.filter(t => t.id !== taskId)
     }));
     try {
-      await deleteTaskFromDb(user.uid, taskId);
+      await deleteTaskFromDb(userId, taskId);
     } catch (e) {
       console.error(e);
       set({ error: 'Failed to delete task', tasks: originalTasks });
     }
   },
 
-  updateTasks: async (tasksToUpdate: Task[]) => {
-      const { user } = useAuth.getState();
-      if (!user) {
-          set({ error: 'User not authenticated' });
-          return;
-      }
+  updateTasks: async (userId, tasksToUpdate: Task[]) => {
       const originalTasks = get().tasks;
       
       // Create a map of the updates
@@ -119,7 +97,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       }));
 
       try {
-          await updateTasksInDb(user.uid, tasksToUpdate);
+          await updateTasksInDb(userId, tasksToUpdate);
       } catch (e) {
           console.error(e);
           set({ error: 'Failed to update tasks', tasks: originalTasks });

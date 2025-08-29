@@ -10,6 +10,7 @@ import type { Task } from '@/types';
 import { TaskItem } from './task-item';
 import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
 interface PlannerProps {
     date: Date | undefined;
@@ -77,6 +78,7 @@ export const Planner = ({ date, tasks, isLoading, onTaskUpdate, onTaskDelete }: 
     const scrollRef = useRef<HTMLDivElement>(null);
     const plannerRef = useRef<HTMLDivElement>(null);
     const { setNodeRef: setPlannerRef } = useDroppable({ id: 'planner' });
+    const { user } = useAuth();
 
     const [hourHeight, setHourHeight] = useState(HOUR_HEIGHT_DEFAULT);
 

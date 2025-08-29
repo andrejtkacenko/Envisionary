@@ -261,6 +261,10 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
   };
 
   const applySchedule = async (scheduleToApply: DailySchedule[]) => {
+      if (!user) {
+        toast({ variant: 'destructive', title: 'Not authenticated' });
+        return;
+      }
       const tasksMap = new Map(allTasks.map(t => [t.id, {...t}]));
       let scheduledCount = 0;
       const tasksToUpdate: Task[] = [];
@@ -282,7 +286,7 @@ export function TaskActions({ allTasks }: TaskActionsProps) {
       }
       
       try {
-          await updateTasks(tasksToUpdate);
+          await updateTasks(user.uid, tasksToUpdate);
           toast({ title: "Schedule Applied!", description: `${scheduledCount} tasks have been scheduled.` });
           setOpen(false);
       } catch (e) {

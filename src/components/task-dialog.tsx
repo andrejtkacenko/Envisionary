@@ -47,6 +47,7 @@ import { Checkbox } from "./ui/checkbox";
 import { ScrollArea } from "./ui/scroll-area";
 import { BreakDownTaskDialog, type SubTask as GeneratedSubTask } from "./break-down-task-dialog";
 import { Label } from "./ui/label";
+import { useAuth } from "@/context/AuthContext";
 
 const priorityMap: Record<TaskPriority, { label: string; color: string; icon: React.ReactNode }> = {
     p1: { label: "Priority 1", color: "text-red-500", icon: <Flag className="h-4 w-4" /> },
@@ -77,6 +78,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   const [open, setOpen] = useState(false);
   const [subTasks, setSubTasks] = useState<Task[]>([]);
   const isEditMode = !!task;
+  const { user } = useAuth();
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
