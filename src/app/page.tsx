@@ -111,18 +111,6 @@ export default function Home() {
   }, [isTelegramFlow, signInWithToken, router]);
 
 
-  const fetchGoals = useCallback(async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      await getGoals(user.uid, () => {}, () => {});
-    } catch (error) {
-      console.error("Error fetching goals:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
   useEffect(() => {
     // Regular auth flow
     if (!isTelegramFlow && !authLoading && !user) {
@@ -147,20 +135,21 @@ export default function Home() {
   }, [user, toast, isTelegramFlow]);
 
 
-  const handleAddNewGoal = useCallback(async (newGoalData: Omit<Goal, 'id' | 'subGoals'>) => {
+  const handleAddNewGoal = useCallback(async (newGoalData: Omit<Goal, 'id' | 'createdAt'>) => {
     if (!user) return;
     try {
-        const newGoal = await addGoal(user.uid, newGoalData);
+        const newGoal = await addGoal({ ...newGoalData, userId: user.uid });
         return newGoal;
     } catch(e) {
         console.error("Error adding goal:", e);
     }
   }, [user]);
 
-  const handleAddNewGoals = useCallback(async (newGoalsData: Omit<Goal, 'id' | 'subGoals'>[]) => {
+  const handleAddNewGoals = useCallback(async (newGoalsData: Omit<Goal, 'id' | 'createdAt'>[]) => {
       if (!user) return;
       try {
-        const newGoals = await addGoals(user.uid, newGoalsData);
+        const goalsWithUser = newGoalsData.map(g => ({ ...g, userId: user.uid }));
+        const newGoals = await addGoals(goalsWithUser);
         return newGoals;
       } catch (e) {
         console.error("Error adding goals:", e);
@@ -176,9 +165,9 @@ export default function Home() {
     });
 
     try {
-      await updateGoal(user.uid, updatedGoal);
+      await updateGoal(updatedGoal);
        if (updatedGoal.status === 'done') {
-        await addNotification(user.uid, {
+        await addNotification({
           userId: user.uid,
           title: 'Goal Completed!',
           description: `You've completed the goal: "${updatedGoal.title}"`,
@@ -203,7 +192,7 @@ export default function Home() {
     setGoals((prev) => prev.filter((goal) => goal.id !== goalId));
 
     try {
-      await deleteGoal(user.uid, goalId);
+      await deleteGoal(goalId);
     } catch (e) {
       console.error("Error deleting goal:", e);
        toast({
@@ -218,7 +207,7 @@ export default function Home() {
   const columns = useMemo(() => {
     return KANBAN_COLUMNS.map(col => ({
         ...col,
-        goals: goals.filter(goal => goal.status === col.id),
+        goals: goals.filter(goal => goal.status === col.id && !goal.parentId),
     }));
   }, [goals]);
 
@@ -359,7 +348,7 @@ export default function Home() {
                 <div className="flex w-full items-center justify-center py-24">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-                ) : goals.length === 0 ? (
+                ) : goals.filter(g => !g.parentId).length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[calc(100vh-15rem)] gap-4 text-center rounded-lg border bg-card">
                         <Target className="h-16 w-16 text-muted-foreground" />
                         <h2 className="text-2xl font-semibold">Your Board is Empty</h2>

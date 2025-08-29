@@ -18,26 +18,28 @@ export type AppUser = {
 
 export type Goal = {
   id: string;
+  userId: string;
+  parentId?: string; // ID of the parent goal if this is a sub-goal
   title: string;
   description?: string;
   status: GoalStatus;
   priority: GoalPriority;
   category: string;
   dueDate?: Date;
-  subGoals?: Goal[];
   estimatedTime?: string;
   createdAt: any; // Allow Date or Timestamp
 };
 
 export type Task = {
     id: string;
+    userId: string;
+    parentId?: string; // ID of the parent task if this is a sub-task
     title: string;
     description?: string;
     priority: TaskPriority;
     dueDate?: Date | string; // Allow string for serialization
     isCompleted: boolean;
     createdAt: any;
-    subTasks?: Task[];
     time?: string | null; // e.g., "09:00"
     duration?: number; // in minutes
 };

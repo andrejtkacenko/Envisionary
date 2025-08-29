@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -48,6 +49,8 @@ import { ScrollArea } from "./ui/scroll-area";
 import { BreakDownTaskDialog, type SubTask as GeneratedSubTask } from "./break-down-task-dialog";
 import { Label } from "./ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { useTaskStore } from "@/hooks/use-task-store";
+import { getSubTasks, deleteTask } from "@/lib/goals-service";
 
 const priorityMap: Record<TaskPriority, { label: string; color: string; icon: React.ReactNode }> = {
     p1: { label: "Priority 1", color: "text-red-500", icon: <Flag className="h-4 w-4" /> },
@@ -79,10 +82,17 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   const [subTasks, setSubTasks] = useState<Task[]>([]);
   const isEditMode = !!task;
   const { user } = useAuth();
+  const { addTask, updateTask } = useTaskStore();
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
   });
+  
+  useEffect(() => {
+    if (task?.id) {
+        getSubTasks(task.id).then(setSubTasks);
+    }
+  }, [task?.id])
 
   useEffect(() => {
     if (open) {
@@ -94,28 +104,29 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
         time: task?.time || "",
         duration: task?.duration || 60,
       });
-      setSubTasks(task?.subTasks || []);
+      if (task?.id) {
+        getSubTasks(task.id).then(setSubTasks);
+      } else {
+        setSubTasks([]);
+      }
     }
   }, [task, open, form]);
   
   const watchedTitle = form.watch("title");
   const watchedDescription = form.watch("description");
 
-
   const onSubmit = (data: TaskFormValues) => {
-    const taskToSave: Omit<Task, 'id' | 'createdAt'> | Task = {
-        ...task,
-        ...data,
-        id: task?.id || nanoid(),
-        time: data.time || null, // Ensure it's null if empty
-        duration: data.duration || 60,
-        subTasks: subTasks,
-        isCompleted: task?.isCompleted || false,
-        createdAt: task?.createdAt || new Date(),
-    };
-    onSave(taskToSave);
-    setOpen(false);
-    form.reset();
+      const taskData = {
+          ...data,
+          isCompleted: task?.isCompleted || false,
+      };
+
+      if (isEditMode && task) {
+          onSave({ ...task, ...taskData });
+      } else if(user) {
+          onSave({ ...taskData, userId: user.uid });
+      }
+      handleOpenChange(false);
   };
   
   const handleOpenChange = (isOpen: boolean) => {
@@ -127,27 +138,27 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
   }
 
   const handleSubTaskAdd = (newSubTasks: GeneratedSubTask[]) => {
-    const newTasks: Task[] = newSubTasks.map(st => ({
-        id: nanoid(),
+    if (!user || !task) return;
+    const tasksToAdd = newSubTasks.map(st => ({
+        userId: user.uid,
+        parentId: task.id,
         title: st.title,
         description: st.description,
         isCompleted: false,
-        priority: 'p4',
+        priority: 'p4' as TaskPriority,
         createdAt: new Date(),
     }));
-    setSubTasks(prev => [...prev, ...newTasks]);
+    tasksToAdd.forEach(t => addTask(user.uid, t));
   };
   
-  const handleToggleSubTask = (subTaskId: string) => {
-    setSubTasks(current => 
-      current.map(st => 
-        st.id === subTaskId ? { ...st, isCompleted: !st.isCompleted } : st
-      )
-    );
+  const handleToggleSubTask = (subTask: Task) => {
+    if(!user) return;
+    updateTask(user.uid, { ...subTask, isCompleted: !subTask.isCompleted });
   };
   
   const handleDeleteSubTask = (subTaskId: string) => {
-     setSubTasks(current => current.filter(st => st.id !== subTaskId));
+     if(!user) return;
+     deleteTask(subTaskId);
   };
 
 
@@ -261,7 +272,7 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                         <FormItem className="flex-grow">
                            <Label htmlFor="time" className="sr-only">Time</Label>
                           <FormControl>
-                            <Input id="time" type="time" {...field} />
+                            <Input id="time" type="time" {...field} value={field.value || ""} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -284,53 +295,55 @@ export function TaskDialog({ task, onSave, onDelete, children }: TaskDialogProps
                 </div>
             </div>
              
-             <Separator />
-
-            <div>
-                <div className="flex justify-between items-center mb-2">
-                     <h4 className="text-sm font-medium text-muted-foreground">Sub-tasks</h4>
-                     <BreakDownTaskDialog 
-                        task={{title: watchedTitle, description: watchedDescription}} 
-                        onSubTasksAdd={handleSubTaskAdd}
-                    >
-                        <Button type="button" variant="outline" size="sm">
-                            <Wand2 className="mr-2 h-4 w-4"/> AI Breakdown
-                        </Button>
-                     </BreakDownTaskDialog>
+            {isEditMode && (
+                <>
+                <Separator />
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">Sub-tasks</h4>
+                        <BreakDownTaskDialog 
+                            task={{title: watchedTitle, description: watchedDescription}} 
+                            onSubTasksAdd={handleSubTaskAdd}
+                        >
+                            <Button type="button" variant="outline" size="sm">
+                                <Wand2 className="mr-2 h-4 w-4"/> AI Breakdown
+                            </Button>
+                        </BreakDownTaskDialog>
+                    </div>
+                    <ScrollArea className="h-48 border rounded-md p-2">
+                        {subTasks.length > 0 ? (
+                            <div className="space-y-1">
+                                {subTasks.map(st => (
+                                    <div key={st.id} className="flex items-center gap-2 group p-1 rounded-md hover:bg-muted/50">
+                                        <Checkbox
+                                            id={`subtask-${st.id}`}
+                                            checked={st.isCompleted}
+                                            onCheckedChange={() => handleToggleSubTask(st)}
+                                        />
+                                        <Label htmlFor={`subtask-${st.id}`} className={cn("text-sm flex-grow cursor-pointer", st.isCompleted && "line-through text-muted-foreground")}>
+                                            {st.title}
+                                        </Label>
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                            onClick={() => handleDeleteSubTask(st.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4"/>
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center text-xs text-muted-foreground py-16">
+                                No sub-tasks yet.
+                            </div>
+                        )}
+                    </ScrollArea>
                 </div>
-                <ScrollArea className="h-48 border rounded-md p-2">
-                    {subTasks.length > 0 ? (
-                        <div className="space-y-1">
-                            {subTasks.map(st => (
-                                <div key={st.id} className="flex items-center gap-2 group p-1 rounded-md hover:bg-muted/50">
-                                    <Checkbox
-                                        id={`subtask-${st.id}`}
-                                        checked={st.isCompleted}
-                                        onCheckedChange={() => handleToggleSubTask(st.id)}
-                                    />
-                                    <Label htmlFor={`subtask-${st.id}`} className={cn("text-sm flex-grow cursor-pointer", st.isCompleted && "line-through text-muted-foreground")}>
-                                        {st.title}
-                                    </Label>
-                                    <Button 
-                                        type="button" 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                                        onClick={() => handleDeleteSubTask(st.id)}
-                                    >
-                                        <Trash2 className="h-4 w-4"/>
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center text-xs text-muted-foreground py-16">
-                            No sub-tasks yet.
-                        </div>
-                    )}
-                </ScrollArea>
-            </div>
-            
+                </>
+            )}
 
             <div className={cn("flex", isEditMode ? "justify-between" : "justify-end")}>
                 {isEditMode && onDelete && task.id && (

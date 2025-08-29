@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Flag, ListTree, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import type { Task, TaskPriority } from '@/types';
 import { TaskDialog } from './task-dialog';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getSubTasks } from '@/lib/goals-service';
 
 const priorityMap: Record<TaskPriority, { color: string, className: string }> = {
     p1: { color: "bg-red-500", className: "border-l-red-500" },
@@ -30,6 +31,13 @@ interface TaskItemProps {
 export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay = false, style: propStyle }: TaskItemProps) => {
     
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+    const [subTasks, setSubTasks] = useState<Task[]>([]);
+
+    useEffect(() => {
+        if(task.id) {
+            getSubTasks(task.id).then(setSubTasks);
+        }
+    }, [task.id]);
     
     const {
         attributes,
@@ -54,8 +62,8 @@ export const TaskItem = ({ task, onUpdate, onDelete, variant = 'list', isOverlay
     };
 
 
-    const completedSubTasks = task.subTasks?.filter(st => st.isCompleted).length || 0;
-    const totalSubTasks = task.subTasks?.length || 0;
+    const completedSubTasks = subTasks.filter(st => st.isCompleted).length || 0;
+    const totalSubTasks = subTasks.length || 0;
 
     const plannerContent = (
          <div className={cn("h-full w-full p-2 rounded-lg flex flex-col justify-center text-white", priorityMap[task.priority].color)}>

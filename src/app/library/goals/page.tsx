@@ -7,7 +7,7 @@ import { Loader2, PlusCircle, User, Clock } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getGoalTemplates, addGoal } from '@/lib/goals-service';
-import type { GoalTemplate } from '@/types';
+import type { Goal, GoalTemplate } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -142,8 +142,6 @@ export default function GoalLibraryPage() {
     async function fetchTemplates() {
       try {
         const fetchedTemplates = await getGoalTemplates();
-        // Sort by most recent first
-        fetchedTemplates.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
         setCommunityTemplates(fetchedTemplates);
       } catch (error) {
         console.error("Failed to fetch goal templates:", error);
@@ -165,22 +163,31 @@ export default function GoalLibraryPage() {
       return;
     }
     try {
-      await addGoal(user.uid, {
+      const parentGoalData = {
+        userId: user.uid,
         title: template.title,
         description: template.description,
         category: template.category || 'General',
-        status: 'todo',
-        priority: 'medium',
-        subGoals: template.subGoals.map(sg => ({
-            id: crypto.randomUUID(),
-            title: sg.title,
-            description: sg.description,
-            category: template.category || 'General',
-            status: 'todo',
-            priority: 'medium',
-            createdAt: new Date(),
-        }))
-      });
+        status: 'todo' as const,
+        priority: 'medium' as const,
+      };
+      const parentGoal = await addGoal(parentGoalData);
+
+      const subGoalsData = template.subGoals.map(sg => ({
+        userId: user.uid,
+        parentId: parentGoal.id,
+        title: sg.title,
+        description: sg.description,
+        category: template.category || 'General',
+        status: 'todo' as const,
+        priority: 'medium' as const,
+        estimatedTime: sg.estimatedTime,
+      }));
+
+      if (subGoalsData.length > 0) {
+        await Promise.all(subGoalsData.map(sg => addGoal(sg)));
+      }
+      
       toast({
         title: 'Goal Added!',
         description: `"${template.title}" has been added to your board.`,
@@ -200,7 +207,7 @@ export default function GoalLibraryPage() {
       ...t,
       id: `system-${i}`,
       authorId: 'system',
-      likes: 0, // System templates don't have likes
+      likes: 0,
       createdAt: new Date() as any, // Not a real timestamp, but satisfies type
   }));
 

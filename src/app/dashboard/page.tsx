@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/chart"
 import { PieChart, Pie, Cell } from "recharts"
 import type { Goal } from "@/types"
-import { getGoals } from "@/lib/goals-service"
+import { getGoals, getSubGoals } from "@/lib/goals-service"
 import { summarizeProgress } from "@/ai/tools/goal-actions";
 import { useToast } from "@/hooks/use-toast"
 
@@ -85,15 +85,16 @@ export default function DashboardPage() {
     chartConfig, 
     ongoingGoals 
   } = useMemo(() => {
-    const activeGoals = goals.filter(g => g.status !== 'ongoing');
-    const ongoings = goals.filter(g => g.status === 'ongoing');
+    const mainGoals = goals.filter(g => !g.parentId);
+    const activeGoals = mainGoals.filter(g => g.status !== 'ongoing');
+    const ongoings = mainGoals.filter(g => g.status === 'ongoing');
 
     const total = activeGoals.length;
     const done = activeGoals.filter(g => g.status === 'done').length;
     const inprogress = activeGoals.filter(g => g.status === 'inprogress').length;
     const todo = activeGoals.filter(g => g.status === 'todo').length;
     
-    const recent = [...goals].sort((a, b) => {
+    const recent = [...mainGoals].sort((a, b) => {
         return (b.createdAt as any) - (a.createdAt as any);
     }).slice(0, 4);
 
@@ -133,6 +134,31 @@ export default function DashboardPage() {
     }
   }, [goals]);
 
+  const GoalProgress = ({ goal }: { goal: Goal }) => {
+    const [subGoals, setSubGoals] = useState<Goal[]>([]);
+
+    useEffect(() => {
+      if (goal.id) {
+        getSubGoals(goal.id).then(setSubGoals);
+      }
+    }, [goal.id]);
+
+    const completedSub = subGoals.filter(sg => sg.status === 'done').length;
+    const totalSub = subGoals.length;
+    const progress = totalSub > 0 ? (completedSub / totalSub) * 100 : (goal.status === 'done' ? 100 : goal.status === 'inprogress' ? 50 : 0);
+
+    return (
+      <div>
+        <div className="flex items-center justify-between">
+          <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
+          <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
+        </div>
+        <p className="text-sm text-muted-foreground">{goal.category || 'Uncategorized'}</p>
+        <Progress value={progress} className="h-2 mt-2" />
+      </div>
+    );
+  };
+
 
   if (isLoading) {
     return (
@@ -162,7 +188,7 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      {goals.length === 0 ? (
+      {goals.filter(g => !g.parentId).length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[calc(100vh-15rem)] gap-4 text-center border bg-card rounded-lg">
             <Target className="h-16 w-16 text-muted-foreground" />
             <h2 className="text-2xl font-semibold">Your Dashboard is Waiting</h2>
@@ -310,22 +336,9 @@ export default function DashboardPage() {
             <CardContent>
                 {recentGoals.length > 0 ? (
                     <div className="space-y-6">
-                    {recentGoals.map((goal: Goal) => {
-                        const completedSub = goal.subGoals?.filter(sg => sg.status === 'done').length || 0
-                        const totalSub = goal.subGoals?.length || 0
-                        const progress = totalSub > 0 ? (completedSub / totalSub) * 100 : (goal.status === 'done' ? 100 : goal.status === 'inprogress' ? 50 : 0)
-                        
-                        return (
-                        <div key={goal.id}>
-                            <div className="flex items-center justify-between">
-                            <Link href="/" className="font-semibold hover:underline">{goal.title}</Link>
-                            <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{goal.category || 'Uncategorized'}</p>
-                            <Progress value={progress} className="h-2 mt-2" />
-                        </div>
-                        )
-                    })}
+                    {recentGoals.map((goal: Goal) => (
+                      <GoalProgress key={goal.id} goal={goal} />
+                    ))}
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-12">

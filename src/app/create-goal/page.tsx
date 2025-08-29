@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -94,8 +95,9 @@ export default function CreateGoalPage() {
     }
     setIsLoading(true);
     try {
-      await addGoal(user.uid, {
+      await addGoal({
         ...data,
+        userId: user.uid,
         category: data.category || 'General' // Use 'General' if not provided
       });
       router.push('/');

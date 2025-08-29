@@ -2,7 +2,7 @@
 
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, Calendar as CalendarIcon, Clock, CheckCircle, Loader, Repeat } from "lucide-react";
 import { format } from "date-fns";
 
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { EditGoalDialog } from "./edit-goal-dialog";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getSubGoals } from "@/lib/goals-service";
 
 
 interface KanbanCardProps {
@@ -38,7 +39,14 @@ const statusIcons: Record<GoalStatus, React.ReactNode> = {
 
 export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: KanbanCardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [subGoals, setSubGoals] = useState<Goal[]>([]);
   
+  useEffect(() => {
+    if (goal.id) {
+        getSubGoals(goal.id).then(setSubGoals);
+    }
+  }, [goal.id]);
+
   const {
     attributes,
     listeners,
@@ -60,8 +68,8 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
     transform: CSS.Transform.toString(transform),
   };
 
-  const completedSubGoals = goal.subGoals?.filter(sg => sg.status === 'done').length || 0;
-  const totalSubGoals = goal.subGoals?.length || 0;
+  const completedSubGoals = subGoals.filter(sg => sg.status === 'done').length;
+  const totalSubGoals = subGoals.length;
   const progress = totalSubGoals > 0 ? (completedSubGoals / totalSubGoals) * 100 : 0;
   
   const cardContent = (
@@ -88,7 +96,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
                 {goal.dueDate && (
                     <div className="flex items-center gap-1">
                     <CalendarIcon className="h-4 w-4" />
-                    <span>{format(goal.dueDate, "MMM d")}</span>
+                    <span>{format(new Date(goal.dueDate), "MMM d")}</span>
                     </div>
                 )}
                 {goal.estimatedTime && (
@@ -121,6 +129,7 @@ export function KanbanCard({ goal, isOverlay, onGoalUpdate, onGoalDelete }: Kanb
         {onGoalUpdate && onGoalDelete ? (
             <EditGoalDialog
                 goal={goal}
+                subGoals={subGoals}
                 onGoalUpdate={onGoalUpdate}
                 onGoalDelete={onGoalDelete}
                 onOpenChange={setIsDialogOpen}
