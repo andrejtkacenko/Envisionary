@@ -15,6 +15,7 @@
 
 
 
+
 import { db } from "@/lib/firebase";
 import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch, Timestamp, getDoc, addDoc, query, orderBy, onSnapshot, Unsubscribe, where, limit } from "firebase/firestore";
 import type { Goal, GoalTemplate, GoalStatus, AppUser, Notification, Task, ScheduleTemplate, DailySchedule } from "@/types";
@@ -105,31 +106,10 @@ const goalConverter = {
     }
 };
 
-const subTaskToFirestore = (task: Task) => {
-    const data: any = { ...task };
-    if (task.dueDate) {
-        const date = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate;
-        data.dueDate = Timestamp.fromDate(date as Date);
-    } else {
-        delete data.dueDate;
-    }
-    if (!data.createdAt) {
-        data.createdAt = Timestamp.now();
-    }
-    if (data.subTasks) {
-        data.subTasks = data.subTasks.map(subTaskToFirestore);
-    }
-    if (task.time === undefined || task.time === null || task.time === '') {
-        delete data.time;
-    } else {
-        data.time = task.time;
-    }
-    return data;
-}
-
 const subTaskFromFirestore = (data: any): Task => {
     const task: Task = {
         ...data,
+        id: data.id || '', // Ensure id is present
         dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : undefined,
         createdAt: data.createdAt,
     };
@@ -143,29 +123,36 @@ const subTaskFromFirestore = (data: any): Task => {
 const taskConverter = {
     toFirestore: (task: Partial<Task>) => {
         const data: any = { ...task };
+        
+        // Handle dates
         if (task.dueDate) {
             const date = typeof task.dueDate === 'string' ? new Date(task.dueDate) : task.dueDate;
             data.dueDate = Timestamp.fromDate(date as Date);
         } else {
+            // Explicitly delete if not present to clear it in Firestore
             delete data.dueDate;
         }
 
+        if (task.time) {
+            data.time = task.time;
+        } else {
+            delete data.time;
+        }
+
+        // Ensure createdAt is set on creation
         if (!data.createdAt) {
             data.createdAt = Timestamp.now();
+        } else if (!(data.createdAt instanceof Timestamp) && data.createdAt.toDate) {
+            // Convert JS Date back to Timestamp if it was transformed
+            data.createdAt = Timestamp.fromDate(data.createdAt.toDate());
         }
 
+        // Recursively convert subTasks
         if (task.subTasks) {
-            data.subTasks = task.subTasks.map(subTaskToFirestore);
+            // Re-use the main converter logic for subtasks
+            data.subTasks = task.subTasks.map(subTask => taskConverter.toFirestore(subTask));
         }
 
-        if (task.time === undefined || task.time === null || task.time === '') {
-            delete data.time;
-        } else {
-            data.time = task.time;
-        }
-        
-        data.duration = task.duration || 60;
-        
         return data;
     },
     fromFirestore: (snapshot: any, options: any): Task => {
