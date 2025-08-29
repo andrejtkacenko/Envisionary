@@ -27,9 +27,10 @@ import type { Task } from '@/types';
 import { TaskDialog } from '@/components/task-dialog';
 import { TaskItem } from '@/components/task-item';
 import { TaskActions } from '@/components/task-actions';
+import { cn } from '@/lib/utils';
 
 const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpdate: (task: Task) => void, onDelete: (taskId: string) => void }) => {
-    const { setNodeRef } = useDroppable({
+    const { setNodeRef, isOver } = useDroppable({
         id: 'inbox',
     });
 
@@ -39,7 +40,13 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
                 <CardTitle className="flex items-center gap-2"><Inbox/> Inbox</CardTitle>
                  <CardDescription>Unscheduled tasks</CardDescription>
             </CardHeader>
-            <CardContent ref={setNodeRef} className="flex-grow overflow-y-auto p-2">
+            <CardContent
+              ref={setNodeRef}
+              className={cn(
+                "flex-grow overflow-y-auto p-2 transition-colors duration-200",
+                isOver ? "bg-primary/10" : ""
+              )}
+            >
                  <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                     {tasks.length > 0 ? (
                         tasks.map(task => (
@@ -95,26 +102,10 @@ export default function TasksPage() {
     };
     
     const handleDragOver = (event: DragOverEvent) => {
-        const { active, over } = event;
+        const { over } = event;
         if (!over || !activeTask) return;
 
-        const overId = over.id as string;
-        const overIsInbox = overId === 'inbox';
         const overIsHourSlot = typeof over.data.current?.hour === 'number';
-
-        // When a task is dragged over the Inbox, unschedule it.
-        if (overIsInbox) {
-            // Check if the task is currently scheduled to avoid unnecessary updates
-            if (activeTask.dueDate || activeTask.time) {
-                setActiveTask(currentActiveTask => {
-                    if (!currentActiveTask) return null;
-                    const updatedTask = { ...currentActiveTask, dueDate: undefined, time: null };
-                    // We only update the local activeTask state here.
-                    // The final update will be committed in onDragEnd.
-                    return updatedTask;
-                });
-            }
-        }
 
         // Dragging over an hour slot
         if (overIsHourSlot && selectedDate) {
@@ -135,12 +126,19 @@ export default function TasksPage() {
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
+        const { over } = event;
         if (activeTask) {
-            const originalTask = tasks.find(t => t.id === activeTask.id);
-            const hasChanged = JSON.stringify(originalTask) !== JSON.stringify(activeTask);
+            let taskToUpdate = { ...activeTask };
+            
+            if (over?.id === 'inbox') {
+              taskToUpdate = { ...taskToUpdate, dueDate: undefined, time: null };
+            }
+
+            const originalTask = tasks.find(t => t.id === taskToUpdate.id);
+            const hasChanged = JSON.stringify(originalTask) !== JSON.stringify(taskToUpdate);
             
             if (hasChanged) {
-                handleUpdateTask(activeTask);
+                handleUpdateTask(taskToUpdate);
             }
         }
         setActiveTask(null);
