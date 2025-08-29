@@ -1,7 +1,8 @@
 
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { ListTodo, Plus, Inbox, Calendar as CalendarIconLucide, Loader2 } from 'lucide-react';
 import { isSameDay, startOfDay, isBefore, setHours, setMinutes, format } from 'date-fns';
 import {
@@ -12,6 +13,7 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  DragOverEvent,
   DragOverlay,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
@@ -64,7 +66,7 @@ const UnscheduledTasks = ({ tasks, onUpdate, onDelete }: { tasks: Task[], onUpda
 
 
 export default function TasksPage() {
-    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks } = useTasks();
+    const { tasks, isLoading, handleAddTask, handleUpdateTask, handleDeleteTask, handleBulkUpdateTasks, setTasks } = useTasks();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
@@ -101,54 +103,67 @@ export default function TasksPage() {
             setDraggedTask(task);
         }
     };
+
+    const handleDragOver = (event: DragOverEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+        
+        const activeId = active.id as string;
+        const overId = over.id as string;
+        
+        const overIsInbox = over.id === 'inbox';
+        const overIsHourSlot = typeof over.data.current?.hour === 'number';
+
+        setTasks(currentTasks => {
+            const activeTaskIndex = currentTasks.findIndex(t => t.id === activeId);
+            if (activeTaskIndex === -1) return currentTasks;
+
+            let updatedTask = { ...currentTasks[activeTaskIndex] };
+
+            if (overIsInbox) {
+                updatedTask.dueDate = undefined;
+                updatedTask.time = null;
+            } else if (overIsHourSlot && selectedDate) {
+                const hour = over.data.current?.hour as number;
+                const newDate = setHours(startOfDay(selectedDate), hour);
+                const newTime = format(newDate, 'HH:mm');
+                updatedTask.dueDate = newDate;
+                updatedTask.time = newTime;
+            } else {
+                return currentTasks;
+            }
+
+            const newTasks = [...currentTasks];
+            newTasks[activeTaskIndex] = updatedTask;
+            return newTasks;
+        });
+    };
     
     const handleDragEnd = (event: DragEndEvent) => {
         setDraggedTask(null);
         const { active, over } = event;
 
         if (!over) return;
-        
-        const originalTask = tasks.find(t => t.id === active.id);
-        if (!originalTask) return;
 
-        let updatedTask = { ...originalTask };
-        let hasChanges = false;
-        
-        const overIsInbox = over.id === 'inbox';
-        const overIsHourSlot = typeof over.data.current?.hour === 'number';
+        const activeId = active.id as string;
 
-        if (overIsInbox) {
-            // Dragged to Inbox
-            if (updatedTask.dueDate || updatedTask.time) {
-                delete updatedTask.dueDate;
-                delete updatedTask.time;
-                hasChanges = true;
-            }
-        } else if (overIsHourSlot && selectedDate) {
-            // Dragged to a time slot in the planner
-            const hour = over.data.current?.hour as number;
-            const newDate = setHours(startOfDay(selectedDate), hour);
-            const newTime = format(newDate, 'HH:mm');
-            
-            const currentDueDate = updatedTask.dueDate ? startOfDay(new Date(updatedTask.dueDate)) : null;
-            const isDifferentDay = !currentDueDate || !isSameDay(currentDueDate, startOfDay(newDate));
+        const originalTask = tasks.find(t => t.id === activeId);
+        const updatedTask = tasks.find(t => t.id === activeId); // This will be the one from the latest state
 
-            if (isDifferentDay || newTime !== updatedTask.time) {
-                updatedTask.dueDate = newDate;
-                updatedTask.time = newTime;
-                hasChanges = true;
-            }
-        }
+        // Now, we get the initial task state before any optimistic updates.
+        // We can find this from the `draggedTask` state which was set on dragStart.
+        const initialTask = draggedTask;
 
-        if (hasChanges) {
+        if (updatedTask && initialTask && !isEqual(initialTask, updatedTask)) {
             handleUpdateTask(updatedTask);
         }
     };
-
+    
     return (
         <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
             collisionDetection={closestCenter}
         >

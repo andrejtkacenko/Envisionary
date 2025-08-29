@@ -45,7 +45,7 @@ export const useTasks = () => {
     const handleUpdateTask = useCallback(async (task: Task) => {
         if (!user) return;
         
-        // Optimistic update
+        const originalTasks = tasks;
         setTasks(currentTasks => currentTasks.map(t => t.id === task.id ? task : t));
 
         try {
@@ -53,9 +53,9 @@ export const useTasks = () => {
         } catch (error) {
             console.error(error);
             toast({ variant: 'destructive', title: "Failed to update task" });
-            // Revert on error if needed
+            setTasks(originalTasks);
         }
-    }, [user, toast]);
+    }, [user, toast, tasks]);
 
     const handleBulkUpdateTasks = useCallback(async (allTasks: Task[]) => {
         if (!user) return;
@@ -91,6 +91,7 @@ export const useTasks = () => {
 
     return {
         tasks,
+        setTasks, // Expose setTasks for optimistic updates in the component
         isLoading,
         handleAddTask,
         handleUpdateTask,
