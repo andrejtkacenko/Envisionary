@@ -1,3 +1,5 @@
+
+
 import prisma from "@/lib/prisma";
 import type { Goal, GoalTemplate, Notification, Task, ScheduleTemplate } from "@/types";
 
@@ -18,21 +20,38 @@ export const getSubGoals = async (goalId: string): Promise<Goal[]> => {
 };
 
 export const addGoal = async (goalData: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Goal> => {
+    const user = await prisma.user.findUnique({ where: { id: goalData.userId }});
+    if (!user) throw new Error("User not found");
+
+    const { userId, ...restOfGoalData } = goalData;
+
     return await prisma.goal.create({
-        data: goalData,
+        data: {
+            ...restOfGoalData,
+            user: {
+                connect: { id: user.id }
+            }
+        },
     });
 };
 
-export const addGoals = async (userId: string, goalsData: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[]): Promise<Goal[]> => {
-    const createdGoals = await prisma.$transaction(
-        goalsData.map(g => prisma.goal.create({ data: {...g, userId } }))
-    );
-    return createdGoals;
+export const addGoals = async (firebaseUid: string, goalsData: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[]): Promise<void> => {
+    const user = await prisma.user.findUnique({ where: { firebaseUid }});
+    if (!user) throw new Error("User not found");
+
+    const goalsToCreate = goalsData.map(g => ({
+        ...g,
+        userId: user.id,
+    }));
+
+    await prisma.goal.createMany({
+        data: goalsToCreate,
+    });
 };
 
 
 export const updateGoal = async (goal: Goal): Promise<Goal> => {
-    const { id, ...data } = goal;
+    const { id, userId, ...data } = goal;
     return await prisma.goal.update({
         where: { id },
         data,
@@ -73,10 +92,17 @@ export const getSubTasks = async (taskId: string): Promise<Task[]> => {
 }
 
 export const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> => {
+    const user = await prisma.user.findUnique({ where: { id: taskData.userId }});
+    if (!user) throw new Error("User not found");
+    const { userId, ...restOfTaskData } = taskData;
+    
     const newTask = await prisma.task.create({
         data: {
-            ...taskData,
+            ...restOfTaskData,
             dueDate: taskData.dueDate ? new Date(taskData.dueDate) : undefined,
+            user: {
+                connect: { id: user.id }
+            }
         },
     });
     return {
@@ -86,7 +112,7 @@ export const addTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updated
 };
 
 export const updateTask = async (task: Task): Promise<Task> => {
-    const { id, ...data } = task;
+    const { id, userId, ...data } = task;
     const updatedTask = await prisma.task.update({
         where: { id },
         data: {
@@ -102,7 +128,7 @@ export const updateTask = async (task: Task): Promise<Task> => {
 
 export const updateTasks = async (tasks: Task[]): Promise<void> => {
     const updates = tasks.map(task => {
-        const { id, ...data } = task;
+        const { id, userId, ...data } = task;
         return prisma.task.update({ where: { id }, data: {
             ...data,
             dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
@@ -133,7 +159,7 @@ export const getGoalTemplates = async (): Promise<GoalTemplate[]> => {
     return templates.map(t => ({ ...t, subGoals: t.subGoals as any, createdAt: t.createdAt.toISOString() }));
 };
 
-export const addGoalTemplate = async (templateData: Omit<GoalTemplate, 'id' | 'createdAt' | 'updatedAt' | 'authorName'>): Promise<GoalTemplate> => {
+export const addGoalTemplate = async (templateData: Omit<GoalTemplate, 'id' | 'createdAt' | 'updatedAt' | 'authorName' | 'authorId'> & { authorId: string }): Promise<GoalTemplate> => {
     const user = await prisma.user.findUnique({ where: { id: templateData.authorId }});
     if (!user) throw new Error("Author not found");
 
@@ -142,6 +168,9 @@ export const addGoalTemplate = async (templateData: Omit<GoalTemplate, 'id' | 'c
             ...templateData,
             subGoals: templateData.subGoals as any,
             authorName: user.displayName || user.email || "Anonymous",
+            author: {
+                connect: { id: user.id }
+            }
         },
     });
     return { ...template, subGoals: template.subGoals as any, createdAt: template.createdAt.toISOString() };
@@ -157,8 +186,8 @@ export const getScheduleTemplates = async (userId: string): Promise<ScheduleTemp
     return templates.map(t => ({ ...t, schedule: t.schedule as any, createdAt: t.createdAt.toISOString() }));
 };
 
-export const addScheduleTemplate = async (userId: string, templateData: Omit<ScheduleTemplate, 'id' | 'createdAt' | 'updatedAt' | 'authorId'>): Promise<ScheduleTemplate> => {
-    const user = await prisma.user.findUnique({ where: { firebaseUid: userId }});
+export const addScheduleTemplate = async (firebaseUid: string, templateData: Omit<ScheduleTemplate, 'id' | 'createdAt' | 'updatedAt' | 'authorId'>): Promise<ScheduleTemplate> => {
+    const user = await prisma.user.findUnique({ where: { firebaseUid }});
     if (!user) throw new Error("Author not found");
 
     const template = await prisma.scheduleTemplate.create({
@@ -181,23 +210,32 @@ export const deleteScheduleTemplate = async (templateId: string): Promise<void> 
 // --- NOTIFICATION FUNCTIONS ---
 
 export const getNotifications = async (userId: string): Promise<Notification[]> => {
+    const user = await prisma.user.findUnique({ where: { firebaseUid: userId } });
+    if (!user) return [];
+
     return await prisma.notification.findMany({
-        where: { user: { firebaseUid: userId } },
+        where: { userId: user.id },
         orderBy: { createdAt: 'desc' },
         take: 20,
     });
 };
 
 export const addNotification = async (notificationData: Omit<Notification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+    const user = await prisma.user.findUnique({ where: { id: notificationData.userId }});
+    if (!user) return;
+
     await prisma.notification.create({
         data: {
             ...notificationData,
+            user: {
+                connect: { id: user.id }
+            }
         },
     });
 };
 
-export const markAllNotificationsAsRead = async (userId: string): Promise<void> => {
-    const user = await prisma.user.findUnique({ where: { firebaseUid: userId }});
+export const markAllNotificationsAsRead = async (firebaseUid: string): Promise<void> => {
+    const user = await prisma.user.findUnique({ where: { firebaseUid }});
     if (!user) return;
     await prisma.notification.updateMany({
         where: { userId: user.id, isRead: false },
