@@ -1,11 +1,5 @@
 
 {
   "framework": "nextjs",
-  "trailingSlash": false,
-  "functions": {
-    "src/**/*.ts": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+  "trailingSlash": false
 }
