@@ -30,7 +30,7 @@ const ScheduleTemplateCard = ({ template, onDelete, onApply }: { template: Sched
         <Card className="flex flex-col">
             <CardHeader>
                 <CardTitle className="font-headline text-xl">{template.name}</CardTitle>
-                <CardDescription>Created on {new Date(template.createdAt).toLocaleDateString()}</CardDescription>
+                <CardDescription>Created on {format(new Date(template.createdAt), 'PPP')}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
                  <p className="text-sm font-medium text-muted-foreground">
@@ -98,11 +98,11 @@ export default function ScheduleLibraryPage() {
   const router = useRouter();
   const { tasks: allTasks, updateTasks, addTask } = useTaskStore();
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
       if (!appUser) return;
       setIsLoading(true);
       try {
-        const fetchedTemplates = await getScheduleTemplates(appUser.id);
+        const fetchedTemplates = await getScheduleTemplates(appUser.firebaseUid);
         setTemplates(fetchedTemplates);
       } catch (error) {
         console.error("Failed to fetch schedule templates:", error);
@@ -114,14 +114,13 @@ export default function ScheduleLibraryPage() {
       } finally {
         setIsLoading(false);
       }
-  }
+  }, [appUser, toast]);
 
   useEffect(() => {
     if (appUser) {
         fetchTemplates();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appUser]);
+  }, [appUser, fetchTemplates]);
 
   const handleDelete = async (templateId: string) => {
     if (!appUser) return;
@@ -138,7 +137,7 @@ export default function ScheduleLibraryPage() {
     if (!appUser) return;
 
     const tasksToUpdate: Task[] = [];
-    const tasksToCreate: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+    const tasksToCreate: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[] = [];
     const unscheduledTasksCopy = [...allTasks.filter(t => !t.dueDate)];
 
     try {
@@ -153,18 +152,17 @@ export default function ScheduleLibraryPage() {
                     const taskToSchedule = unscheduledTasksCopy.shift()!;
                     tasksToUpdate.push({
                         ...taskToSchedule,
-                        dueDate: taskDate,
+                        dueDate: taskDate.toISOString(),
                         time: item.startTime,
                         duration: item.duration,
                     });
                 } else {
                     // If no more user tasks, create the AI-suggested ones
                     tasksToCreate.push({
-                        userId: appUser.id,
                         title: item.title,
                         priority: 'p4',
                         isCompleted: false,
-                        dueDate: taskDate,
+                        dueDate: taskDate.toISOString(),
                         time: item.startTime,
                         duration: item.duration,
                     });
@@ -182,7 +180,7 @@ export default function ScheduleLibraryPage() {
             await updateTasks(tasksToUpdate);
         }
         if (tasksToCreate.length > 0) {
-            await Promise.all(tasksToCreate.map(t => addTask(t)));
+            await Promise.all(tasksToCreate.map(t => addTask({ ...t, userId: appUser.id })));
         }
 
         toast({ title: "Schedule Applied!", description: `${totalScheduled} tasks have been scheduled.` });
