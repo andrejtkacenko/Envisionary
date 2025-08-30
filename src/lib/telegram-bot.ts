@@ -1,8 +1,9 @@
 
 import { Telegraf, Markup, Context } from 'telegraf';
 import { getTasks } from '@/lib/goals-service';
-import type { AppUser } from '@/types';
+import type { AppUser, Task } from '@/types';
 import { findUserByTelegramId } from './firebase-admin-service';
+import { addTask } from '@/lib/goals-service';
 
 // Extend Telegraf context to include our custom properties
 export interface MyContext extends Context {
@@ -104,7 +105,7 @@ const setupBot = () => {
                     title: taskTitle,
                     isCompleted: false,
                     priority: 'p3',
-                });
+                } as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>);
                 ctx.reply(`✅ Task added: "${taskTitle}"`);
             } catch (error) {
                 console.error("Error adding task from telegram:", error);
