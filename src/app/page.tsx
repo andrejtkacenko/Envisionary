@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Goal, GoalStatus, AppUser } from '@/types';
 import { AppHeader } from '@/components/app-header';
@@ -37,7 +37,7 @@ declare global {
     }
 }
 
-export default function Home() {
+function HomePageContent() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
 
@@ -116,8 +116,8 @@ export default function Home() {
   }, [user, authLoading, router, isTelegramFlow]);
 
   const fetchGoals = useCallback(async (currentAppUser: AppUser) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const userGoals = await getGoals(currentAppUser.firebaseUid);
       setGoals(userGoals.filter(g => g.status !== 'ongoing'));
     } catch (error) {
@@ -131,8 +131,10 @@ export default function Home() {
   useEffect(() => {
     if (appUser && !isTelegramFlow) {
       fetchGoals(appUser);
+    } else if (!authLoading && !isTelegramFlow) {
+      setIsLoading(false);
     }
-  }, [appUser, isTelegramFlow, fetchGoals]);
+  }, [appUser, authLoading, isTelegramFlow, fetchGoals]);
 
   const handleGoalUpdate = async (updatedGoal: Goal) => {
     if (!appUser) return;
@@ -353,4 +355,17 @@ export default function Home() {
         </DragOverlay>
     </DndContext>
   );
+}
+
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen w-full flex-col bg-background items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
+  )
 }

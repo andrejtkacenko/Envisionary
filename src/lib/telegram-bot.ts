@@ -1,6 +1,6 @@
 
 import { Telegraf, Markup, Context } from 'telegraf';
-import { getTasksSnapshot, addTask } from '@/lib/goals-service';
+import { getTasks } from '@/lib/goals-service';
 import type { AppUser } from '@/types';
 import { findUserByTelegramId } from './firebase-admin-service';
 
@@ -76,9 +76,9 @@ const setupBot = () => {
     });
 
     newBot.command('tasks', async (ctx) => {
-        if (!ctx.firebaseUser?.uid) return ctx.reply('Please link your account first.');
+        if (!ctx.firebaseUser?.firebaseUid) return ctx.reply('Please link your account first.');
         try {
-            const tasks = await getTasksSnapshot(ctx.firebaseUser.uid);
+            const tasks = await getTasks(ctx.firebaseUser.firebaseUid);
             if (tasks.length === 0) {
                 return ctx.reply("You have no tasks! Send a message to add one or open the app.", getWebAppKeyboard(true));
             }
@@ -94,12 +94,13 @@ const setupBot = () => {
     });
 
     newBot.on('message', async (ctx) => {
-        if (!ctx.firebaseUser?.uid) return ctx.reply('Please link your account first.');
+        if (!ctx.firebaseUser?.id) return ctx.reply('Please link your account first.');
         if ('text' in ctx.message) {
             const taskTitle = ctx.message.text;
             if (taskTitle.startsWith('/')) return; // Ignore commands
             try {
-                await addTask(ctx.firebaseUser.uid, {
+                await addTask({
+                    userId: ctx.firebaseUser.id,
                     title: taskTitle,
                     isCompleted: false,
                     priority: 'p3',

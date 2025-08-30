@@ -39,15 +39,6 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
-  serverActions: {
-    bodySizeLimit: '2mb',
-    // @ts-ignore
-    experimental: {
-      serverActions: {
-        executionTimeout: 60,
-      },
-    },
-  },
 };
 
 export default nextConfig;
